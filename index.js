@@ -62,6 +62,17 @@ client.on('message', async (msg) =>
             }
         }
 
+        if(msg.content.match('ask')) {
+            if(Math.random() >= 0.5){
+                msg.reply("はい")
+
+            } else {
+                msg.reply("いいえ")
+
+            }
+
+        }
+
     }
 
     if(voiceChannelConnection && !msg.isMemberMentioned(client.user)) {
