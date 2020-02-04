@@ -75,8 +75,9 @@ client.on('message', async (msg) =>
 
     }
 
+    console.log(msg.content)
     if(voiceChannelConnection && !msg.isMemberMentioned(client.user)) {
-        const tagRe = /<(:.+:\d+)?(@!\d+)?(@\d+)?>/g;
+        const tagRe = /<(:.+?:\d+)?(@!\d+)?(@\d+)?>/g;
         const emojiRe = /:(.+):/;
 
         const message = msg.content.replace(tagRe, (tag, emojiTag, botTag, userTag) => {
