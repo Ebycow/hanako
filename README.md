@@ -1,4 +1,7 @@
-# dependencies
+# Hanako
+汎用Discordチャット読み上げBot
+
+# Dependencies
 * 気合
 
 # Usage
