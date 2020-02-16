@@ -3,6 +3,7 @@ const Discord = require('discord.js');
 const axios = require('axios').default;
 const client = new Discord.Client();
 const toStream = require('tostream');
+const exitHook = require('exit-hook');
 
 let voiceChannelConnection = undefined;
 let micInstance = undefined;
@@ -21,7 +22,12 @@ client.on('message', async (msg) =>
                 // リプライしてきたユーザのボイスチャンネルに参加
 
                 voiceChannelConnection = await msg.member.voiceChannel.join();
-
+                const unsubscribe = exitHook(() => {
+                   voiceChannelConnection.disconnect();
+                });
+                voiceChannelConnection.on('disconnect', (_) => {
+                    unsubscribe();
+                });
 
             } else if(voiceChannelConnection) {
                 msg.reply('すでに通話チャンネルに参加済みですよ、「さようなら」とリプライすると切断します');
@@ -96,4 +102,3 @@ client.on('message', async (msg) =>
 });
 
 client.login(process.env.TOKEN);
-
