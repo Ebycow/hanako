@@ -79,7 +79,11 @@ client.on('message', async (msg) =>
             throw Error("unreachable");
         });
         
-        const data = (await axios.get(`http://localhost:4090/?text=${message}`)).data;
+        const data = (await axios.get(`http://localhost:4090/`, {
+            params : {
+                text : message
+            }
+        })).data;
         const buffer = new Buffer(data, 'base64');
         const readable = toStream(buffer)
         const dispatcher = voiceChannelConnection.playStream(readable, {
