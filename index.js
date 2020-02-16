@@ -4,9 +4,10 @@ const axios = require('axios').default;
 const client = new Discord.Client();
 const toStream = require('tostream');
 const exitHook = require('exit-hook');
+const SampleRate = require('node-libsamplerate');
+const Interleaver = require('./interleaver').Interleaver;
 
 let voiceChannelConnection = undefined;
-let micInstance = undefined;
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -42,8 +43,7 @@ client.on('message', async (msg) =>
         // 切断
         if(msg.content.match('bye')) {
             if(voiceChannelConnection) {
-                    voiceChannelConnection.disconnect();
-                    micInstance.stop();
+                voiceChannelConnection.disconnect();
         
             } else {
                 msg.reply("どこのチャンネルにも参加していないか、エラーが発生しています :sob:")
@@ -84,17 +84,32 @@ client.on('message', async (msg) =>
 
             throw Error("unreachable");
         });
-        
-        const data = (await axios.get(`http://localhost:4090/`, {
+
+        const response = await axios.get(`http://localhost:4090/`, {
+            responseType: 'stream',
             params : {
                 text : message
             }
-        })).data;
-        const buffer = new Buffer(data, 'base64');
-        const readable = toStream(buffer)
-        const dispatcher = voiceChannelConnection.playStream(readable, {
-            bitrate : 48000
         });
+        const sampleRate = parseInt(response.headers['ebyroid-pcm-sample-rate'], 10);
+        const bitDepth = parseInt(response.headers['ebyroid-pcm-bit-depth'], 10);
+        const numChannels = parseInt(response.headers['ebyroid-pcm-number-of-channels'], 10);
+
+        let stream = response.data;
+        if (numChannels == 1) {
+            stream = stream.pipe(new Interleaver());
+        }
+
+        const resample = new SampleRate({
+            type: SampleRate.SRC_SINC_MEDIUM_QUALITY,
+            channels: 2,
+            fromRate: sampleRate,
+            fromDepth: bitDepth,
+            toRate: 48000,
+            toDepth: 16
+        });
+        stream = stream.pipe(resample);
+        const dispatcher = voiceChannelConnection.playConvertedStream(stream, { bitrate: 'auto' });
 
     }
 
