@@ -1,11 +1,8 @@
 require('dotenv').config();
 const Discord = require('discord.js');
-const mic = require('mic');
-const { Bouyomi } = require('./bouyomi');
+const axios = require('axios').default;
 const client = new Discord.Client();
-
-const bouyomi = new Bouyomi();
-
+const toStream = require('tostream');
 
 let voiceChannelConnection = undefined;
 let micInstance = undefined;
@@ -25,21 +22,6 @@ client.on('message', async (msg) =>
 
                 voiceChannelConnection = await msg.member.voiceChannel.join();
 
-                micInstance = mic({
-                    rate: '192000',
-                    channels: '1',
-                    device : 'waveaudio',
-                    debug: true,
-                });
-                
-                micInstance.start();
-                const micInputStream = micInstance.getAudioStream();
-                
-                const dispatcher = voiceChannelConnection.playStream(micInputStream, {
-                    bitrate : 48000
-                });
-
-                bouyomi.yomiage("読み上げをはじめます");
 
             } else if(voiceChannelConnection) {
                 msg.reply('すでに通話チャンネルに参加済みですよ、「さようなら」とリプライすると切断します');
@@ -96,8 +78,13 @@ client.on('message', async (msg) =>
 
             throw Error("unreachable");
         });
-
-        bouyomi.yomiage(message);
+        
+        const data = (await axios.get(`http://localhost:4090/?text=${message}`)).data;
+        const buffer = new Buffer(data, 'base64');
+        const readable = toStream(buffer)
+        const dispatcher = voiceChannelConnection.playStream(readable, {
+            bitrate : 48000
+        });
 
     }
 

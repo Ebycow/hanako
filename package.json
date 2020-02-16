@@ -10,9 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.19.2",
     "discord.js": "^11.5.1",
     "dotenv": "^8.2.0",
     "mic": "^2.1.2",
-    "node-opus": "^0.3.3"
+    "node-opus": "^0.3.3",
+    "tostream": "^1.0.0"
   }
 }
