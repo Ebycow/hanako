@@ -2,10 +2,12 @@ require('dotenv').config();
 const Discord = require('discord.js');
 const axios = require('axios').default;
 const client = new Discord.Client();
-const toStream = require('tostream');
 const exitHook = require('exit-hook');
 const SampleRate = require('node-libsamplerate');
 const Interleaver = require('./interleaver').Interleaver;
+
+const TeachCommand = require('./commands/teach').TeachCommand;
+const teachCommand = new TeachCommand();
 
 let voiceChannelConnection = undefined;
 
@@ -17,7 +19,7 @@ client.on('message', async (msg) =>
 {
     if (msg.isMemberMentioned(client.user)) {
 
-        // 参加させる
+        // VC参加
         if(msg.content.match('plz')) {
             if(msg.member.voiceChannel) {
                 // リプライしてきたユーザのボイスチャンネルに参加
@@ -40,16 +42,24 @@ client.on('message', async (msg) =>
 
         }
 
-        // 切断
+        // VC切断
         if(msg.content.match('bye')) {
             if(voiceChannelConnection) {
                 voiceChannelConnection.disconnect();
         
             } else {
-                msg.reply("どこのチャンネルにも参加していないか、エラーが発生しています :sob:")
+                msg.reply("どこのチャンネルにも参加していないか、エラーが発生しています :sob:");
             }
+
         }
 
+        // 教育
+        if(msg.content.match('teach')) {
+            teachCommand.do(msg);
+
+        }
+
+        // satomi
         if(msg.content.match('ask')) {
             if(Math.random() >= 0.5){
                 msg.reply("はい")
@@ -65,10 +75,13 @@ client.on('message', async (msg) =>
 
     console.log(msg.content)
     if(voiceChannelConnection && !msg.isMemberMentioned(client.user)) {
+
+        let message = msg.content;
+        // Discordタグ置換
         const tagRe = /<(a?:.+?:\d+)?(@!\d+)?(@\d+)?>/g;
         const emojiRe = /:(.+):/;
 
-        const message = msg.content.replace(tagRe, (tag, emojiTag, botTag, userTag) => {
+        message = message.replace(tagRe, (tag, emojiTag, botTag, userTag) => {
             if (typeof emojiTag !== 'undefined') {
                 let emojiName = emojiTag.match(emojiRe)[1];
                 return emojiName; 
@@ -84,6 +97,9 @@ client.on('message', async (msg) =>
 
             throw Error("unreachable");
         });
+
+        // 辞書置換
+        message = teachCommand.replaceText(message);
 
         const response = await axios.get(`http://localhost:4090/`, {
             responseType: 'stream',
