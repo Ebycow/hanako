@@ -13,6 +13,8 @@ const WaveFileHeaderTrimmer = require('./transforms/waveheader').WaveFileHeaderT
 const TeachCommand = require('./commands/teach').TeachCommand;
 const teachCommand = new TeachCommand();
 
+let wordLimit = 120;
+
 let voiceChannelConnection = undefined;
 
 let streamCue = [];
@@ -58,6 +60,21 @@ client.on('message', async (msg) =>
             } else {
                 msg.reply("どこのチャンネルにも参加していないか、エラーが発生しています :sob:");
             }
+
+        }
+
+        // 文字数制限
+        if(msg.content.match('limit')) {
+            if(msg.content.split(" ")[2]) {
+                const num = msg.content.split(" ")[2];
+                wordLimit = num;
+    
+            } else {
+                wordLimit = 9999;
+                
+            }
+
+            msg.reply(`読み上げる文字数を${wordLimit}文字に制限しました :no_entry:`);
 
         }
 
@@ -120,6 +137,12 @@ client.on('message', async (msg) =>
 
         // 辞書置換
         message = teachCommand.replaceText(message);
+
+        // 文字数制限置換
+        if(message.length > wordLimit) {
+            message = message.substr(0, wordLimit) + "以下略。";
+        }
+
 
 
         console.log(message);
