@@ -1,9 +1,9 @@
-const Transform = require('stream').Transform;
+const { Transform } = require('stream');
 
 class Interleaver extends Transform {
 
-    constructor() {
-        super();
+    constructor(options) {
+        super(Object.assign({}, options, { objectMode: false }));
         this.fragments = [];
 
     }
