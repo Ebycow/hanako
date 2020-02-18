@@ -34,6 +34,9 @@ client.on('message', async (msg) =>
                 // リプライしてきたユーザのボイスチャンネルに参加
 
                 voiceChannelConnection = await msg.member.voiceChannel.join();
+
+                msg.reply(`${msg.channel}に参加したよ、よろしくね`);
+
                 const unsubscribe = exitHook(() => {
                    voiceChannelConnection.disconnect();
                 });
