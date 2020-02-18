@@ -10,6 +10,8 @@ const TeachCommand = require('./commands/teach').TeachCommand;
 const teachCommand = new TeachCommand();
 
 let voiceChannelConnection = undefined;
+const cue = [];
+let playingDispatcher = undefined;
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -132,11 +134,32 @@ client.on('message', async (msg) =>
             toDepth: 16
         });
         stream = stream.pipe(resample);
-        const dispatcher = voiceChannelConnection.playConvertedStream(stream, { bitrate: 'auto' });
+
+        cue.push(stream);
+
+        if(playingDispatcher === undefined){
+            playingDispatcher = voiceChannelConnection.playConvertedStream(cue.shift(0), { bitrate: 'auto' });
+            playingDispatcher.on('end', value => playNextCue(value));
+
+        }
 
     }
-
     
 });
 
+function playNextCue(flag) {
+    const stream = cue.shift(0)
+    console.log(cue.length)
+    if (stream !== undefined) {
+        playingDispatcher = voiceChannelConnection.playConvertedStream(stream, { bitrate: 'auto' });
+        playingDispatcher.on('end', value => playNextCue(value));
+
+    } else {
+        playingDispatcher = undefined;
+
+    }
+    
+}
+
 client.login(process.env.TOKEN);
+
