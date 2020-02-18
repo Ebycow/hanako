@@ -1,10 +1,13 @@
 require('dotenv').config();
+const fs = require('fs');
 const Discord = require('discord.js');
 const axios = require('axios').default;
 const client = new Discord.Client();
 const exitHook = require('exit-hook');
 const SampleRate = require('node-libsamplerate');
-const Interleaver = require('./interleaver').Interleaver;
+const Interleaver = require('./transforms/interleaver').Interleaver;
+const StereoByteAdjuster = require('./transforms/byteadjuster').StereoByteAdjuster;
+const WaveFileHeaderTrimmer = require('./transforms/waveheader').WaveFileHeaderTrimmer;
 
 const TeachCommand = require('./commands/teach').TeachCommand;
 const teachCommand = new TeachCommand();
@@ -122,8 +125,18 @@ client.on('message', async (msg) =>
 
         let stream = response.data;
         if (numChannels == 1) {
+            // 元データがモノラルのとき
             stream = stream.pipe(new Interleaver());
+        } else {
+            // 元データがステレオのとき
+            stream = stream.pipe(new StereoByteAdjuster());
         }
+
+        // # SE流す時はこう
+        //
+        // const sampleRate = 44100;
+        // const bitDepth = 16;
+        // stream = fs.createReadStream('syamu.wav').pipe(new WaveFileHeaderTrimmer).pipe(new StereoByteAdjuster);
 
         const resample = new SampleRate({
             type: SampleRate.SRC_SINC_MEDIUM_QUALITY,
