@@ -63,6 +63,23 @@ client.on('message', async (msg) =>
 
         }
 
+        // 成敗
+        if(msg.content.match('seibai')) {
+            if(playingDispatcher){
+                for (const stream of streamCue) {
+                    stream.destroy();
+                }
+                streamCue = [];
+                playingDispatcher.end("seibai")
+                msg.reply("戯け者 余の顔を見忘れたか :knife:");
+
+            } else {
+                msg.reply("安心せい、みねうちにゃ… :knife:");
+
+            }
+
+        }
+        
         // 文字数制限
         if(msg.content.match('limit')) {
             if(msg.content.split(" ")[2]) {
@@ -91,6 +108,7 @@ client.on('message', async (msg) =>
         }
 
 
+
         // satomi
         if(msg.content.match('ask')) {
             if(Math.random() >= 0.5){
@@ -106,7 +124,7 @@ client.on('message', async (msg) =>
     }
 
     console.log(msg.content)
-    if(voiceChannelConnection && !msg.isMemberMentioned(client.user)) {
+    if(voiceChannelConnection && !msg.isMemberMentioned(client.user) && !(msg.author === client.user)) {
 
         let message = msg.content;
 
