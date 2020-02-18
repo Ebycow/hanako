@@ -1,3 +1,5 @@
+const emoji = require('node-emoji')
+
 class TeachCommand {
     constructor() {
         this.dictionary = []
@@ -5,8 +7,10 @@ class TeachCommand {
     }
 
     doTeach(msg) {
-        const from = msg.content.split(" ")[2];
-        const to = msg.content.split(" ")[3];
+        const text = emoji.replace(msg.content, (emoji) => `:${emoji.key}:`)
+
+        const from = text.split(" ")[2];
+        const to = text.split(" ")[3];
 
         if(from === undefined || to === undefined) {
             msg.reply("コマンドの形式が間違っています（teach from to） :sob:");
@@ -45,7 +49,9 @@ class TeachCommand {
     }
 
     doForget(msg) {
-        const word = msg.content.split(" ")[2];
+        // emoji置き換えも行う
+        const word = emoji.replace(
+            msg.content.split(" ")[2]　, (emoji) => `:${emoji.key}:`);
 
         let popId = -1;
         this.dictionary.forEach((rep, index) => {

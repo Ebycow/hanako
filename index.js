@@ -5,6 +5,7 @@ const axios = require('axios').default;
 const client = new Discord.Client();
 const exitHook = require('exit-hook');
 const SampleRate = require('node-libsamplerate');
+const emoji = require('node-emoji')
 const Interleaver = require('./transforms/interleaver').Interleaver;
 const StereoByteAdjuster = require('./transforms/byteadjuster').StereoByteAdjuster;
 const WaveFileHeaderTrimmer = require('./transforms/waveheader').WaveFileHeaderTrimmer;
@@ -13,7 +14,8 @@ const TeachCommand = require('./commands/teach').TeachCommand;
 const teachCommand = new TeachCommand();
 
 let voiceChannelConnection = undefined;
-const cue = [];
+
+let streamCue = [];
 let playingDispatcher = undefined;
 
 client.on('ready', () => {
@@ -22,7 +24,7 @@ client.on('ready', () => {
 
 client.on('message', async (msg) =>
 {
-    if (msg.isMemberMentioned(client.user)) {
+    if (msg.isMemberMentioned(client.user)　|| msg.content.startsWith("?") ) {
 
         // VC参加
         if(msg.content.match('plz')) {
@@ -50,6 +52,7 @@ client.on('message', async (msg) =>
         // VC切断
         if(msg.content.match('bye')) {
             if(voiceChannelConnection) {
+                streamCue = [];
                 voiceChannelConnection.disconnect();
         
             } else {
@@ -89,6 +92,11 @@ client.on('message', async (msg) =>
     if(voiceChannelConnection && !msg.isMemberMentioned(client.user)) {
 
         let message = msg.content;
+
+
+        // うにこーど絵文字置換
+        message = emoji.replace(message, (emoji) => `:${emoji.key}:`)
+
         // Discordタグ置換
         const tagRe = /<(a?:.+?:\d+)?(@!\d+)?(@\d+)?>/g;
         const emojiRe = /:(.+):/;
@@ -112,6 +120,9 @@ client.on('message', async (msg) =>
 
         // 辞書置換
         message = teachCommand.replaceText(message);
+
+
+        console.log(message);
 
         const response = await axios.get(`http://localhost:4090/`, {
             responseType: 'stream',
@@ -148,10 +159,10 @@ client.on('message', async (msg) =>
         });
         stream = stream.pipe(resample);
 
-        cue.push(stream);
+        streamCue.push(stream);
 
         if(playingDispatcher === undefined){
-            playingDispatcher = voiceChannelConnection.playConvertedStream(cue.shift(0), { bitrate: 'auto' });
+            playingDispatcher = voiceChannelConnection.playConvertedStream(streamCue.shift(0), { bitrate: 'auto' });
             playingDispatcher.on('end', value => playNextCue(value));
 
         }
@@ -161,8 +172,8 @@ client.on('message', async (msg) =>
 });
 
 function playNextCue(flag) {
-    const stream = cue.shift(0)
-    console.log(cue.length)
+    const stream = streamCue.shift(0)
+    console.log('streamCue', streamCue.length)
     if (stream !== undefined) {
         playingDispatcher = voiceChannelConnection.playConvertedStream(stream, { bitrate: 'auto' });
         playingDispatcher.on('end', value => playNextCue(value));
