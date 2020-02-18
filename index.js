@@ -55,9 +55,16 @@ client.on('message', async (msg) =>
 
         // 教育
         if(msg.content.match('teach')) {
-            teachCommand.do(msg);
+            teachCommand.doTeach(msg);
 
         }
+
+        // 忘却
+        if(msg.content.match('forget')) {
+            teachCommand.doForget(msg);
+
+        }
+
 
         // satomi
         if(msg.content.match('ask')) {

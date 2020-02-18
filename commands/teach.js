@@ -4,7 +4,7 @@ class TeachCommand {
         
     }
 
-    do(msg) {
+    doTeach(msg) {
         const from = msg.content.split(" ")[2];
         const to = msg.content.split(" ")[3];
 
@@ -39,6 +39,29 @@ class TeachCommand {
             }
 
             console.log(this.dictionary)
+
+        }
+
+    }
+
+    doForget(msg) {
+        const word = msg.content.split(" ")[2];
+
+        let popId = -1;
+        this.dictionary.forEach((rep, index) => {
+            if (rep[0] == word) {
+                popId = index;
+
+            }
+
+        });
+
+        if (popId >= 0) {
+            this.dictionary.pop(popId);
+            msg.reply(`1 2の…ポカン！${ word }を忘れました！ :bulb:`);
+
+        } else {
+            msg.reply("その単語は教育されていません");
 
         }
 
