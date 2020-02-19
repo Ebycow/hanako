@@ -9,11 +9,12 @@ const emoji = require('node-emoji')
 const Interleaver = require('./transforms/interleaver').Interleaver;
 const StereoByteAdjuster = require('./transforms/byteadjuster').StereoByteAdjuster;
 const WaveFileHeaderTrimmer = require('./transforms/waveheader').WaveFileHeaderTrimmer;
+const DiscordTagReplacer = require('./utils/tagreplacer').DiscordTagReplacer;
 
 const TeachCommand = require('./commands/teach').TeachCommand;
 const teachCommand = new TeachCommand();
-
-let wordLimit = 120;
+const LimitCommand = require('./commands/limit').LimitCommand;
+const limitCommand = new LimitCommand();
 
 let voiceChannelConnection = undefined;
 
@@ -85,16 +86,7 @@ client.on('message', async (msg) =>
         
         // 文字数制限
         if(msg.content.match('limit')) {
-            if(msg.content.split(" ")[2]) {
-                const num = msg.content.split(" ")[2];
-                wordLimit = num;
-    
-            } else {
-                wordLimit = 9999;
-                
-            }
-
-            msg.reply(`読み上げる文字数を${wordLimit}文字に制限しました :no_entry:`);
+            limitCommand.setLimit(msg);
 
         }
 
@@ -109,8 +101,6 @@ client.on('message', async (msg) =>
             teachCommand.doForget(msg);
 
         }
-
-
 
         // satomi
         if(msg.content.match('ask')) {
@@ -131,40 +121,17 @@ client.on('message', async (msg) =>
 
         let message = msg.content;
 
-
         // うにこーど絵文字置換
         message = emoji.replace(message, (emoji) => `:${emoji.key}:`)
 
         // Discordタグ置換
-        const tagRe = /<(a?:.+?:\d+)?(@!\d+)?(@\d+)?>/g;
-        const emojiRe = /:(.+):/;
-
-        message = message.replace(tagRe, (tag, emojiTag, botTag, userTag) => {
-            if (typeof emojiTag !== 'undefined') {
-                let emojiName = emojiTag.match(emojiRe)[1];
-                return emojiName; 
-            }
-            if (typeof userTag !== 'undefined') {
-                let userId = userTag.slice(1);
-                return "@" + msg.mentions.users.find("id", userId).username;
-            }
-            if (typeof botTag !== 'undefined') {
-                let userId = botTag.slice(2);
-                return "@" + msg.mentions.users.find("id", userId).username;
-            }
-
-            throw Error("unreachable");
-        });
+        message = DiscordTagReplacer.replace(message);
 
         // 辞書置換
-        message = teachCommand.replaceText(message);
+        message = teachCommand.replace(message);
 
         // 文字数制限置換
-        if(message.length > wordLimit) {
-            message = message.substr(0, wordLimit) + "以下略。";
-        }
-
-
+        message = limitCommand.replace(message);
 
         console.log(message);
 
