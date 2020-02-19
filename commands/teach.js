@@ -1,9 +1,34 @@
 const emoji = require('node-emoji')
+const fs = require('fs')
+
+const dictSort = (a, b) => {
+    if (a[0].length > b[0].length) {
+        return -1;
+    }
+
+    if (a[0].length < b[0].length) {
+        return 1;
+    } 
+
+    return 0;
+}
 
 class TeachCommand {
     constructor() {
-        this.dictionary = []
+        try {
+            const save = JSON.parse(fs.readFileSync('./temp/teach/a.json'));
+            this.dictionary = save;
+
+        } catch (error) {
+            fs.writeFileSync('./temp/teach/a.json', "");
+            this.dictionary = [];
+
+        }
         
+    }
+
+    saveFile() {
+        fs.writeFileSync('./temp/teach/a.json', JSON.stringify(this.dictionary));
     }
 
     doTeach(msg) {
@@ -42,6 +67,9 @@ class TeachCommand {
 
             }
 
+            this.dictionary.sort(dictSort);
+
+            this.saveFile();
             console.log(this.dictionary)
 
         }
@@ -65,11 +93,15 @@ class TeachCommand {
         if (popId >= 0) {
             this.dictionary.pop(popId);
             msg.reply(`1 2の…ポカン！${ word }を忘れました！ :bulb:`);
+            this.dictionary.sort(dictSort);
+            this.saveFile();
 
         } else {
             msg.reply("その単語は教育されていません");
 
         }
+
+
 
     }
 
@@ -83,8 +115,12 @@ class TeachCommand {
 
     }
 
+
+
 }
 
 module.exports = {
     TeachCommand
 }
+
+new TeachCommand()
