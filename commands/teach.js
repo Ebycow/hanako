@@ -73,7 +73,7 @@ class TeachCommand {
 
     }
 
-    replaceText(text) {
+    replace(text) {
         for (const rep of this.dictionary) {
             text = text.replace(new RegExp(rep[0], 'g'), rep[1]);
 
