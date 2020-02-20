@@ -9,7 +9,8 @@ const emoji = require('node-emoji')
 const Interleaver = require('./transforms/interleaver').Interleaver;
 const StereoByteAdjuster = require('./transforms/byteadjuster').StereoByteAdjuster;
 const WaveFileHeaderTrimmer = require('./transforms/waveheader').WaveFileHeaderTrimmer;
-const DiscordTagReplacer = require('./utils/tagreplacer').DiscordTagReplacer;
+const DiscordTagReplacer = require('./utils/replacer').DiscordTagReplacer;
+const UrlReplacer = require('./utils/replacer').UrlReplacer;
 
 const TeachCommand = require('./commands/teach').TeachCommand;
 const teachCommand = new TeachCommand();
@@ -122,7 +123,10 @@ client.on('message', async (msg) =>
         let message = msg.content;
 
         // うにこーど絵文字置換
-        message = emoji.replace(message, (emoji) => `:${emoji.key}:`)
+        message = emoji.replace(message, (emoji) => `:${emoji.key}:`);
+
+        // URL置換
+        message = UrlReplacer.replace(message);
 
         // Discordタグ置換
         message = DiscordTagReplacer.replace(message);
