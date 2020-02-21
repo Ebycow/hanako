@@ -1,13 +1,14 @@
 const fs = require('fs');
 const Datastore = require('nedb');
+const table = require('text-table');
 const { MessageContext } = require('../contexts/messagecontext');
 const { ReplaciveCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
 const { EmojiReplacer } = require('../utils/replacer');
 
 const db = new Datastore({ filename: './db/teach.db', autoload: true });
-db.loadDatabase()
-11
+db.loadDatabase();
+
 // 定期的にDBを圧縮
 db.persistence.setAutocompactionInterval(86400000)
 
@@ -34,7 +35,7 @@ class TeachCommand extends ReplaciveCommand {
             if(err) {
                 throw err;
             }
-            console.log(docs.dict)
+
             if(docs) {
                 this.dictionary = docs.dict
 
@@ -71,6 +72,11 @@ class TeachCommand extends ReplaciveCommand {
      * @override
      */
     process(context, name, args) {
+        // if(!context.isJoined) {
+        //     return this.doError();
+
+        // }
+
         for (const cmd of CommandNames.TEACH) {
             if (name === cmd) {
                 return this.doTeach(args);
@@ -86,6 +92,12 @@ class TeachCommand extends ReplaciveCommand {
         for (const cmd of CommandNames.DICTIONARY) {
             if (name === cmd) {
                 return this.doShowList();
+            }
+        }
+
+        for (const cmd of CommandNames.DIC_ALLDELETE) {
+            if (name === cmd) {
+                return this.doAllDelete(args);
             }
         }
 
@@ -192,15 +204,32 @@ class TeachCommand extends ReplaciveCommand {
 
     }
 
+    /**
+     * @returns {CommandResult} 
+     */
     doShowList() {
         let replyText = "覚えた単語の一覧だよ！:\n";
-        console.log(this.dictionary);
-        for (const rep of this.dictionary) {
-            console.log(rep)
-            replyText += `${rep[0]} -> ${rep[1]}\n`;
+        return new CommandResult(ResultType.SUCCESS, replyText + table(this.dictionary));
+    }
 
+    /**
+     * @param {string[]} args
+     * @returns {CommandResult} 
+     */
+    doAllDelete(args) {
+        const force = args[0] === '--force';
+        let result;
+
+        if(force){
+            result = new CommandResult(ResultType.SUCCESS, `まっさらに生まれ変わって　人生一から始めようが\nへばりついて離れない　地続きの今を歩いているんだ :bulb:`);
+            this.dictionary = [];
+            this.saveDict();
+
+        } else {
+            result = new CommandResult(ResultType.REQUIRE_CONFIRM, `**ほんとうにけすのですか？、こうかいしませんね？\n すべての単語を削除する場合はコマンドに --force を付けてください(?alldelete --force)**`);
         }
-        return new CommandResult(ResultType.SUCCESS, replyText);
+
+        return result;
     }
 
     /**
@@ -219,6 +248,13 @@ class TeachCommand extends ReplaciveCommand {
 
     }
 
+    /**
+     * @param {string} str
+     * @param {string} before 
+     * @param {string} after 
+     * @returns {string}
+     * @override
+     */
     wordReplacer (str, before, after) {
         return str.split(before).join(after);
 

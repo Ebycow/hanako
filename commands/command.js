@@ -33,8 +33,9 @@ const CommandNames = {
     LEAVE: ['さようなら', 'bye', "b"],
     ASK: ['ask'],
     LIMIT: ['limit', 'readlimit'],
-    TEACH: ['teach', 'wbook-add', "mk"],
-    FORGET: ['forget', 'wbook-delete', "rm"],
+    TEACH: ['教育', 'teach', 'wbook-add', "mk"],
+    FORGET: ['忘却', 'forget', 'wbook-delete', "rm"],
+    DIC_ALLDELETE: ['wbook-alldel', "alldelete"],
     DICTIONARY: ['dictionary', 'wbook-list', "dic"],
     SEIBAI: ['seibai', 'stop']
 };

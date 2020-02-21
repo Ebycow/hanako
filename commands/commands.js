@@ -27,6 +27,7 @@ class Commands extends Map {
             [CommandNames.TEACH, teach],
             [CommandNames.FORGET, teach],
             [CommandNames.DICTIONARY, teach],
+            [CommandNames.DIC_ALLDELETE, teach],
         ];
 
         this._replacives = [];
