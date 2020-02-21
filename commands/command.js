@@ -33,8 +33,8 @@ const CommandNames = {
     LEAVE: ['bye', "b"],
     ASK: ['ask'],
     LIMIT: ['limit', 'readlimit'],
-    TEACH: ['teach', 'wbook-add'],
-    FORGET: ['forget', 'wbook-delete'],
+    TEACH: ['teach', 'wbook-add', "mk"],
+    FORGET: ['forget', 'wbook-delete', "rm"],
     SEIBAI: ['seibai', 'stop']
 };
 
