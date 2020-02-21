@@ -20,6 +20,9 @@ class MessageContext {
      * @param {function():Promise<string>} options.voiceJoin
      * @param {function():void} options.voiceLeave
      * @param {function(string):Promise<void>} options.voiceCancel
+     * @param {function(string):string} options.resolveRoleName
+     * @param {function(string):string} options.resolveUserName
+     * @param {function(string):string} options.resolveChannelName
      */
     constructor(options) {
         
@@ -78,7 +81,28 @@ class MessageContext {
          * @description 花子が送信中の音声ストリームを中止する処理（非同期）。キューが残っていれば続けて再生される。引数は中止する理由。
          */
         this.voiceCancel = (typeof options.voiceCancel !== 'undefined') ? options.voiceCancel : null;
-    
+
+        /**
+         * @type {function(string):string}
+         * @returns ユーザー名の文字列。
+         * @description ユーザーID文字列からユーザー名文字列を解決する処理（同期）。
+         */
+        this.resolveUserName = (typeof options.resolveUserName !== 'undefined') ? options.resolveUserName : null;
+
+        /**
+         * @type {function(string):string}
+         * @returns ロール名の文字列。
+         * @description ロールID文字列からロール名文字列を解決する処理（同期）。
+         */
+        this.resolveRoleName = (typeof options.resolveRoleName !== 'undefined') ? options.resolveRoleName : null;
+
+        /**
+         * @type {function(string):string}
+         * @returns チャンネル名の文字列。
+         * @description チャンネルID文字列からチャンネル名文字列を解決する処理（同期）。
+         */
+        this.resolveChannelName = (typeof options.resolveChannelName !== 'undefined') ? options.resolveChannelName : null;
+
     }
 
 }

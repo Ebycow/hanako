@@ -1,4 +1,4 @@
-const assert = require('assert').strict;
+const { MessageContext } = require('../contexts/messagecontext');
 const { Replacive } = require('./replacive');
 
 const tagRe = /<(a?:.+?:\d+)?(@!\d+)?(@\d+)?(#\d+)?(@&\d+)?>/g;
@@ -10,17 +10,12 @@ const emojiRe = /:(.+):/;
 class DiscordTagReplacer extends Replacive {
     
     /**
+     * @param {MessageContext} context
      * @param {string} message 
-     * @param {Object} options 
      * @returns {string}
      * @override
      */
-    replace(message, options) {
-        const users = options.users;
-        const channels = options.channels;
-        const roles = options.roles;
-        assert(users && channels && roles);
-
+    replace(context, message) {
         message = message.replace(tagRe, (tag, emojiTag, botTag, userTag, channelTag, roleTag) => {
             if (typeof emojiTag !== 'undefined') {
                 let emojiName = emojiTag.match(emojiRe)[1];
@@ -28,19 +23,19 @@ class DiscordTagReplacer extends Replacive {
             }
             if (typeof userTag !== 'undefined') {
                 let userId = userTag.slice(1);
-                return "@" + users.find('id', userId).username;
+                return "@" + context.resolveUserName(userId);
             }
             if (typeof botTag !== 'undefined') {
                 let userId = botTag.slice(2);
-                return "@" + users.find('id', userId).username;
+                return "@" + context.resolveUserName(userId);
             }
             if (typeof channelTag !== 'undefined') {
                 let channelId = channelTag.slice(1);
-                return channels.find('id', channelId).name; 
+                return context.resolveChannelName(channelId); 
             }
             if (typeof roleTag !== 'undefined') {
                 let roleId = roleTag.slice(2);
-                return roles.find('id', roleId).name;
+                return context.resolveRoleName(roleId);
             }
         
             throw Error("unreachable");

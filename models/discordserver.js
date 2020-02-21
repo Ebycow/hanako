@@ -71,11 +71,11 @@ class DiscordServer {
     }
 
     /**
+     * @param {MessageContext} context
      * @param {string} _text
-     * @param {Object} options
      * @returns {string} 
      */
-    handleReplace(_text, options) {
+    handleReplace(context, _text) {
         const replacives = this.commands.replacives.sort((a, b) => {
             if (a.replacePriority() < b.replacePriority()) {
                 return -1;
@@ -88,7 +88,7 @@ class DiscordServer {
 
         let text = _text;
         for (let i = 0, len = replacives.length; i < len; i++) {
-            text = replacives[i].replace(text, options);
+            text = replacives[i].replace(context, text);
         }
 
         return text;

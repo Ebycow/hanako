@@ -112,10 +112,10 @@ client.on('message', async (message) => {
         isJoined: () => !!(connections.get(key)),
         isSpeaking: () => (!!(dispatchers.get(key)) || (queues.get(key).length > 0)),
         queueLength: () => queues.get(key).length,
-        queuePurge,
-        voiceJoin,
-        voiceLeave,
-        voiceCancel
+        queuePurge, voiceJoin, voiceLeave, voiceCancel,
+        resolveUserName: (x) => message.mentions.users.find('id', x).username,
+        resolveRoleName: (x) => message.guild.roles.find('id', x).name,
+        resolveChannelName: (x) => message.guild.channels.find('id', x).name,
     });
 
     console.info(message.content);
@@ -144,7 +144,7 @@ client.on('message', async (message) => {
         text = UrlReplacer.replace(text);
 
         // リプレーサーによる置換
-        text = server.handleReplace(text, { users: message.mentions.users, channels: message.guild.channels, roles: message.guild.roles });
+        text = server.handleReplace(context, text);
 
         console.info(text);
 

@@ -153,12 +153,12 @@ class TeachCommand extends ReplaciveCommand {
     }
 
     /**
+     * @param {MessageContext} context
      * @param {string} text 
-     * @param {Object} [options={}] 
      * @returns {string}
      * @override
      */
-    replace(text, options = {}) {
+    replace(context, text) {
         for (const rep of this.dictionary) {
             text = text.replace(new RegExp(rep[0], 'g'), rep[1]);
 
