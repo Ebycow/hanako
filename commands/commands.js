@@ -16,25 +16,36 @@ class Commands extends Map {
     constructor(guild) {
         super();
 
+        const teach = new TeachCommand(guild);
+
+        const commandDefinitions = [
+            [CommandNames.JOIN, new JoinCommand()],
+            [CommandNames.LEAVE, new LeaveCommand()],
+            [CommandNames.ASK, new AskCommand()],
+            [CommandNames.LIMIT, new LimitCommand()],
+            [CommandNames.SEIBAI, new SeibaiCommand()],
+            [CommandNames.TEACH, teach],
+            [CommandNames.FORGET, teach]
+        ];
+
         this._replacives = [];
         this._replacives.push(new DiscordTagReplacer());
         
-        this.set(CommandNames.JOIN, new JoinCommand());
-        this.set(CommandNames.LEAVE, new LeaveCommand());
-        this.set(CommandNames.ASK, new AskCommand())
-        this.set(CommandNames.LIMIT, new LimitCommand());
-        this.set(CommandNames.SEIBAI, new SeibaiCommand());
-        
-        const teach = new TeachCommand(guild);
-        this.set(CommandNames.TEACH, teach);
-        this.set(CommandNames.FORGET, teach);
+        for (const cmddef of commandDefinitions) {
+            for (const commandName of cmddef[0]) {
+                this.set(commandName, cmddef[1])
+            }
+
+        }
+
     }
 
     /**
      * @returns {Replacive[]}
      */
     get replacives() {
-        const reps = Array.from(this.values()).filter(v => v instanceof Replacive);
+        const reps = Array.from(this.values()).filter(v => v instanceof Replacive).filter((v, i, a) => a.indexOf(v) === i);
+        console.log(reps);
         return [...new Set(reps.concat(this._replacives))];
     }
 

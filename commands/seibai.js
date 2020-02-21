@@ -16,7 +16,16 @@ class SeibaiCommand extends Command {
      * @override 
      */
     async process(context, name, args) {
-        assert(name === CommandNames.SEIBAI);
+        assert(() => {
+            for (const cmdName of CommandNames.SEIBAI) {
+                if(name === cmdName){
+                    return true;
+                }
+            }
+
+            return false;
+            
+        });
 
         if (context.isSpeaking()) {
             if (context.queueLength() > 0) {

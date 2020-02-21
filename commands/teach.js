@@ -71,12 +71,18 @@ class TeachCommand extends ReplaciveCommand {
      * @override
      */
     process(context, name, args) {
-        if (name === CommandNames.TEACH) {
-            return this.doTeach(args);
+        for (const cmd of CommandNames.TEACH) {
+            if (name === cmd) {
+                return this.doTeach(args);
+            }
         }
-        if (name === CommandNames.FORGET) {
-            return this.doForget(args);
+        
+        for (const cmd of CommandNames.FORGET) {
+            if (name === cmd) {
+                return this.doForget(args);
+            }
         }
+
         throw new Error('unreachable');
     }
 

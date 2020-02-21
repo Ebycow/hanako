@@ -22,7 +22,16 @@ class LimitCommand extends ReplaciveCommand {
      * @override
      */
     process(context, name, args) {
-        assert(name === CommandNames.LIMIT);
+        assert(() => {
+            for (const cmdName of CommandNames.LIMIT) {
+                if(name === cmdName){
+                    return true;
+                }
+            }
+
+            return false;
+            
+        });
 
         if (args.length > 0) {
             const num = parseInt(args[0], 10);

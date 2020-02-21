@@ -29,13 +29,13 @@ class ReplaciveCommand extends Command {}
 Replacive.applyToClass(ReplaciveCommand);
 
 const CommandNames = {
-    JOIN: 'plz',
-    LEAVE: 'bye',
-    ASK: 'ask',
-    LIMIT: 'limit',
-    TEACH: 'teach',
-    FORGET: 'forget',
-    SEIBAI: 'seibai'
+    JOIN: ['plz', "p", "summon", "s"],
+    LEAVE: ['bye', "b"],
+    ASK: ['ask'],
+    LIMIT: ['limit', 'readlimit'],
+    TEACH: ['teach', 'wbook-add'],
+    FORGET: ['forget', 'wbook-delete'],
+    SEIBAI: ['seibai', 'stop']
 };
 
 module.exports = {
