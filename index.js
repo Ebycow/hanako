@@ -132,6 +132,9 @@ client.on('message', async (message) => {
             console.error(err);
             return; // TODO: 例外処理これでいい？
         }
+    } else if(!context.isMainChannel) {
+        return; // TODO: Multi Channels
+
     } else if (connections.get(key) !== null) {
 
         let text = message.content;
