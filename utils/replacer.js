@@ -1,11 +1,11 @@
 const emoji = require('node-emoji');
 
-const tagRe = /<(a?:.+?:\d+)?(@!\d+)?(@\d+)?(#\d+)?>/g;
+const tagRe = /<(a?:.+?:\d+)?(@!\d+)?(@\d+)?(#\d+)?(@&\d+)?>/g;
 const emojiRe = /:(.+):/;
 
 class DiscordTagReplacer {
-    static replace(message, users, channels) {
-        message = message.replace(tagRe, (tag, emojiTag, botTag, userTag, channelTag) => {
+    static replace(message, users, channels, roles) {
+        message = message.replace(tagRe, (tag, emojiTag, botTag, userTag, channelTag, roleTag) => {
             if (typeof emojiTag !== 'undefined') {
                 let emojiName = emojiTag.match(emojiRe)[1];
                 return emojiName; 
@@ -21,6 +21,10 @@ class DiscordTagReplacer {
             if (typeof channelTag !== 'undefined') {
                 let channelId = channelTag.slice(1);
                 return channels.find('id', channelId).name; 
+            }
+            if (typeof roleTag !== 'undefined') {
+                let roleId = roleTag.slice(2);
+                return roles.find('id', roleId).name;
             }
         
             throw Error("unreachable");
