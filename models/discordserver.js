@@ -17,7 +17,7 @@ class DiscordServer {
          * @type {string}
          * @readonly
          */
-        this.commandKey = '?';
+        this.commandKey = '$';
 
         /**
          * @type {string}
