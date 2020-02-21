@@ -66,6 +66,17 @@ class TeachCommand extends Command {
         const from = noEmojiArgs[0];
         const to = noEmojiArgs[1];
         const force = noEmojiArgs[2] === '--force';
+        
+        // バリデーション
+        if(!(from.length >= 2)){
+            return new CommandResult(ResultType.INVALID_ARGUMENT, '一文字教育はできん');
+
+        }
+
+        const MAX_TEACH_WORDLENGTH = 50;
+        if(from.length > MAX_TEACH_WORDLENGTH || to.length > MAX_TEACH_WORDLENGTH) {
+            return new CommandResult(ResultType.INVALID_ARGUMENT, `もじながすぎわろたwwww ${MAX_TEACH_WORDLENGTH}文字以上の教育はできません`); 
+        }
 
         // 重複チェック
         let dupId = -1;
