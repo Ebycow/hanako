@@ -7,6 +7,9 @@ const { EmojiReplacer } = require('../utils/replacer');
 
 const db = new Datastore({ filename: './db/teach.db', autoload: true });
 db.loadDatabase()
+11
+// 定期的にDBを圧縮
+db.persistence.setAutocompactionInterval(86400000)
 
 const dictSort = (a, b) => {
     if (a[0].length > b[0].length) {
