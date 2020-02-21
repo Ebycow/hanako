@@ -29,12 +29,13 @@ class ReplaciveCommand extends Command {}
 Replacive.applyToClass(ReplaciveCommand);
 
 const CommandNames = {
-    JOIN: ['plz', "p", "summon", "s"],
-    LEAVE: ['bye', "b"],
+    JOIN: ['お願い', 'plz', "summon", "s"],
+    LEAVE: ['さようなら', 'bye', "b"],
     ASK: ['ask'],
     LIMIT: ['limit', 'readlimit'],
     TEACH: ['teach', 'wbook-add', "mk"],
     FORGET: ['forget', 'wbook-delete', "rm"],
+    DICTIONARY: ['dictionary', 'wbook-list', "dic"],
     SEIBAI: ['seibai', 'stop']
 };
 

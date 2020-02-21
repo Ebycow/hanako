@@ -25,7 +25,8 @@ class Commands extends Map {
             [CommandNames.LIMIT, new LimitCommand()],
             [CommandNames.SEIBAI, new SeibaiCommand()],
             [CommandNames.TEACH, teach],
-            [CommandNames.FORGET, teach]
+            [CommandNames.FORGET, teach],
+            [CommandNames.DICTIONARY, teach],
         ];
 
         this._replacives = [];

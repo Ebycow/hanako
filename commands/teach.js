@@ -34,7 +34,7 @@ class TeachCommand extends ReplaciveCommand {
             if(err) {
                 throw err;
             }
-
+            console.log(docs.dict)
             if(docs) {
                 this.dictionary = docs.dict
 
@@ -83,6 +83,12 @@ class TeachCommand extends ReplaciveCommand {
             }
         }
 
+        for (const cmd of CommandNames.DICTIONARY) {
+            if (name === cmd) {
+                return this.doShowList();
+            }
+        }
+
         throw new Error('unreachable');
     }
 
@@ -103,7 +109,7 @@ class TeachCommand extends ReplaciveCommand {
         
         // バリデーション
         if(!(from.length >= 2)){
-            return new CommandResult(ResultType.INVALID_ARGUMENT, '一文字教育はできん');
+            return new CommandResult(ResultType.INVALID_ARGUMENT, '一文字教育はできないよ');
 
         }
 
@@ -125,7 +131,7 @@ class TeachCommand extends ReplaciveCommand {
         let result;
         if (dupId >= 0) {
             if(!force){
-                const errorMsg = `既に教育済みの単語です！${ this.dictionary[dupId][0] } -> ${ this.dictionary[dupId][1] } 強制的に置き換える場合はコマンドに --force を付けてください`;
+                const errorMsg = `既に教育済みの単語です！${ this.dictionary[dupId][0] } -> ${ this.dictionary[dupId][1] } \n__強制的に置き換える場合はコマンドに --force を付けてください(?rm from to --force)__`;
                 result = new CommandResult(ResultType.ALREADY_EXISTS, errorMsg);
 
             } else {
@@ -183,6 +189,18 @@ class TeachCommand extends ReplaciveCommand {
         }
 
         return result;
+
+    }
+
+    doShowList() {
+        let replyText = "覚えた単語の一覧だよ！:\n";
+        console.log(this.dictionary);
+        for (const rep of this.dictionary) {
+            console.log(rep)
+            replyText += `${rep[0]} -> ${rep[1]}\n`;
+
+        }
+        return new CommandResult(ResultType.SUCCESS, replyText);
     }
 
     /**
@@ -193,13 +211,18 @@ class TeachCommand extends ReplaciveCommand {
      */
     replace(context, text) {
         for (const rep of this.dictionary) {
-            text = text.replace(new RegExp(rep[0], 'g'), rep[1]);
+            text = this.wordReplacer(text, rep[0], rep[1]);
 
         }
 
         return text;
 
     }
+
+    wordReplacer (str, before, after) {
+        return str.split(before).join(after);
+
+    };
 
     /**
      * @returns {number}
