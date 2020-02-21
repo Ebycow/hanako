@@ -1,5 +1,7 @@
-const emoji = require('node-emoji')
 const fs = require('fs')
+const { Command, CommandNames } = require('./command');
+const { CommandResult, ResultType } = require('./commandresult');
+const { EmojiReplacer } = require('../utils/replacer');
 
 const dictSort = (a, b) => {
     if (a[0].length > b[0].length) {
@@ -13,8 +15,11 @@ const dictSort = (a, b) => {
     return 0;
 }
 
-class TeachCommand {
+class TeachCommand extends Command {
+
     constructor() {
+        super();
+
         try {
             const save = JSON.parse(fs.readFileSync('./temp/teach/a.json'));
             this.dictionary = save;
@@ -24,62 +29,92 @@ class TeachCommand {
             this.dictionary = [];
 
         }
-        
     }
 
     saveFile() {
         fs.writeFileSync('./temp/teach/a.json', JSON.stringify(this.dictionary));
     }
 
-    doTeach(msg) {
-        const text = emoji.replace(msg.content, (emoji) => `:${emoji.key}:`)
+    /**
+     * @param {any} _
+     * @param {string} name
+     * @param {string[]} args
+     * @returns {CommandResult}
+     * @override
+     */
+    process(_, name, args) {
+        if (name === CommandNames.TEACH) {
+            return this.doTeach(args);
+        }
+        if (name === CommandNames.FORGET) {
+            return this.doForget(args);
+        }
+        throw new Error('unreachable');
+    }
 
-        const from = text.split(" ")[2];
-        const to = text.split(" ")[3];
+    /**
+     * @param {string[]} args
+     * @returns {CommandResult} 
+     */
+    doTeach(args) {
+        if (args.length < 2) {
+            return new CommandResult(ResultType.INVALID_ARGUMENT, 'コマンドの形式が間違っています（teach from to） :sob:');
+        }
 
-        if(from === undefined || to === undefined) {
-            msg.reply("コマンドの形式が間違っています（teach from to） :sob:");
+        const noEmojiArgs = args.map(x => EmojiReplacer.replace(x));
 
-        } else {
-            // 重複チェック
-            let dupId = -1;
-            this.dictionary.forEach((rep, index) => {
-                if (rep[0] == from) {
-                    dupId = index;
+        const from = noEmojiArgs[0];
+        const to = noEmojiArgs[1];
+        const force = noEmojiArgs[2] === '--force';
 
-                }
-
-            });
-
-            if (dupId >= 0) {
-                if(msg.content.split(" ")[4] !== "--force"){
-                    msg.reply(`既に教育済みの単語です！${ this.dictionary[dupId][0] } -> ${ this.dictionary[dupId][1] } 強制的に置き換える場合はコマンドに --force を付けてください`);
-
-                } else {
-                    this.dictionary[dupId] = [from, to];
-                    msg.reply(`置換ちました！ ${ from } -> ${ to } :bulb:`);
-
-                }
-
-            } else {
-                this.dictionary.push([from, to]);
-                msg.reply(`覚えました！ ${ from } -> ${ to } :bulb:`);
+        // 重複チェック
+        let dupId = -1;
+        this.dictionary.forEach((rep, index) => {
+            if (rep[0] == from) {
+                dupId = index;
 
             }
 
-            this.dictionary.sort(dictSort);
+        });
 
-            this.saveFile();
-            console.log(this.dictionary)
+        let result;
+        if (dupId >= 0) {
+            if(!force){
+                const errorMsg = `既に教育済みの単語です！${ this.dictionary[dupId][0] } -> ${ this.dictionary[dupId][1] } 強制的に置き換える場合はコマンドに --force を付けてください`;
+                result = new CommandResult(ResultType.ALREADY_EXISTS, errorMsg);
+
+            } else {
+                this.dictionary[dupId] = [from, to];
+                result =  new CommandResult(ResultType.SUCCESS, `置換ちました！ ${ from } -> ${ to } :bulb:`);
+
+            }
+
+        } else {
+            this.dictionary.push([from, to]);
+            result =  new CommandResult(ResultType.SUCCESS, `覚えました！ ${ from } -> ${ to } :bulb:`);
 
         }
 
+        this.dictionary.sort(dictSort);
+
+        this.saveFile();
+        console.log(this.dictionary);
+
+        return result;
     }
 
-    doForget(msg) {
+    /**
+     * @param {string[]} args
+     * @returns {CommandResult} 
+     */
+    doForget(args) {
+        if (args.length < 1) {
+            // 引数が指定されなかったときの処理
+            return new CommandResult(ResultType.INVALID_ARGUMENT, null);
+        }
+
         // emoji置き換えも行う
-        const word = emoji.replace(
-            msg.content.split(" ")[2]　, (emoji) => `:${emoji.key}:`);
+        const word = EmojiReplacer.replace(args[0]);
 
         let popId = -1;
         this.dictionary.forEach((rep, index) => {
@@ -90,19 +125,19 @@ class TeachCommand {
 
         });
 
+        let result;
         if (popId >= 0) {
             this.dictionary.pop(popId);
-            msg.reply(`1 2の…ポカン！${ word }を忘れました！ :bulb:`);
+            result = new CommandResult(ResultType.SUCCESS, `1 2の…ポカン！${ word }を忘れました！ :bulb:`);
             this.dictionary.sort(dictSort);
             this.saveFile();
 
         } else {
-            msg.reply("その単語は教育されていません");
-
+            result = new CommandResult(ResultType.NOT_FOUND, 'その単語は教育されていません');
+        
         }
 
-
-
+        return result;
     }
 
     replace(text) {
@@ -115,12 +150,16 @@ class TeachCommand {
 
     }
 
-
+    /**
+     * @returns {number}
+     * @override
+     */
+    replacePriority() { 
+        return 0x0100;
+    }
 
 }
 
 module.exports = {
     TeachCommand
-}
-
-new TeachCommand()
+};

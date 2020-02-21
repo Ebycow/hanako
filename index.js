@@ -1,153 +1,177 @@
 require('dotenv').config();
 const fs = require('fs');
+const { Readable } = require('stream');
 const Discord = require('discord.js');
 const axios = require('axios').default;
 const client = new Discord.Client();
 const exitHook = require('exit-hook');
 const SampleRate = require('node-libsamplerate');
-const emoji = require('node-emoji')
 const Interleaver = require('./transforms/interleaver').Interleaver;
 const StereoByteAdjuster = require('./transforms/byteadjuster').StereoByteAdjuster;
 const WaveFileHeaderTrimmer = require('./transforms/waveheader').WaveFileHeaderTrimmer;
 const DiscordTagReplacer = require('./utils/replacer').DiscordTagReplacer;
 const UrlReplacer = require('./utils/replacer').UrlReplacer;
+const EmojiReplacer = require('./utils/replacer').EmojiReplacer;
 
-const TeachCommand = require('./commands/teach').TeachCommand;
-const teachCommand = new TeachCommand();
-const LimitCommand = require('./commands/limit').LimitCommand;
-const limitCommand = new LimitCommand();
-
-let voiceChannelConnection = undefined;
-
-let streamCue = [];
-let playingDispatcher = undefined;
+const { DiscordServer } = require('./models/discordserver');
+const { MessageContext } = require('./contexts/messagecontext');
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('message', async (msg) =>
-{
-    if (msg.isMemberMentioned(client.user)　|| msg.content.startsWith("?") ) {
+/**
+ * @type {Map<string, DiscordServer>}
+ */
+let servers = new Map();
 
-        // VC参加
-        if(msg.content.match('plz')) {
-            if(msg.member.voiceChannel) {
-                // リプライしてきたユーザのボイスチャンネルに参加
+/**
+ * @type {Map<string, Discord.VoiceConnection?>}
+ */
+let connections = new Map();
 
-                voiceChannelConnection = await msg.member.voiceChannel.join();
+/**
+ * @type {Map<string, Readable[]>}
+ */
+let queues = new Map();
 
-                msg.reply(`${msg.channel}に参加したよ、よろしくね`);
+/**
+ * @type {Map<string, Discord.StreamDispatcher>}
+ */
+let dispatchers = new Map();
 
-                const unsubscribe = exitHook(() => {
-                   voiceChannelConnection.disconnect();
-                });
-                voiceChannelConnection.on('disconnect', (_) => {
-                    unsubscribe();
-                });
+/**
+ * @type {Map<string, Discord.TextChannel>}
+ */
+let channels = new Map();
 
-            } else if(voiceChannelConnection) {
-                msg.reply('すでに通話チャンネルに参加済みですよ、「さようなら」とリプライすると切断します');
+client.on('message', async (message) => {
+    if (message.author.id === client.user.id) {
+        // 自分のメッセージは無視
+        return;
+    }
+    if (!message.guild) {
+        // DMとかは無視
+        console.info('処理されなかったメッセージ', message);
+        return;
+    }
+    
+    const key = message.guild.id;
 
-            } else {
-                msg.reply('テキストチャンネルに参加してから呼んでね');
-
-            }
-
-        }
-
-        // VC切断
-        if(msg.content.match('bye')) {
-            if(voiceChannelConnection) {
-                streamCue = [];
-                voiceChannelConnection.disconnect();
-        
-            } else {
-                msg.reply("どこのチャンネルにも参加していないか、エラーが発生しています :sob:");
-            }
-
-        }
-
-        // 成敗
-        if(msg.content.match('seibai')) {
-            if(playingDispatcher){
-                for (const stream of streamCue) {
-                    stream.destroy();
-                }
-                streamCue = [];
-                playingDispatcher.end("seibai")
-                msg.reply("戯け者 余の顔を見忘れたか :knife:");
-
-            } else {
-                msg.reply("安心せい、みねうちにゃ… :knife:");
-
-            }
-
-        }
-        
-        // 文字数制限
-        if(msg.content.match('limit')) {
-            limitCommand.setLimit(msg);
-
-        }
-
-        // 教育
-        if(msg.content.match('teach')) {
-            teachCommand.doTeach(msg);
-
-        }
-
-        // 忘却
-        if(msg.content.match('forget')) {
-            teachCommand.doForget(msg);
-
-        }
-
-        // satomi
-        if(msg.content.match('ask')) {
-            if(Math.random() >= 0.5){
-                msg.reply("はい")
-
-            } else {
-                msg.reply("いいえ")
-
-            }
-
-        }
-
+    /** @type {DiscordServer} */
+    let server;
+    
+    if (servers.has(key)) {
+        server = servers.get(key);
+    } else {
+        server = new DiscordServer(message.guild);
+        servers.set(key, server);
+        connections.set(key, null);
+        queues.set(key, []);
+        dispatchers.set(key, null);
+        channels.set(key, null);
     }
 
-    console.log(msg.content)
-    if(voiceChannelConnection && !msg.isMemberMentioned(client.user) && !(msg.author === client.user)) {
+    const queuePurge = () => {
+        const cue = queues.get(key);
+        cue.forEach(stream => stream.destroy());
+        queues.set(key, []);
+    }
 
-        let message = msg.content;
+    const voiceJoin = async () => {
+        const vc = await message.member.voiceChannel.join();
+        const unsub = exitHook(() => vc.disconnect());
+        vc.once('disconnect', _ => unsub());
+        connections.set(key, vc);
+        channels.set(key, message.channel);
+        return `${message.channel}`;
+    }
 
-        // うにこーど絵文字置換
-        message = emoji.replace(message, (emoji) => `:${emoji.key}:`);
+    const voiceLeave = () => {
+        queuePurge();
+        const vc = connections.get(key);
+        if (vc) {
+            vc.disconnect();
+        }
+        channels.set(key, null);
+    }
 
-        // URL置換
-        message = UrlReplacer.replace(message);
-
-        // Discordタグ置換
-        message = DiscordTagReplacer.replace(message);
-
-        // 辞書置換
-        message = teachCommand.replace(message);
-
-        // 文字数制限置換
-        message = limitCommand.replace(message);
-
-        console.log(message);
-
-        const response = await axios.get(`http://localhost:4090/`, {
-            responseType: 'stream',
-            params : {
-                text : message
+    const voiceCancel = (reason) => {
+        return new Promise((resolve) => {
+            const disp = dispatchers.get(key);
+            if (disp) {
+                disp.end(reason);
+                setImmediate(() => resolve());
+            } else {
+                resolve();
             }
         });
+    }
+
+    const context = new MessageContext({
+        isMainChannel: !!(channels.get(key)) && (message.channel === channels.get(key)),
+        isAuthorInVC: !!(message.member.voiceChannel),
+        isJoined: () => !!(connections.get(key)),
+        isSpeaking: () => (!!(dispatchers.get(key)) || (queues.get(key).length > 0)),
+        queueLength: () => queues.get(key).length,
+        queuePurge,
+        voiceJoin,
+        voiceLeave,
+        voiceCancel
+    });
+
+    console.info(message.content);
+
+    if (server.isCommandMessage(message)) {
+        try {
+            const result = await server.handleMessage(context, message);
+            if (result.replyText) {
+                _ = await message.reply(result.replyText);
+            }
+        } catch (err) {
+            console.error(err);
+            return; // TODO: 例外処理これでいい？
+        }
+    } else if (connections.get(key) !== null) {
+
+        let text = message.content;
+
+        // うにこーど絵文字置換
+        text = EmojiReplacer.replace(text);
+
+        // URL置換
+        text = UrlReplacer.replace(text);
+
+        // Discordタグ置換
+        text = DiscordTagReplacer.replace(text, message.mentions.users, message.guild.channels);
+
+        // コマンド設定による置換
+        text = server.handleReplace(text);
+
+        console.info(text);
+
+        let response;
+        try {
+            response = await axios.get(`http://localhost:4090/`, {
+                responseType: 'stream',
+                params : { text }
+            });
+        } catch (err) {
+            console.error(err);
+            return // TODO: 例外処理どうする？
+        }
+
         const sampleRate = parseInt(response.headers['ebyroid-pcm-sample-rate'], 10);
         const bitDepth = parseInt(response.headers['ebyroid-pcm-bit-depth'], 10);
         const numChannels = parseInt(response.headers['ebyroid-pcm-number-of-channels'], 10);
+
+        // awaitが絡んだのでここではnullの可能性があるよ
+        const voiceConnection = connections.get(key);
+        if (!voiceConnection) {
+            console.info('HTTPリクエスト中にVC切断されてました。', message.guild.name);
+            response.data.destroy();
+            return;
+        }
 
         let stream = response.data;
         if (numChannels == 1) {
@@ -174,30 +198,34 @@ client.on('message', async (msg) =>
         });
         stream = stream.pipe(resample);
 
-        streamCue.push(stream);
+        const cue = queues.get(key);
+        cue.push(stream);
 
-        if(playingDispatcher === undefined){
-            playingDispatcher = voiceChannelConnection.playConvertedStream(streamCue.shift(0), { bitrate: 'auto' });
-            playingDispatcher.on('end', value => playNextCue(value));
-
+        const disp = dispatchers.get(key);
+        if (!disp) {
+            const newDisp = voiceConnection.playConvertedStream(cue.shift(0), { bitrate: 'auto' });
+            dispatchers.set(key, newDisp)
+            newDisp.on('end', _ => playNextCue(key));
         }
-
     }
-    
 });
 
-function playNextCue(flag) {
-    const stream = streamCue.shift(0)
-    console.log('streamCue', streamCue.length)
-    if (stream !== undefined) {
-        playingDispatcher = voiceChannelConnection.playConvertedStream(stream, { bitrate: 'auto' });
-        playingDispatcher.on('end', value => playNextCue(value));
-
+function playNextCue(key) {
+    const cue = queues.get(key);
+    const stream = cue.shift(0);
+    console.info('cue', cue.length);
+    if (stream) {
+        setImmediate(() => {
+            const voiceConnection = connections.get(key);
+            if (voiceConnection) {
+                newDisp = voiceConnection.playConvertedStream(stream, { bitrate: 'auto' });
+                dispatchers.set(key, newDisp);
+                newDisp.on('end', _ => playNextCue(key));
+            }
+        });
     } else {
-        playingDispatcher = undefined;
-
+        dispatchers.set(key, null);
     }
-    
 }
 
 client.login(process.env.TOKEN);

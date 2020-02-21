@@ -1,33 +1,61 @@
-class LimitCommand {
+const assert = require('assert').strict;
+const { Command, CommandNames } = require('./command');
+const { CommandResult, ResultType } = require('./commandresult');
+
+class LimitCommand extends Command {
+
     constructor() {
+        super();
+        /**
+         * @type {number}
+         * @private
+         */
         this.wordLimit = 120;
     }
 
-    setLimit(msg) {
-        if(msg.content.split(" ")[2]) {
-            const num = msg.content.split(" ")[2];
-            this.wordLimit = num;
-        
-        } else {
-            this.wordLimit = 9999;
-            
-        }
-        
-        msg.reply(`読み上げる文字数を${this.wordLimit}文字に制限しました :no_entry:`);
+    /**
+     * @param {any} _
+     * @param {string} name
+     * @param {string[]} args
+     * @returns {CommandResult} 
+     * @override
+     */
+    process(_, name, args) {
+        assert(name === CommandNames.LIMIT);
 
+        if (args.length > 0) {
+            const num = parseInt(args[0], 10);
+            if (isNaN(num)) {
+                return new CommandResult(ResultType.INVALID_ARGUMENT, null);
+            }
+            // TODO: numは青天井で大丈夫？
+            this.wordLimit = num | 0;       
+        } else {
+            // 引数が指定されなかったときの処理
+            this.wordLimit = 9999; // TODO: 数値はこのままで大丈夫？
+        }
+
+        return new CommandResult(ResultType.SUCCESS, `読み上げる文字数を${this.wordLimit}文字に制限しました :no_entry:`);
     }
 
     replace(message) {
         if(message.length > this.wordLimit) {
-            message = message.substr(0, this.wordLimit) + "以下略。";
+            message = message.substr(0, this.wordLimit) + "イか略。"; // 発音が良い
         }
 
         return message;
+    }
 
+    /**
+     * @returns {number}
+     * @override
+     */
+    replacePriority() { 
+        return 0xFFFF;
     }
 
 }
 
 module.exports = {
     LimitCommand
-}
+};

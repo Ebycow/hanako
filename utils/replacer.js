@@ -1,20 +1,26 @@
-const tagRe = /<(a?:.+?:\d+)?(@!\d+)?(@\d+)?>/g;
+const emoji = require('node-emoji');
+
+const tagRe = /<(a?:.+?:\d+)?(@!\d+)?(@\d+)?(#\d+)?>/g;
 const emojiRe = /:(.+):/;
 
 class DiscordTagReplacer {
-    static replace(message) {
-        message = message.replace(tagRe, (tag, emojiTag, botTag, userTag) => {
+    static replace(message, users, channels) {
+        message = message.replace(tagRe, (tag, emojiTag, botTag, userTag, channelTag) => {
             if (typeof emojiTag !== 'undefined') {
                 let emojiName = emojiTag.match(emojiRe)[1];
                 return emojiName; 
             }
             if (typeof userTag !== 'undefined') {
                 let userId = userTag.slice(1);
-                return "@" + msg.mentions.users.find("id", userId).username;
+                return "@" + users.find('id', userId).username;
             }
             if (typeof botTag !== 'undefined') {
                 let userId = botTag.slice(2);
-                return "@" + msg.mentions.users.find("id", userId).username;
+                return "@" + users.find('id', userId).username;
+            }
+            if (typeof channelTag !== 'undefined') {
+                let channelId = channelTag.slice(1);
+                return channels.find('id', channelId).name; 
             }
         
             throw Error("unreachable");
@@ -36,7 +42,20 @@ class UrlReplacer {
 
 }
 
+class EmojiReplacer {
+
+    /**
+     * @param {string} message
+     * @returns {string} 
+     */
+    static replace(message) {
+        return emoji.replace(message, (emoji) => `:${emoji.key}:`);
+    }
+
+}
+
 module.exports = {
     DiscordTagReplacer,
-    UrlReplacer
+    UrlReplacer,
+    EmojiReplacer
 };
