@@ -143,7 +143,7 @@ client.on('message', async (message) => {
         text = UrlReplacer.replace(text);
 
         // Discordタグ置換
-        text = DiscordTagReplacer.replace(text, message.mentions.users, message.guild.channels);
+        text = DiscordTagReplacer.replace(text, message.mentions.users, message.guild.channels, message.guild.roles);
 
         // コマンド設定による置換
         text = server.handleReplace(text);

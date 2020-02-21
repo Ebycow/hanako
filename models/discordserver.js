@@ -49,7 +49,7 @@ class DiscordServer {
         const args = this._parseCommandArgument(message);
         console.log(args);
         if (args.length === 0) {
-            return new CommandResult(ResultType.INVALID_ARGUMENT, null);
+            return Promise.resolve(new CommandResult(ResultType.INVALID_ARGUMENT, null));
         }
 
         if (this.commands.has(args[0])) {
