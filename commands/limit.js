@@ -40,12 +40,12 @@ class LimitCommand extends ReplaciveCommand {
     }
 
     /**
+     * @param {MessageContext} context 
      * @param {string} message 
-     * @param {Object} [options={}]
      * @returns {string}
      * @override
      */
-    replace(message, options = {}) {
+    replace(context, message) {
         if(message.length > this.wordLimit) {
             message = message.substr(0, this.wordLimit) + "イか略。"; // 発音が良い
         }
