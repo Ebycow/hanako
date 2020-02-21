@@ -30,6 +30,7 @@ const ResultType = {
     INVALID_ARGUMENT: 'error invalid argument',
     ALREADY_EXISTS: 'error already exists',
     REQUIRE_CONFIRM: 'error require confirm',
+    REQUIRE_JOIN: 'error require channel join',
     NOT_FOUND: 'error not found',
     
 };

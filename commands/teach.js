@@ -72,10 +72,10 @@ class TeachCommand extends ReplaciveCommand {
      * @override
      */
     process(context, name, args) {
-        // if(!context.isJoined) {
-        //     return this.doError();
+        if(!context.isJoined()) {
+            return this.doNotJoinError();
 
-        // }
+        }
 
         for (const cmd of CommandNames.TEACH) {
             if (name === cmd) {
@@ -102,6 +102,13 @@ class TeachCommand extends ReplaciveCommand {
         }
 
         throw new Error('unreachable');
+    }
+
+    /**
+     * @returns {CommandResult} 
+     */
+    doNotJoinError() {
+        return new CommandResult(ResultType.REQUIRE_JOIN, 'そのコマンドはどこかのチャンネルに私を招待してから使ってね :sob:');
     }
 
     /**
