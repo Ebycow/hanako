@@ -1,5 +1,6 @@
 const fs = require('fs')
-const { Command, CommandNames } = require('./command');
+const { MessageContext } = require('../contexts/messagecontext');
+const { ReplaciveCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
 const { EmojiReplacer } = require('../utils/replacer');
 
@@ -15,7 +16,7 @@ const dictSort = (a, b) => {
     return 0;
 }
 
-class TeachCommand extends Command {
+class TeachCommand extends ReplaciveCommand {
 
     constructor() {
         super();
@@ -36,13 +37,13 @@ class TeachCommand extends Command {
     }
 
     /**
-     * @param {any} _
+     * @param {MessageContext} context
      * @param {string} name
      * @param {string[]} args
      * @returns {CommandResult}
      * @override
      */
-    process(_, name, args) {
+    process(context, name, args) {
         if (name === CommandNames.TEACH) {
             return this.doTeach(args);
         }
@@ -151,7 +152,13 @@ class TeachCommand extends Command {
         return result;
     }
 
-    replace(text) {
+    /**
+     * @param {string} text 
+     * @param {Object} [options={}] 
+     * @returns {string}
+     * @override
+     */
+    replace(text, options = {}) {
         for (const rep of this.dictionary) {
             text = text.replace(new RegExp(rep[0], 'g'), rep[1]);
 
@@ -166,7 +173,7 @@ class TeachCommand extends Command {
      * @override
      */
     replacePriority() { 
-        return 0x0100;
+        return 0x0010;
     }
 
 }

@@ -72,11 +72,11 @@ class DiscordServer {
 
     /**
      * @param {string} _text
+     * @param {Object} options
      * @returns {string} 
      */
-    handleReplace(_text) {
-        const it = this.commands.values();
-        const commandList = Array.from(it).sort((a, b) => {
+    handleReplace(_text, options) {
+        const replacives = this.commands.replacives.sort((a, b) => {
             if (a.replacePriority() < b.replacePriority()) {
                 return -1;
             } else if (a.replacePriority() > b.replacePriority()) {
@@ -87,8 +87,8 @@ class DiscordServer {
         });
 
         let text = _text;
-        for (let i = 0, len = commandList.length; i < len; i++) {
-            text = commandList[i].replace(text);
+        for (let i = 0, len = replacives.length; i < len; i++) {
+            text = replacives[i].replace(text, options);
         }
 
         return text;

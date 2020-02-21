@@ -25,24 +25,6 @@ class AskCommand extends Command {
         }
     }
 
-    /**
-     * @param {string} text 
-     * @returns {string} 
-     * @override
-     */
-    replace(text) { 
-        // pass through
-        return text;
-    }
-
-    /**
-     * @returns {number}
-     * @override
-     */
-    replacePriority() {
-        return 0x00AA;
-    }
-
 }
 
 module.exports = {

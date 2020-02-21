@@ -1,8 +1,9 @@
 const assert = require('assert').strict;
-const { Command, CommandNames } = require('./command');
+const { MessageContext } = require('../contexts/messagecontext');
+const { ReplaciveCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
 
-class LimitCommand extends Command {
+class LimitCommand extends ReplaciveCommand {
 
     constructor() {
         super();
@@ -14,13 +15,13 @@ class LimitCommand extends Command {
     }
 
     /**
-     * @param {any} _
+     * @param {MessageContext} context
      * @param {string} name
      * @param {string[]} args
      * @returns {CommandResult} 
      * @override
      */
-    process(_, name, args) {
+    process(context, name, args) {
         assert(name === CommandNames.LIMIT);
 
         if (args.length > 0) {
@@ -38,7 +39,13 @@ class LimitCommand extends Command {
         return new CommandResult(ResultType.SUCCESS, `読み上げる文字数を${this.wordLimit}文字に制限しました :no_entry:`);
     }
 
-    replace(message) {
+    /**
+     * @param {string} message 
+     * @param {Object} [options={}]
+     * @returns {string}
+     * @override
+     */
+    replace(message, options = {}) {
         if(message.length > this.wordLimit) {
             message = message.substr(0, this.wordLimit) + "イか略。"; // 発音が良い
         }

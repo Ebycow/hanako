@@ -1,3 +1,5 @@
+const { Replacive } = require('./replacive');
+const { DiscordTagReplacer } = require('./replacives');
 const { Command, CommandNames } = require('./command');
 const { JoinCommand } = require('./join');
 const { LeaveCommand } = require('./leave');
@@ -13,6 +15,9 @@ class Commands extends Map {
 
     constructor() {
         super();
+
+        this._replacives = [];
+        this._replacives.push(new DiscordTagReplacer());
         
         this.set(CommandNames.JOIN, new JoinCommand());
         this.set(CommandNames.LEAVE, new LeaveCommand());
@@ -23,6 +28,14 @@ class Commands extends Map {
         const teach = new TeachCommand();
         this.set(CommandNames.TEACH, teach);
         this.set(CommandNames.FORGET, teach);
+    }
+
+    /**
+     * @returns {Replacive[]}
+     */
+    get replacives() {
+        const reps = Array.from(this.values()).filter(v => v instanceof Replacive);
+        return [...new Set(reps.concat(this._replacives))];
     }
 
 }

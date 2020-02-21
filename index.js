@@ -6,12 +6,10 @@ const axios = require('axios').default;
 const client = new Discord.Client();
 const exitHook = require('exit-hook');
 const SampleRate = require('node-libsamplerate');
-const Interleaver = require('./transforms/interleaver').Interleaver;
-const StereoByteAdjuster = require('./transforms/byteadjuster').StereoByteAdjuster;
-const WaveFileHeaderTrimmer = require('./transforms/waveheader').WaveFileHeaderTrimmer;
-const DiscordTagReplacer = require('./utils/replacer').DiscordTagReplacer;
-const UrlReplacer = require('./utils/replacer').UrlReplacer;
-const EmojiReplacer = require('./utils/replacer').EmojiReplacer;
+const { Interleaver } = require('./transforms/interleaver');
+const { StereoByteAdjuster } = require('./transforms/byteadjuster');
+const { WaveFileHeaderTrimmer } = require('./transforms/waveheader');
+const { UrlReplacer, EmojiReplacer } = require('./utils/replacer');
 
 const { DiscordServer } = require('./models/discordserver');
 const { MessageContext } = require('./contexts/messagecontext');
@@ -109,7 +107,7 @@ client.on('message', async (message) => {
     }
 
     const context = new MessageContext({
-        isMainChannel: !!(channels.get(key)) && (message.channel === channels.get(key)),
+        isMainChannel: !!(channels.get(key)) && (message.channel.id === channels.get(key).id),
         isAuthorInVC: !!(message.member.voiceChannel),
         isJoined: () => !!(connections.get(key)),
         isSpeaking: () => (!!(dispatchers.get(key)) || (queues.get(key).length > 0)),
@@ -145,11 +143,8 @@ client.on('message', async (message) => {
         // URL置換
         text = UrlReplacer.replace(text);
 
-        // Discordタグ置換
-        text = DiscordTagReplacer.replace(text, message.mentions.users, message.guild.channels, message.guild.roles);
-
-        // コマンド設定による置換
-        text = server.handleReplace(text);
+        // リプレーサーによる置換
+        text = server.handleReplace(text, { users: message.mentions.users, channels: message.guild.channels, roles: message.guild.roles });
 
         console.info(text);
 

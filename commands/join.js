@@ -27,25 +27,7 @@ class JoinCommand extends Command {
             return new CommandResult(ResultType.PRECONDITION_FAIL, 'テキストチャンネルに参加してから呼んでね'); // TODO: <-これボイスチャンネルのまちがい？
         }
     }
-
-    /**
-     * @param {string} text 
-     * @returns {string} 
-     * @override
-     */
-    replace(text) { 
-        // pass through
-        return text;
-    }
-
-    /**
-     * @returns {number}
-     * @override
-     */
-    replacePriority() {
-        return 0x00AA;
-    }
-
+    
 }
 
 module.exports = {
