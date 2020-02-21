@@ -12,7 +12,7 @@ class DiscordServer {
      * @param {discord.Guild} guild 
      */
     constructor(guild) {
-        
+        console.log(guild.id);
         /**
          * @type {string}
          * @readonly
@@ -35,7 +35,7 @@ class DiscordServer {
          * @type {Commands}
          * @private
          */
-        this.commands = new Commands();
+        this.commands = new Commands(guild);
     }
 
     /**

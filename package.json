@@ -17,9 +17,13 @@
     "dotenv": "^8.2.0",
     "exit-hook": "^2.2.0",
     "mic": "^2.1.2",
+    "nedb": "^1.8.0",
     "node-emoji": "^1.10.0",
     "node-libsamplerate": "git+https://github.com/nanokina/node-libsamplerate.git",
     "node-opus": "^0.3.3",
     "tostream": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/nedb": "^1.8.9"
   }
 }

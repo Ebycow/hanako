@@ -13,7 +13,7 @@ const { TeachCommand } = require('./teach');
  */
 class Commands extends Map {
 
-    constructor() {
+    constructor(guild) {
         super();
 
         this._replacives = [];
@@ -25,7 +25,7 @@ class Commands extends Map {
         this.set(CommandNames.LIMIT, new LimitCommand());
         this.set(CommandNames.SEIBAI, new SeibaiCommand());
         
-        const teach = new TeachCommand();
+        const teach = new TeachCommand(guild);
         this.set(CommandNames.TEACH, teach);
         this.set(CommandNames.FORGET, teach);
     }

@@ -1,8 +1,12 @@
-const fs = require('fs')
+const fs = require('fs');
+const Datastore = require('nedb');
 const { MessageContext } = require('../contexts/messagecontext');
 const { ReplaciveCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
 const { EmojiReplacer } = require('../utils/replacer');
+
+const db = new Datastore({ filename: './db/teach.db', autoload: true });
+db.loadDatabase()
 
 const dictSort = (a, b) => {
     if (a[0].length > b[0].length) {
@@ -18,22 +22,42 @@ const dictSort = (a, b) => {
 
 class TeachCommand extends ReplaciveCommand {
 
-    constructor() {
+    constructor(guild) {
         super();
+        this.id = guild.id;
+        this.dictionary = [];
 
-        try {
-            const save = JSON.parse(fs.readFileSync('./temp/teach/a.json'));
-            this.dictionary = save;
+        db.findOne({ id: this.id }, (err, docs) => {
+            if(err) {
+                throw err;
+            }
 
-        } catch (error) {
-            fs.writeFileSync('./temp/teach/a.json', "");
-            this.dictionary = [];
+            if(docs) {
+                this.dictionary = docs.dict
 
-        }
+            } else {
+                db.insert({ id : this.id, dict : []}, (err) => {
+                    if(err) {
+                        throw err;
+
+                    }
+
+                });
+            }
+            
+        });
+
     }
 
-    saveFile() {
-        fs.writeFileSync('./temp/teach/a.json', JSON.stringify(this.dictionary));
+    saveDict() {
+        db.update({ id: this.id }, { $set : { dict : this.dictionary } }, (err) => {
+            if(err) {
+                throw err;
+
+            }
+
+        });
+        
     }
 
     /**
@@ -57,7 +81,7 @@ class TeachCommand extends ReplaciveCommand {
      * @param {string[]} args
      * @returns {CommandResult} 
      */
-    doTeach(args) {
+    async doTeach(args) {
         if (args.length < 2) {
             return new CommandResult(ResultType.INVALID_ARGUMENT, 'コマンドの形式が間違っています（teach from to） :sob:');
         }
@@ -109,7 +133,7 @@ class TeachCommand extends ReplaciveCommand {
 
         this.dictionary.sort(dictSort);
 
-        this.saveFile();
+        this.saveDict();
         console.log(this.dictionary);
 
         return result;
@@ -142,7 +166,7 @@ class TeachCommand extends ReplaciveCommand {
             this.dictionary.pop(popId);
             result = new CommandResult(ResultType.SUCCESS, `1 2の…ポカン！${ word }を忘れました！ :bulb:`);
             this.dictionary.sort(dictSort);
-            this.saveFile();
+            this.saveDict();
 
         } else {
             result = new CommandResult(ResultType.NOT_FOUND, 'その単語は教育されていません');
