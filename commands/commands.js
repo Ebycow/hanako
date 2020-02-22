@@ -46,7 +46,7 @@ class Commands extends Map {
      * @returns {Replacive[]}
      */
     get replacives() {
-        const reps = Array.from(this.values()).filter(v => v instanceof Replacive).filter((v, i, a) => a.indexOf(v) === i);
+        const reps = Array.from(this.values()).filter(v => v instanceof Replacive);
         return [...new Set(reps.concat(this._replacives))];
     }
 
