@@ -29,13 +29,15 @@ class ReplaciveCommand extends Command {}
 Replacive.applyToClass(ReplaciveCommand);
 
 const CommandNames = {
-    JOIN: 'plz',
-    LEAVE: 'bye',
-    ASK: 'ask',
-    LIMIT: 'limit',
-    TEACH: 'teach',
-    FORGET: 'forget',
-    SEIBAI: 'seibai'
+    JOIN: ['お願い', 'plz', "summon", "s"],
+    LEAVE: ['さようなら', 'bye', "b"],
+    ASK: ['ask'],
+    LIMIT: ['limit', 'readlimit'],
+    TEACH: ['教育', 'teach', 'wbook-add', "mk"],
+    FORGET: ['忘却', 'forget', 'wbook-delete', "rm"],
+    DIC_ALLDELETE: ['wbook-alldel', "alldelete"],
+    DICTIONARY: ['dictionary', 'wbook-list', "dic"],
+    SEIBAI: ['seibai', 'stop']
 };
 
 module.exports = {

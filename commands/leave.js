@@ -16,7 +16,16 @@ class LeaveCommand extends Command {
      * @override 
      */
     process(context, name, args) {
-        assert(name === CommandNames.LEAVE);
+        assert(() => {
+            for (const cmdName of CommandNames.LEAVE) {
+                if(name === cmdName){
+                    return true;
+                }
+            }
+
+            return false;
+            
+        });
         
         if(context.isJoined()) {
             if (context.queueLength() > 0) {

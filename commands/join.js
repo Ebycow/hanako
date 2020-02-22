@@ -16,7 +16,16 @@ class JoinCommand extends Command {
      * @override 
      */
     async process(context, name, args) {
-        assert(name === CommandNames.JOIN);
+        assert(() => {
+            for (const cmdName of CommandNames.JOIN) {
+                if(name === cmdName){
+                    return true;
+                }
+            }
+
+            return false;
+            
+        });
 
         if (context.isAuthorInVC) {
             const link = await context.voiceJoin();

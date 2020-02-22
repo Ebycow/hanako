@@ -17,7 +17,7 @@ class DiscordServer {
          * @type {string}
          * @readonly
          */
-        this.commandKey = '?';
+        this.commandKey = '>';
 
         /**
          * @type {string}
@@ -36,6 +36,13 @@ class DiscordServer {
          * @private
          */
         this.commands = new Commands(guild);
+    }
+
+    /**
+     * @returns {Promise<void>}
+     */
+    async init() {
+        await this.commands.init();
     }
 
     /**

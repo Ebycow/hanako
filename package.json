@@ -21,6 +21,7 @@
     "node-emoji": "^1.10.0",
     "node-libsamplerate": "git+https://github.com/nanokina/node-libsamplerate.git",
     "node-opus": "^0.3.3",
+    "text-table": "^0.2.0",
     "tostream": "^1.0.0"
   },
   "devDependencies": {

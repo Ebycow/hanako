@@ -16,7 +16,16 @@ class AskCommand extends Command {
      * @override 
      */
     process(context, name, args) {
-        assert(name === CommandNames.ASK);
+        assert(() => {
+            for (const cmdName of CommandNames.ASK) {
+                if(name === cmdName){
+                    return true;
+                }
+            }
+
+            return false;
+            
+        });
         
         if (Math.random() >= 0.5) {
             return new CommandResult(ResultType.SUCCESS, 'はい');

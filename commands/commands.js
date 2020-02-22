@@ -1,3 +1,4 @@
+const { Initable } = require('./initable');
 const { Replacive } = require('./replacive');
 const { DiscordTagReplacer } = require('./replacives');
 const { Command, CommandNames } = require('./command');
@@ -16,18 +17,38 @@ class Commands extends Map {
     constructor(guild) {
         super();
 
+        const teach = new TeachCommand(guild);
+
+        const commandDefinitions = [
+            [CommandNames.JOIN, new JoinCommand()],
+            [CommandNames.LEAVE, new LeaveCommand()],
+            [CommandNames.ASK, new AskCommand()],
+            [CommandNames.LIMIT, new LimitCommand()],
+            [CommandNames.SEIBAI, new SeibaiCommand()],
+            [CommandNames.TEACH, teach],
+            [CommandNames.FORGET, teach],
+            [CommandNames.DICTIONARY, teach],
+            [CommandNames.DIC_ALLDELETE, teach],
+        ];
+
         this._replacives = [];
         this._replacives.push(new DiscordTagReplacer());
         
-        this.set(CommandNames.JOIN, new JoinCommand());
-        this.set(CommandNames.LEAVE, new LeaveCommand());
-        this.set(CommandNames.ASK, new AskCommand())
-        this.set(CommandNames.LIMIT, new LimitCommand());
-        this.set(CommandNames.SEIBAI, new SeibaiCommand());
-        
-        const teach = new TeachCommand(guild);
-        this.set(CommandNames.TEACH, teach);
-        this.set(CommandNames.FORGET, teach);
+        for (const cmddef of commandDefinitions) {
+            for (const commandName of cmddef[0]) {
+                this.set(commandName, cmddef[1])
+            }
+
+        }
+
+    }
+
+    async init() {
+        const inits = 
+            new Set(Array.from(this.values()).concat(this._replacives).filter(v => v instanceof Initable));
+        for (const initable of inits) {
+            await initable.asyncInit();
+        }
     }
 
     /**
