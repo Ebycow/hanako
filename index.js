@@ -23,26 +23,6 @@ client.on('ready', () => {
  */
 let servers = new Map();
 
-/**
- * @type {Map<string, Discord.VoiceConnection?>}
- */
-let connections = new Map();
-
-/**
- * @type {Map<string, Readable[]>}
- */
-let queues = new Map();
-
-/**
- * @type {Map<string, Discord.StreamDispatcher>}
- */
-let dispatchers = new Map();
-
-/**
- * @type {Map<string, Discord.TextChannel>}
- */
-let channels = new Map();
-
 client.on('message', async (message) => {
     if (message.author.id === client.user.id) {
         // 自分のメッセージは無視
@@ -61,65 +41,48 @@ client.on('message', async (message) => {
     
     if (servers.has(key)) {
         server = servers.get(key);
+        if (server.isInitializing) {
+            console.info('初期化中なので無視したメッセージ', message);
+            return;
+        }
+        if (!server.isCommandMessage(message) && !server.isMessageToReadOut(message)) {
+            // コマンドじゃない＆読み上げないなら，性能要件のためここで切り上げる
+            // （ここを通過してもawaitが絡むので後々の分岐で蹴られる場合がある）
+            console.info(`pass: ${message.content}`);
+            return;
+        } 
     } else {
         server = new DiscordServer(message.guild);
+        servers.set(key, server);
         try {
             await server.init();
         } catch (err) {
-            // TODO: 非同期初期化処理で例外が発生した時なにをすべきか
+            servers.set(key, null);
             console.error('初期化失敗', err);
             return;
         }
-        servers.set(key, server);
-        connections.set(key, null);
-        queues.set(key, []);
-        dispatchers.set(key, null);
-        channels.set(key, null);
-    }
-
-    const queuePurge = () => {
-        const cue = queues.get(key);
-        cue.forEach(stream => stream.destroy());
-        queues.set(key, []);
     }
 
     const voiceJoin = async () => {
-        const vc = await message.member.voiceChannel.join();
-        const unsub = exitHook(() => vc.disconnect());
-        vc.once('disconnect', _ => unsub());
-        connections.set(key, vc);
-        channels.set(key, message.channel);
+        await server.vc.join(message.member.voiceChannel);
+        server.mainChannel = message.channel;
         return `${message.channel}`;
     }
 
     const voiceLeave = () => {
-        queuePurge();
-        const vc = connections.get(key);
-        if (vc) {
-            vc.disconnect();
-        }
-        channels.set(key, null);
-    }
-
-    const voiceCancel = (reason) => {
-        return new Promise((resolve) => {
-            const disp = dispatchers.get(key);
-            if (disp) {
-                disp.end(reason);
-                setImmediate(() => resolve());
-            } else {
-                resolve();
-            }
-        });
+        server.vc.leave();
+        server.mainChannel = null;
     }
 
     const context = new MessageContext({
-        isMainChannel: !!(channels.get(key)) && (message.channel.id === channels.get(key).id),
+        isMainChannel: !!(server.mainChannel) && (message.channel.id === server.mainChannel.id),
         isAuthorInVC: !!(message.member.voiceChannel),
-        isJoined: () => !!(connections.get(key)),
-        isSpeaking: () => (!!(dispatchers.get(key)) || (queues.get(key).length > 0)),
-        queueLength: () => queues.get(key).length,
-        queuePurge, voiceJoin, voiceLeave, voiceCancel,
+        isJoined: () => server.vc.isJoined,
+        isSpeaking: () => (server.vc.isStreaming || (server.vc.queueLength > 0)),
+        queueLength: () => server.vc.queueLength,
+        queuePurge: () => server.vc.clearQueue(),
+        voiceJoin, voiceLeave,
+        voiceCancel: (x) => server.vc.killStream(x),
         resolveUserName: (x) => message.mentions.users.find('id', x).username,
         resolveRoleName: (x) => message.guild.roles.find('id', x).name,
         resolveChannelName: (x) => message.guild.channels.find('id', x).name,
@@ -137,10 +100,8 @@ client.on('message', async (message) => {
             console.error(err);
             return; // TODO: 例外処理これでいい？
         }
-    } else if(!context.isMainChannel) {
-        return; // TODO: Multi Channels
 
-    } else if (connections.get(key) !== null) {
+    } else if (server.isMessageToReadOut(message)) {
 
         let text = message.content;
 
@@ -171,8 +132,7 @@ client.on('message', async (message) => {
         const numChannels = parseInt(response.headers['ebyroid-pcm-number-of-channels'], 10);
 
         // awaitが絡んだのでここではnullの可能性があるよ
-        const voiceConnection = connections.get(key);
-        if (!voiceConnection) {
+        if (!server.vc.isJoined) {
             console.info('HTTPリクエスト中にVC切断されてました。', message.guild.name);
             response.data.destroy();
             return;
@@ -203,35 +163,9 @@ client.on('message', async (message) => {
         });
         stream = stream.pipe(resample);
 
-        const cue = queues.get(key);
-        cue.push(stream);
-
-        const disp = dispatchers.get(key);
-        if (!disp) {
-            const newDisp = voiceConnection.playConvertedStream(cue.shift(0), { bitrate: 'auto' });
-            dispatchers.set(key, newDisp)
-            newDisp.on('end', _ => playNextCue(key));
-        }
+        server.vc.push(stream);
     }
 });
-
-function playNextCue(key) {
-    const cue = queues.get(key);
-    const stream = cue.shift(0);
-    console.info('cue', cue.length);
-    if (stream) {
-        setImmediate(() => {
-            const voiceConnection = connections.get(key);
-            if (voiceConnection) {
-                newDisp = voiceConnection.playConvertedStream(stream, { bitrate: 'auto' });
-                dispatchers.set(key, newDisp);
-                newDisp.on('end', _ => playNextCue(key));
-            }
-        });
-    } else {
-        dispatchers.set(key, null);
-    }
-}
 
 client.login(process.env.TOKEN);
 

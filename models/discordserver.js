@@ -3,6 +3,7 @@ const discord = require('discord.js');
 const { Commands } = require('../commands/commands');
 const { CommandResult, ResultType } = require('../commands/commandresult');
 const { MessageContext } = require('../contexts/messagecontext');
+const { VoiceChat } = require('./voicechat');
 
 const CommandDelimiterRegexp = new RegExp('[ 　]+');
 
@@ -20,6 +21,17 @@ class DiscordServer {
         this.commandKey = '>';
 
         /**
+         * @type {discord.TextChannel}
+         */
+        this.mainChannel = null;
+
+        /**
+         * @type {VoiceChat}
+         * @readonly
+         */
+        this.vc = new VoiceChat();
+
+        /**
          * @type {string}
          * @private
          */
@@ -35,14 +47,26 @@ class DiscordServer {
          * @type {Commands}
          * @private
          */
-        this.commands = new Commands(guild);
+        this.commands = new Commands(guild.id);
+
+        /** 
+         * @type {boolean}
+         * @readonly
+         */
+        this.isInitializing = false;
     }
 
     /**
      * @returns {Promise<void>}
      */
     async init() {
-        await this.commands.init();
+        this.isInitializing = true;
+        try {
+            await this.commands.init();
+            this.isInitializing = false;
+        } catch (err) {
+            throw err;
+        }
     }
 
     /**
@@ -78,6 +102,13 @@ class DiscordServer {
     }
 
     /**
+     * @param {discord.Message} message 
+     */
+    isMessageToReadOut(message) {
+        return this.vc.isJoined && (this.mainChannel !== null) && (this.mainChannel.id === message.channel.id);
+    }
+
+    /**
      * @param {MessageContext} context
      * @param {string} _text
      * @returns {string} 
@@ -108,7 +139,7 @@ class DiscordServer {
      */
     _parseCommandArgument(message) {
         if (message.content.startsWith(this.commandKey)) {
-            // "?teach 里見 あおもり" 形式のコマンド
+            // ">teach 里見 あおもり" 形式のコマンド
             const pureText = message.content.slice(this.commandKey.length).trimRight();
             return pureText.split(CommandDelimiterRegexp);
         } else {

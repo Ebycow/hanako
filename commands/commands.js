@@ -14,10 +14,13 @@ const { TeachCommand } = require('./teach');
  */
 class Commands extends Map {
 
-    constructor(guild) {
+    /**
+     * @param {string} primaryKey 
+     */
+    constructor(primaryKey) {
         super();
 
-        const teach = new TeachCommand(guild);
+        const teach = new TeachCommand(primaryKey);
 
         const commandDefinitions = [
             [CommandNames.JOIN, new JoinCommand()],

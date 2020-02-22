@@ -31,9 +31,12 @@ const dictSort = (a, b) => {
  */
 class TeachCommand extends ReplaciveCommand {
 
-    constructor(guild) {
+    /**
+     * @param {string} primaryKey 
+     */
+    constructor(primaryKey) {
         super();
-        this.id = guild.id;
+        this.id = primaryKey;
         this.dictionary = [];
         this._db = null;
     }
