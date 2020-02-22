@@ -39,6 +39,13 @@ class DiscordServer {
     }
 
     /**
+     * @returns {Promise<void>}
+     */
+    async init() {
+        await this.commands.init();
+    }
+
+    /**
      * @param {MessageContext} context
      * @param {discord.Message} message 
      * @returns {Promise<CommandResult>}

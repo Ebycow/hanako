@@ -1,3 +1,4 @@
+const { Initable } = require('./initable');
 const { Replacive } = require('./replacive');
 const { DiscordTagReplacer } = require('./replacives');
 const { Command, CommandNames } = require('./command');
@@ -40,6 +41,14 @@ class Commands extends Map {
 
         }
 
+    }
+
+    async init() {
+        const inits = 
+            new Set(Array.from(this.values()).concat(this._replacives).filter(v => v instanceof Initable));
+        for (const initable of inits) {
+            await initable.asyncInit();
+        }
     }
 
     /**

@@ -63,6 +63,13 @@ client.on('message', async (message) => {
         server = servers.get(key);
     } else {
         server = new DiscordServer(message.guild);
+        try {
+            await server.init();
+        } catch (err) {
+            // TODO: 非同期初期化処理で例外が発生した時なにをすべきか
+            console.error('初期化失敗', err);
+            return;
+        }
         servers.set(key, server);
         connections.set(key, null);
         queues.set(key, []);
@@ -124,7 +131,7 @@ client.on('message', async (message) => {
         try {
             const result = await server.handleMessage(context, message);
             if (result.replyText) {
-                _ = await message.reply(result.replyText);
+                await message.reply(result.replyText);
             }
         } catch (err) {
             console.error(err);

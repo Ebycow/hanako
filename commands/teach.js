@@ -6,11 +6,11 @@ const { ReplaciveCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
 const { EmojiReplacer } = require('../utils/replacer');
 
-const db = new Datastore({ filename: './db/teach.db', autoload: true });
-db.loadDatabase();
+const sharedDbInstance = new Datastore({ filename: './db/teach.db', autoload: true });
+sharedDbInstance.loadDatabase();
 
 // 定期的にDBを圧縮
-db.persistence.setAutocompactionInterval(86400000)
+sharedDbInstance.persistence.setAutocompactionInterval(86400000)
 
 const dictSort = (a, b) => {
     if (a[0].length > b[0].length) {
@@ -24,56 +24,85 @@ const dictSort = (a, b) => {
     return 0;
 }
 
+/**
+ * @implements Command
+ * @implements Replacive
+ * @implements Initable
+ */
 class TeachCommand extends ReplaciveCommand {
 
     constructor(guild) {
         super();
         this.id = guild.id;
         this.dictionary = [];
+        this._db = null;
+    }
 
-        db.findOne({ id: this.id }, (err, docs) => {
-            if(err) {
-                throw err;
-            }
+    /**
+     * @returns {Promise<void>}
+     * @override
+     */
+    async asyncInit() {
+        await this.loadDbInstance();
+    }
 
-            if(docs) {
-                this.dictionary = docs.dict
-
-            } else {
-                db.insert({ id : this.id, dict : []}, (err) => {
-                    if(err) {
-                        throw err;
-
+    /**
+     * @returns {Promise<Nedb>}
+     * @private
+     */
+    loadDbInstance() {
+        if (this._db) {
+            return Promise.resolve(this._db);
+        } else {
+            return new Promise((resolve, reject) => {
+                sharedDbInstance.findOne({ id: this.id }, (err, docs) => {
+                    if (err) {
+                        return reject(err);
                     }
+        
+                    if(docs) {
+                        this.dictionary = docs.dict;
+                        this._db = sharedDbInstance;
+                        return resolve(this._db);
 
+                    } else {
+                        sharedDbInstance.insert({ id : this.id, dict : []}, (err) => {
+                            if (err) {
+                                return reject(err);
+                            }
+
+                            this._db = sharedDbInstance;
+                            resolve(this._db);
+
+                        });
+                    }
                 });
-            }
-            
-        });
-
+            });
+        }
     }
 
     saveDict() {
-        db.update({ id: this.id }, { $set : { dict : this.dictionary } }, (err) => {
-            if(err) {
-                throw err;
-
-            }
-
-        });
-        
+        return this.loadDbInstance().then(db => new Promise((resolve, reject) =>
+            db.update({ id: this.id }, { $set : { dict : this.dictionary } }, (err) => {
+                if(err) {
+                    return reject(err);
+                } else {
+                    return resolve();
+                }
+    
+            })));
     }
 
     /**
      * @param {MessageContext} context
      * @param {string} name
      * @param {string[]} args
-     * @returns {CommandResult}
+     * @returns {Promise<CommandResult>}
      * @override
      */
     process(context, name, args) {
         if(!context.isJoined()) {
-            return this.doNotJoinError();
+            return Promise.resolve(this.doNotJoinError());
 
         }
 
@@ -91,7 +120,7 @@ class TeachCommand extends ReplaciveCommand {
 
         for (const cmd of CommandNames.DICTIONARY) {
             if (name === cmd) {
-                return this.doShowList();
+                return Promise.resolve(this.doShowList());
             }
         }
 
@@ -113,7 +142,7 @@ class TeachCommand extends ReplaciveCommand {
 
     /**
      * @param {string[]} args
-     * @returns {CommandResult} 
+     * @returns {Promise<CommandResult>} 
      */
     async doTeach(args) {
         if (args.length < 2) {
@@ -167,7 +196,7 @@ class TeachCommand extends ReplaciveCommand {
 
         this.dictionary.sort(dictSort);
 
-        this.saveDict();
+        await this.saveDict();
         console.log(this.dictionary);
 
         return result;
@@ -175,9 +204,9 @@ class TeachCommand extends ReplaciveCommand {
 
     /**
      * @param {string[]} args
-     * @returns {CommandResult} 
+     * @returns {Promise<CommandResult>} 
      */
-    doForget(args) {
+    async doForget(args) {
         if (args.length < 1) {
             // 引数が指定されなかったときの処理
             return new CommandResult(ResultType.INVALID_ARGUMENT, null);
@@ -197,10 +226,10 @@ class TeachCommand extends ReplaciveCommand {
 
         let result;
         if (popId >= 0) {
-            this.dictionary.pop(popId);
+            this.dictionary.splice(popId, 1);
             result = new CommandResult(ResultType.SUCCESS, `1 2の…ポカン！${ word }を忘れました！ :bulb:`);
             this.dictionary.sort(dictSort);
-            this.saveDict();
+            await this.saveDict();
 
         } else {
             result = new CommandResult(ResultType.NOT_FOUND, 'その単語は教育されていません');
@@ -221,16 +250,16 @@ class TeachCommand extends ReplaciveCommand {
 
     /**
      * @param {string[]} args
-     * @returns {CommandResult} 
+     * @returns {Promise<CommandResult>} 
      */
-    doAllDelete(args) {
+    async doAllDelete(args) {
         const force = args[0] === '--force';
         let result;
 
         if(force){
             result = new CommandResult(ResultType.SUCCESS, `まっさらに生まれ変わって　人生一から始めようが\nへばりついて離れない　地続きの今を歩いているんだ :bulb:`);
             this.dictionary = [];
-            this.saveDict();
+            await this.saveDict();
 
         } else {
             result = new CommandResult(ResultType.REQUIRE_CONFIRM, `**ほんとうにけすのですか？、こうかいしませんね？\n すべての単語を削除する場合はコマンドに --force を付けてください(?alldelete --force)**`);
