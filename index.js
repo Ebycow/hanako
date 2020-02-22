@@ -1,21 +1,20 @@
 require('dotenv').config();
-const fs = require('fs');
-const { Readable } = require('stream');
 const Discord = require('discord.js');
-const axios = require('axios').default;
 const client = new Discord.Client();
-const exitHook = require('exit-hook');
-const SampleRate = require('node-libsamplerate');
-const { Interleaver } = require('./transforms/interleaver');
-const { StereoByteAdjuster } = require('./transforms/byteadjuster');
-const { WaveFileHeaderTrimmer } = require('./transforms/waveheader');
 const { UrlReplacer, EmojiReplacer } = require('./utils/replacer');
-
 const { DiscordServer } = require('./models/discordserver');
+const { EbyroidRequest } = require('./models/audiorequest');
 const { MessageContext } = require('./contexts/messagecontext');
+const { AudioAdapterManager } = require('./adapters/audioadapter');
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
+});
+
+AudioAdapterManager.init({
+    ebyroid: {
+        baseUrl: 'http://localhost:4090/'
+    }
 });
 
 /**
@@ -116,53 +115,15 @@ client.on('message', async (message) => {
 
         console.info(text);
 
-        let response;
-        try {
-            response = await axios.get(`http://localhost:4090/`, {
-                responseType: 'stream',
-                params : { text }
-            });
-        } catch (err) {
-            console.error(err);
-            return // TODO: 例外処理どうする？
-        }
-
-        const sampleRate = parseInt(response.headers['ebyroid-pcm-sample-rate'], 10);
-        const bitDepth = parseInt(response.headers['ebyroid-pcm-bit-depth'], 10);
-        const numChannels = parseInt(response.headers['ebyroid-pcm-number-of-channels'], 10);
+        const stream = await AudioAdapterManager.request(new EbyroidRequest(text), new EbyroidRequest('ってさとみがいってた'));
 
         // awaitが絡んだのでここではnullの可能性があるよ
         if (!server.vc.isJoined) {
-            console.info('HTTPリクエスト中にVC切断されてました。', message.guild.name);
-            response.data.destroy();
+            console.info('オーディオリクエスト中にVC切断されてました。', message.guild.name);
+            stream.destroy();
             return;
         }
-
-        let stream = response.data;
-        if (numChannels == 1) {
-            // 元データがモノラルのとき
-            stream = stream.pipe(new Interleaver());
-        } else {
-            // 元データがステレオのとき
-            stream = stream.pipe(new StereoByteAdjuster());
-        }
-
-        // # SE流す時はこう
-        //
-        // const sampleRate = 44100;
-        // const bitDepth = 16;
-        // stream = fs.createReadStream('syamu.wav').pipe(new WaveFileHeaderTrimmer).pipe(new StereoByteAdjuster);
-
-        const resample = new SampleRate({
-            type: SampleRate.SRC_SINC_MEDIUM_QUALITY,
-            channels: 2,
-            fromRate: sampleRate,
-            fromDepth: bitDepth,
-            toRate: 48000,
-            toDepth: 16
-        });
-        stream = stream.pipe(resample);
-
+        console.log(stream);
         server.vc.push(stream);
     }
 });
