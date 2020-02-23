@@ -3,7 +3,7 @@ const Discord = require('discord.js');
 const client = new Discord.Client();
 const { UrlReplacer, EmojiReplacer } = require('./utils/replacer');
 const { DiscordServer } = require('./models/discordserver');
-const { EbyroidRequest } = require('./models/audiorequest');
+const { EbyroidRequest, SoundRequest } = require('./models/audiorequest');
 const { MessageContext } = require('./contexts/messagecontext');
 const { AudioAdapterManager } = require('./adapters/audioadapter');
 
@@ -115,7 +115,9 @@ client.on('message', async (message) => {
 
         console.info(text);
 
-        const stream = await AudioAdapterManager.request(new EbyroidRequest(text), new EbyroidRequest('ってさとみがいってた'));
+        const stream = await AudioAdapterManager.request(
+            new EbyroidRequest(text), new EbyroidRequest('ところで、さとみが言うには'),
+            new SoundRequest('syamu.wav'), new EbyroidRequest('ってことらしい'));
 
         // awaitが絡んだのでここではnullの可能性があるよ
         if (!server.vc.isJoined) {

@@ -15,7 +15,7 @@ class AudioRequest {
 
         this.text = (typeof options.text !== 'undefined') ? options.text : null;
 
-        this.resource = (typeof options.resource !== 'undefined') ? options.text : null;
+        this.resource = (typeof options.resource !== 'undefined') ? options.resource : null;
 
         this.options = (typeof options.options === 'object') ? options.options : null;
     }

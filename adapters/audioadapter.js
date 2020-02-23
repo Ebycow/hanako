@@ -3,10 +3,25 @@ const { Readable } = require('stream');
 const CombinedStream = require('combined-stream2');
 const { AudioRequest } = require('../models/audiorequest');
 const { EbyroidAdapter } = require('./ebyroid');
+const { SoundAdapter } = require('./sound');
 
 function cs2reducer(cs2, stream) {
     cs2.append(stream);
     return cs2;
+}
+
+const sconv_size = 4 * 0xFF;
+function sconv(streams) {
+    const arr = [];
+    const len = streams.length * 2 - 1;
+    for (let i = 0; i < len; i++) {
+        if (!(i & 1)) {
+            arr[i] = streams.shift();
+        } else {
+            arr[i] = Readable.from(Buffer.alloc(sconv_size), { objectMode: false });
+        }
+    }
+    return arr;
 }
 
 class AudioAdapter {
@@ -29,7 +44,7 @@ class AudioAdapter {
     acceptAudioRequests(requests) {
         assert(requests.length > 0);
         const promises = requests.map(r => this.adapters.get(r.type).requestAudioStream(r));
-        return Promise.all(promises).then(streams => streams.reduce(cs2reducer, CombinedStream.create()));
+        return Promise.all(promises).then(streams => sconv(streams).reduce(cs2reducer, CombinedStream.create()));
     }
 
 }
@@ -41,7 +56,8 @@ class AudioAdapterManager {
     static init(options) {
         // TODO 使用設定とかいろいろ
         const ebyroid = new EbyroidAdapter(options.ebyroid.baseUrl);
-        this.adapter = new AudioAdapter({ ebyroid });
+        const sound = new SoundAdapter();
+        this.adapter = new AudioAdapter({ ebyroid, sound });
     }
 
     /**

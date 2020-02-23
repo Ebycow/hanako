@@ -20,7 +20,7 @@
     "mic": "^2.1.2",
     "nedb": "^1.8.0",
     "node-emoji": "^1.10.0",
-    "node-libsamplerate": "git+https://github.com/nanokina/node-libsamplerate.git",
+    "node-libsamplerate": "git+https://github.com/nanokina/node-libsamplerate.git#89e448e04700a6e2834818f39180a6a65b7a4216",
     "node-opus": "^0.3.3",
     "text-table": "^0.2.0",
     "tostream": "^1.0.0"
