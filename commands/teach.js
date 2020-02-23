@@ -151,11 +151,9 @@ class TeachCommand extends ReplaciveCommand {
             return new CommandResult(ResultType.INVALID_ARGUMENT, 'コマンドの形式が間違っています（teach from to） :sob:');
         }
 
-        const noEmojiArgs = args.map(x => EmojiReplacer.replace(x));
-
-        const from = noEmojiArgs[0];
-        const to = noEmojiArgs[1];
-        const force = noEmojiArgs[2] === '--force';
+        const from = args[0];
+        const to = args[1];
+        const force = args[2] === '--force';
         
         // バリデーション
         if(!(from.length >= 2)){
@@ -214,8 +212,7 @@ class TeachCommand extends ReplaciveCommand {
             return new CommandResult(ResultType.INVALID_ARGUMENT, null);
         }
 
-        // emoji置き換えも行う
-        const word = EmojiReplacer.replace(args[0]);
+        const word = args[0];
 
         let popId = -1;
         this.dictionary.forEach((rep, index) => {

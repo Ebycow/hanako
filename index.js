@@ -1,7 +1,7 @@
 require('dotenv').config();
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const { UrlReplacer, EmojiReplacer } = require('./utils/replacer');
+const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/replacer');
 const { DiscordServer } = require('./models/discordserver');
 const { EbyroidRequest, SoundRequest } = require('./models/audiorequest');
 const { MessageContext } = require('./contexts/messagecontext');
@@ -90,6 +90,10 @@ client.on('message', async (message) => {
         resolveChannelName: (x) => message.guild.channels.find('id', x).name,
     });
 
+    // コンテキストが確定した時点で絵文字とタグの一括置換を行う
+    message.content = EmojiReplacer.replace(message.content);
+    message.content = DiscordTagReplacer.replace(context, message.content);
+
     console.info(message.content);
 
     if (server.isCommandMessage(message)) {
@@ -106,9 +110,6 @@ client.on('message', async (message) => {
     } else if (server.isMessageToReadOut(message)) {
 
         let text = message.content;
-
-        // うにこーど絵文字置換
-        text = EmojiReplacer.replace(text);
 
         // URL置換
         text = UrlReplacer.replace(text);
@@ -128,7 +129,7 @@ client.on('message', async (message) => {
             stream.destroy();
             return;
         }
-        console.log(stream);
+
         server.vc.push(stream);
     }
 });

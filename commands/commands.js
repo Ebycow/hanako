@@ -1,6 +1,5 @@
 const { Initable } = require('./initable');
 const { Replacive } = require('./replacive');
-const { DiscordTagReplacer } = require('./replacives');
 const { Command, CommandNames } = require('./command');
 const { JoinCommand } = require('./join');
 const { LeaveCommand } = require('./leave');
@@ -38,7 +37,6 @@ class Commands extends Map {
         ];
 
         this._replacives = [];
-        this._replacives.push(new DiscordTagReplacer());
         
         for (const cmddef of commandDefinitions) {
             for (const commandName of cmddef[0]) {

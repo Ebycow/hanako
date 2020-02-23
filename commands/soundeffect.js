@@ -136,10 +136,8 @@ class SoundEffectCommand extends Command {
             return new CommandResult(ResultType.INVALID_ARGUMENT, 'コマンドの形式が間違っています（se-add word url） :sob:');
         }
 
-        const noEmojiArgs = args.map(x => EmojiReplacer.replace(x));
-
-        const word = noEmojiArgs[0];
-        const url = noEmojiArgs[1];
+        const word = args[0];
+        const url = args[1];
         
         // バリデーション
         if(!(word.length >= 2)){
