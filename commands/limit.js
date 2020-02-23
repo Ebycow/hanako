@@ -56,6 +56,16 @@ class LimitCommand extends ReplaciveCommand {
      */
     replace(context, message) {
         if(message.length > this.wordLimit) {
+            splitMessage = message.split(/(:.+?:)/);
+            message = "";
+            for (const str of splitMessage) {
+                message += str;
+    
+                if((message + str).length >= this.wordLimit){
+                    break;
+                }
+    
+            }
             message = message.substr(0, this.wordLimit) + "イか略。"; // 発音が良い
         }
 
