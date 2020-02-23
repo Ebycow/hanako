@@ -3,7 +3,7 @@ const table = require('text-table');
 const { MessageContext } = require('../contexts/messagecontext');
 const { ConverterCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
-const { FileAdapterManager } = require('../adapters/fileadapter');
+const { FileAdapterManager, FileAdapterErrors } = require('../adapters/fileadapter');
 const { AudioRequest, SoundRequest } = require('../models/audiorequest');
 
 const sharedDbInstance = new Datastore({ filename: './db/soundeffect.db', autoload: true });
@@ -181,9 +181,17 @@ class SoundEffectCommand extends ConverterCommand {
 
         } else {
             const base64word = Buffer.from(word).toString('base64');
-            console.log(word, base64word);
-            await FileAdapterManager.saveSoundFile(this.id, base64word, url);
-
+            try {
+                await FileAdapterManager.saveSoundFile(this.id, base64word, url);
+            } catch(err) {
+                if (err === FileAdapterErrors.ALREADY_EXISTS) {
+                    console.warn('SoundEffectCommand: ALREADY_EXISTS 軽い不整合', this.id, word, base64word);
+                    return new CommandResult(ResultType.ALREADY_EXISTS, 'すでに設定済みみたい :sob:');
+                } else {
+                    throw err;
+                }
+            }
+            
             this.dictionary.push([word, url]);
             result =  new CommandResult(ResultType.SUCCESS, `設定しました！ ${ word } -> ${ url } :bulb:`);
 
@@ -221,7 +229,18 @@ class SoundEffectCommand extends ConverterCommand {
         let result;
         if (popId >= 0) {
             const base64word = Buffer.from(word).toString('base64');
-            await FileAdapterManager.deleteSoundFile(this.id, base64word);
+            try {
+                await FileAdapterManager.deleteSoundFile(this.id, base64word);
+            } catch (err) {
+                if (err === FileAdapterErrors.NOT_FOUND) {
+                    console.warn('SoundEffectCommand: メモリ上のディクショナリとストレージの間に不整合があるようです。');
+                    console.warn('削除失敗 NOT_FOUND');
+                    console.warn(`Word:${word} Segment:${this.id} Desc:${base64word}`)
+                    return new CommandResult(ResultType.NOT_FOUND, 'ごめん、なんかエラってる :sob:');
+                } else {
+                    throw err;
+                }
+            }
             this.dictionary.splice(popId, 1);
             result = new CommandResult(ResultType.SUCCESS, `1 2の…ポカン！${ word }のSE設定を削除しました！ :bulb:`);
             this.dictionary.sort(dictSort);

@@ -16,6 +16,7 @@ class SoundAdapter extends AudioStreamAdapter {
     /**
      * @param {SoundRequest} request
      * @returns {Promise<Readable>}
+     * @throws {FileAdapterErrors.NOT_FOUND}
      * @override
      */
     async requestAudioStream(request) {

@@ -5,7 +5,7 @@ const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/repl
 const { DiscordServer } = require('./models/discordserver');
 const { MessageContext } = require('./contexts/messagecontext');
 const { AudioAdapterManager } = require('./adapters/audioadapter');
-const { FileAdapterManager } = require('./adapters/fileadapter');
+const { FileAdapterManager, FileAdapterErrors } = require('./adapters/fileadapter');
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -121,7 +121,21 @@ client.on('message', async (message) => {
         // リクエストコンバーターによる変換
         requests = server.createRequests(context, text);
 
-        const stream = await AudioAdapterManager.request(...requests);
+        // リクエストの実行
+        let stream;
+        try {
+            stream = await AudioAdapterManager.request(...requests);
+        } catch (err) {
+            if (err === FileAdapterErrors.NOT_FOUND) {
+                console.warn('index.js: リクエストしたファイルが見つからなかった。');
+                console.warn('requests:', requests);
+                return;
+            } else {
+                console.error('index.js: 未知のエラー');
+                console.error('error:', err);
+                return;
+            }
+        }
 
         // awaitが絡んだのでここではnullの可能性があるよ
         if (!server.vc.isJoined) {

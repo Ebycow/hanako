@@ -68,6 +68,7 @@ class AudioAdapter {
     /**
      * @param {AudioRequest[]} requests
      * @returns {Promise<Readable>}
+     * @throws {FileAdapterErrors.NOT_FOUND}
      */
     acceptAudioRequests(requests) {
         assert(requests.length > 0);
@@ -118,6 +119,7 @@ class AudioAdapterManager {
      * リクエストを連結して単一の音声ストリームを取得
      * @param  {...AudioRequest} reqs
      * @returns {Promise<Readable>}
+     * @throws {FileAdapterErrors.NOT_FOUND}
      */
     static request(...reqs) {
         if (!this.uses.ebyroid) {

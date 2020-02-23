@@ -221,8 +221,10 @@ class FileAdapterManager {
      * @param {string} descriptiveKey 
      * @param {string} url 
      * @returns {Promise<void>}
+     * @throws {FileAdapterErrors.ALREADY_EXISTS}
      */
     static async saveSoundFile(segmentKey, descriptiveKey, url) {
+        // TODO やっぱaxiosの404君の料理を・・・最高やな！
         const response = await axios.get(url, { responseType: 'stream' });
         const args = FFMPEG_ARGUMENTS.slice();
         const ffmpeg = new prism.FFmpeg({ args });
@@ -235,6 +237,7 @@ class FileAdapterManager {
      * @param {string} segmentKey 
      * @param {string} descriptiveKey 
      * @returns {Promise<Readable>}
+     * @throws {FileAdapterErrors.NOT_FOUND}
      */
     static async readSoundFile(segmentKey, descriptiveKey) {
         const stream = await this.adapter.readFile(segmentKey, descriptiveKey, 'pcm');
@@ -246,6 +249,7 @@ class FileAdapterManager {
      * @param {string} segmentKey 
      * @param {string} descriptiveKey
      * @returns {Promise<void>}
+     * @throws {FileAdapterErrors.NOT_FOUND}
      */
     static async deleteSoundFile(segmentKey, descriptiveKey) {
         await this.adapter.deleteFile(segmentKey, descriptiveKey, 'pcm');
