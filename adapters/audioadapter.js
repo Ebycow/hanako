@@ -10,7 +10,7 @@ function cs2reducer(cs2, stream) {
     return cs2;
 }
 
-// TODO 並列複数Hz問題が解決したらいらなくなる処理
+// FIXME 並列複数Hz問題が解決したらいらなくなる処理
 const sconv_size = 4 * 0xFF;
 function sconv(streams) {
     const arr = [];
@@ -23,6 +23,14 @@ function sconv(streams) {
         }
     }
     return arr;
+}
+
+// FIXME discord.jsがStream3 APIに移行してcombined-stream2が不要になったらいらなくなる処理
+//       配列の最後がFileStreamのときcombined-stream2君が処理できない
+const atail_size = 4 * 0x10;
+function atail(streams) {
+    streams.push(Readable.from(Buffer.alloc(atail_size), { objectMode: false }));
+    return streams;
 }
 
 class AudioAdapter {
@@ -45,7 +53,7 @@ class AudioAdapter {
     acceptAudioRequests(requests) {
         assert(requests.length > 0);
         const promises = requests.map(r => this.adapters.get(r.type).requestAudioStream(r));
-        return Promise.all(promises).then(streams => sconv(streams).reduce(cs2reducer, CombinedStream.create()));
+        return Promise.all(promises).then(streams => atail(sconv(streams)).reduce(cs2reducer, CombinedStream.create()));
     }
 
 }
