@@ -37,7 +37,8 @@ const CommandNames = {
     FORGET: ['忘却', 'forget', 'wbook-delete', "rm"],
     DIC_ALLDELETE: ['wbook-alldel', "alldelete"],
     DICTIONARY: ['dictionary', 'wbook-list', "dic"],
-    SEIBAI: ['seibai', 'stop']
+    SEIBAI: ['seibai', 'stop'],
+    SE_ADD: ['se-add'], // FIXME もっとイケてるコマンドに
 };
 
 module.exports = {

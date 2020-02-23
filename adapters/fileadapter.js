@@ -17,6 +17,7 @@ class FileAdapter {
          * @type {Nedb}
          */
         this.db = new DataStore({ filename: './db/files.db', autoload: true });
+        this.db.persistence.setAutocompactionInterval(86400000);
     }
 
     /**

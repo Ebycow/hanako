@@ -1,4 +1,3 @@
-const fs = require('fs');
 const Datastore = require('nedb');
 const table = require('text-table');
 const { MessageContext } = require('../contexts/messagecontext');
@@ -10,7 +9,7 @@ const sharedDbInstance = new Datastore({ filename: './db/teach.db', autoload: tr
 sharedDbInstance.loadDatabase();
 
 // 定期的にDBを圧縮
-sharedDbInstance.persistence.setAutocompactionInterval(86400000)
+sharedDbInstance.persistence.setAutocompactionInterval(86400000);
 
 const dictSort = (a, b) => {
     if (a[0].length > b[0].length) {

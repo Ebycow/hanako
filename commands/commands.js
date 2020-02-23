@@ -8,6 +8,7 @@ const { AskCommand } = require('./ask');
 const { LimitCommand } = require('./limit');
 const { SeibaiCommand } = require('./seibai');
 const { TeachCommand } = require('./teach');
+const { SoundEffectCommand } = require('./soundeffect');
 
 /**
  * @extends {Map<string, Command>}
@@ -21,6 +22,7 @@ class Commands extends Map {
         super();
 
         const teach = new TeachCommand(primaryKey);
+        const soundeffect = new SoundEffectCommand(primaryKey);
 
         const commandDefinitions = [
             [CommandNames.JOIN, new JoinCommand()],
@@ -32,6 +34,7 @@ class Commands extends Map {
             [CommandNames.FORGET, teach],
             [CommandNames.DICTIONARY, teach],
             [CommandNames.DIC_ALLDELETE, teach],
+            [CommandNames.SE_ADD, soundeffect],
         ];
 
         this._replacives = [];
