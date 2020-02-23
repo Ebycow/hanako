@@ -4,6 +4,7 @@ const { Commands } = require('../commands/commands');
 const { CommandResult, ResultType } = require('../commands/commandresult');
 const { MessageContext } = require('../contexts/messagecontext');
 const { VoiceChat } = require('./voicechat');
+const { AudioRequest } = require('./audiorequest');
 
 const CommandDelimiterRegexp = new RegExp('[ 　]+');
 
@@ -130,6 +131,25 @@ class DiscordServer {
         }
 
         return text;
+    }
+
+    /**
+     * @param {MessageContext} context
+     * @param {string} text
+     * @returns {AudioRequest[]} 
+     */
+    createRequests(context, text) {
+        const converters = this.commands.converters.sort((a, b) => {
+            if (a.convertPriority() < b.convertPriority()) {
+                return -1;
+            } else if (a.convertPriority() > b.convertPriority()) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+
+        return converters.reduce((acc, conv) => conv.convert(context, acc), [text]);
     }
 
     /**

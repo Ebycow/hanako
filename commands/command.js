@@ -1,4 +1,5 @@
 const { Replacive } = require('./replacive');
+const { RequestConverter } = require('./converter');
 const { CommandResult } = require('./commandresult');
 const { MessageContext } = require('../contexts/messagecontext');
 
@@ -28,6 +29,13 @@ class ReplaciveCommand extends Command {}
 
 Replacive.applyToClass(ReplaciveCommand);
 
+/**
+ * RequestConverterかつCommandなクラス
+ */
+class ConverterCommand extends Command {}
+
+RequestConverter.applyToClass(ConverterCommand);
+
 const CommandNames = {
     JOIN: ['お願い', 'plz', "summon", "s"],
     LEAVE: ['さようなら', 'bye', "b"],
@@ -42,5 +50,5 @@ const CommandNames = {
 };
 
 module.exports = {
-    Command, ReplaciveCommand, CommandNames
+    Command, ReplaciveCommand, ConverterCommand, CommandNames
 };

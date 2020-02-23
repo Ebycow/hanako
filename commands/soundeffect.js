@@ -1,9 +1,9 @@
 const Datastore = require('nedb');
 const { MessageContext } = require('../contexts/messagecontext');
-const { Command, CommandNames } = require('./command');
+const { ConverterCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
-const { EmojiReplacer } = require('../utils/replacer');
 const { FileAdapterManager } = require('../adapters/fileadapter');
+const { AudioRequest, SoundRequest } = require('../models/audiorequest');
 
 const sharedDbInstance = new Datastore({ filename: './db/soundeffect.db', autoload: true });
 sharedDbInstance.loadDatabase();
@@ -25,9 +25,10 @@ const dictSort = (a, b) => {
 
 /**
  * @implements Command
+ * @implements Converter
  * @implements Initable
  */
-class SoundEffectCommand extends Command {
+class SoundEffectCommand extends ConverterCommand {
 
     // FIXME!!
     // 以下テキストとかTeachの改変で超適当です
@@ -181,6 +182,46 @@ class SoundEffectCommand extends Command {
         console.log(this.dictionary);
 
         return result;
+    }
+
+    /**
+     * @param {MessageContext} context
+     * @param {Array<string|AudioRequest>} array
+     * @returns {Array<string|AudioRequest>}
+     * @override
+     */
+    convert(context, array) {
+        /**
+         * @param {string|AudioRequest} value 
+         * @param {[string, string]} rep 
+         * @returns {Array<string|AudioRequest>}
+         */
+        const wrap = (value, rep) => {
+            if (typeof value !== 'string') {
+                return [value];
+            }
+            const text = value;
+            const word = rep[0];
+            if (text.includes(word)) {
+                const base64word = Buffer.from(word).toString('base64');
+                const xs = text.split(word).map(x => [x]).reduceRight((acc, xs) => xs.concat([new SoundRequest(this.id, base64word)], acc));
+                return xs.filter(v => v !== '');
+            } else {
+                return [text];
+            }
+        };
+
+        const arr = this.dictionary.reduce((acc, rep) => acc.map(v => wrap(v, rep)).flat(), array);
+        console.log(array, arr);
+        return arr;
+    }
+
+    /**
+     * @returns {number}
+     * @override
+     */
+    convertPriority() {
+        return 0x0010;
     }
 
 }

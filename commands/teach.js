@@ -3,7 +3,6 @@ const table = require('text-table');
 const { MessageContext } = require('../contexts/messagecontext');
 const { ReplaciveCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
-const { EmojiReplacer } = require('../utils/replacer');
 
 const sharedDbInstance = new Datastore({ filename: './db/teach.db', autoload: true });
 sharedDbInstance.loadDatabase();

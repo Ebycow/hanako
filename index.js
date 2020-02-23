@@ -119,9 +119,10 @@ client.on('message', async (message) => {
 
         console.info(text);
 
-        const stream = await AudioAdapterManager.request(
-            new EbyroidRequest(text), new EbyroidRequest('ところで、さとみが言うには'),
-            new SoundRequest('test-segment', 'uiissu'), new EbyroidRequest('ってことらしい'));
+        // リクエストコンバーターによる変換
+        requests = server.createRequests(context, text);
+
+        const stream = await AudioAdapterManager.request(...requests);
 
         // awaitが絡んだのでここではnullの可能性があるよ
         if (!server.vc.isJoined) {
