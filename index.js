@@ -6,6 +6,7 @@ const { DiscordServer } = require('./models/discordserver');
 const { EbyroidRequest, SoundRequest } = require('./models/audiorequest');
 const { MessageContext } = require('./contexts/messagecontext');
 const { AudioAdapterManager } = require('./adapters/audioadapter');
+const { FileAdapterManager } = require('./adapters/fileadapter');
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -16,6 +17,8 @@ AudioAdapterManager.init({
         baseUrl: 'http://localhost:4090/'
     }
 });
+
+FileAdapterManager.init();
 
 /**
  * @type {Map<string, DiscordServer>}
@@ -117,7 +120,7 @@ client.on('message', async (message) => {
 
         const stream = await AudioAdapterManager.request(
             new EbyroidRequest(text), new EbyroidRequest('ところで、さとみが言うには'),
-            new SoundRequest('syamu.wav'), new EbyroidRequest('ってことらしい'));
+            new SoundRequest('test-segment', 'uiissu'), new EbyroidRequest('ってことらしい'));
 
         // awaitが絡んだのでここではnullの可能性があるよ
         if (!server.vc.isJoined) {

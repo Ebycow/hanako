@@ -32,9 +32,9 @@ class EbyroidRequest extends AudioRequest {
 
 class SoundRequest extends AudioRequest {
 
-    constructor(resource) {
+    constructor(segment, resource) {
         super({ type: RequestType.SOUND, resource });
-        // TODO
+        this.segment = segment;
     }
 
 }

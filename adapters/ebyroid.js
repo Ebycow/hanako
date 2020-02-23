@@ -26,7 +26,7 @@ class EbyroidAdapter {
             });
         } catch (err) {
             console.error(err);
-            return // TODO: 例外処理どうする？
+            throw err; // TODO: 例外処理どうする？
         }
 
         const sampleRate = parseInt(response.headers['ebyroid-pcm-sample-rate'], 10);

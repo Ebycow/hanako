@@ -10,6 +10,7 @@ function cs2reducer(cs2, stream) {
     return cs2;
 }
 
+// TODO 並列複数Hz問題が解決したらいらなくなる処理
 const sconv_size = 4 * 0xFF;
 function sconv(streams) {
     const arr = [];
