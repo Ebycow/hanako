@@ -2,25 +2,24 @@ const { Readable } = require('stream');
 const { StereoByteAdjuster } = require('../transforms/byteadjuster');
 const { SoundRequest } = require('../models/audiorequest');
 const { FileAdapterManager } = require('./fileadapter');
+const { AudioStreamAdapter } = require('./interfaces');
 
-class SoundAdapter {
+/**
+ * ファイルからSE音声ストリームを取得するアダプタ
+ */
+class SoundAdapter extends AudioStreamAdapter {
 
     constructor() {
-        // TODO
+        super();
     }
 
     /**
      * @param {SoundRequest} request
      * @returns {Promise<Readable>}
+     * @override
      */
     async requestAudioStream(request) {
-        let stream;
-        try {
-            stream = await FileAdapterManager.readSoundFile(request.segment, request.resource);
-        } catch (err) {
-            throw err; // TODO
-        }
-        
+        const stream = await FileAdapterManager.readSoundFile(request.segment, request.resource);
         return stream.pipe(new StereoByteAdjuster());
     }
 

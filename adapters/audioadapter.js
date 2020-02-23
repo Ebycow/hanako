@@ -1,10 +1,17 @@
 const assert = require('assert').strict;
 const { Readable } = require('stream');
 const CombinedStream = require('combined-stream2');
-const { AudioRequest } = require('../models/audiorequest');
+const { AudioRequest, RequestType } = require('../models/audiorequest');
+const { AudioStreamAdapter } = require('./interfaces');
 const { EbyroidAdapter } = require('./ebyroid');
 const { SoundAdapter } = require('./sound');
 
+/**
+ * combined-stream2用
+ * @param {CombinedStream} cs2 
+ * @param {Readable} stream
+ * @returns {CombinedStream}
+ */
 function cs2reducer(cs2, stream) {
     cs2.append(stream);
     return cs2;
@@ -33,12 +40,24 @@ function atail(streams) {
     return streams;
 }
 
+/**
+ * 音声・サウンドリクエスト用アダプタ
+ */
 class AudioAdapter {
 
+    /**
+     * @param {Object} adapters
+     * @param {AudioStreamAdapter?} adapters.ebyroid
+     * @param {AudioStreamAdapter?} adapters.sound 
+     */
     constructor(adapters) {
+        /**
+         * @type {Map<string, AudioStreamAdapter}
+         * @private
+         */
         this.adapters = new Map();
-        this.adapters.set('ebyroid', adapters.ebyroid || null);
-        this.adapters.set('sound', adapters.sound || null);
+        this.adapters.set(RequestType.EBYROID, adapters.ebyroid || null);
+        this.adapters.set(RequestType.SOUND, adapters.sound || null);
         
         const instances = Array.from(this.adapters.values());
         if (instances.every(x => x === null)) {
@@ -58,22 +77,60 @@ class AudioAdapter {
 
 }
 
+/**
+ * 音声・サウンドリクエストマネージャ
+ */
 class AudioAdapterManager {
     
+    /**
+     * @type {AudioAdapter}
+     */
     static adapter;
 
+    /**
+     * @namespace
+     * @prop {boolean} ebyroid
+     * @prop {boolean} sound
+     */
+    static uses = { ebyroid: false, sound: false };
+
+    /**
+     * 初期化処理
+     * @param {Object} options
+     * @param {Object?} options.ebyroid
+     * @param {string}  options.ebyroid.baseUrl 
+     */
     static init(options) {
-        // TODO 使用設定とかいろいろ
-        const ebyroid = new EbyroidAdapter(options.ebyroid.baseUrl);
-        const sound = new SoundAdapter();
-        this.adapter = new AudioAdapter({ ebyroid, sound });
+        const adapters = {};
+
+        if (options.ebyroid) {
+            adapters.ebyroid = new EbyroidAdapter(options.ebyroid.baseUrl);
+            this.uses.ebyroid = true;
+        }
+
+        adapters.sound = new SoundAdapter();
+        this.uses.sound = true;
+        
+        this.adapter = new AudioAdapter(adapters);
     }
 
     /**
+     * リクエストを連結して単一の音声ストリームを取得
      * @param  {...AudioRequest} reqs
      * @returns {Promise<Readable>}
      */
     static request(...reqs) {
+        if (!this.uses.ebyroid) {
+            console.warn('Ebyroidへのリクエストが要求されましたが、Ebyroid利用設定がありません。');
+            reqs = reqs.filter(req => req.type !== RequestType.EBYROID);
+        }
+        if (!this.uses.sound) {
+            console.warn('SEファイルへのリクエストが要求されましたが、SE利用設定がありません。');
+            reqs = reqs.filter(req => req.type !== RequestType.SOUND);
+        }
+        if (reqs.length === 0) {
+            return Promise.reject('空のリクエスト');
+        }
         return this.adapter.acceptAudioRequests(reqs);
     }
 

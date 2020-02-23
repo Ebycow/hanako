@@ -10,6 +10,9 @@ const FileAdapterErrors = {
     NOT_FOUND: 'fae not found',
 };
 
+/**
+ * セグメント(Discordサーバー)ごとのファイル読み書き用アダプタ
+ */
 class FileAdapter {
     
     constructor() {
@@ -131,14 +134,31 @@ const FFMPEG_ARGUMENTS = [
     '-ac', '2',
 ];
 
+/**
+ * ファイル読み書きマネージャ
+ */
 class FileAdapterManager {
 
+    /**
+     * @type {FileAdapter}
+     * @private
+     */
     static adapter;
 
+    /**
+     * 初期化処理
+     */
     static init() {
         this.adapter = new FileAdapter();
     }
 
+    /**
+     * 音声ファイル保存
+     * @param {string} segmentKey 
+     * @param {string} descriptiveKey 
+     * @param {string} url 
+     * @returns {Promise<void>}
+     */
     static async saveSoundFile(segmentKey, descriptiveKey, url) {
         const response = await axios.get(url, { responseType: 'stream' });
         const args = FFMPEG_ARGUMENTS.slice();
@@ -147,6 +167,12 @@ class FileAdapterManager {
         await this.adapter.saveFile(segmentKey, descriptiveKey, 'pcm', stream);
     }
 
+    /**
+     * 音声ファイルから音声ストリームを取得
+     * @param {string} segmentKey 
+     * @param {string} descriptiveKey 
+     * @returns {Promise<Readable>}
+     */
     static async readSoundFile(segmentKey, descriptiveKey) {
         const stream = await this.adapter.readFile(segmentKey, descriptiveKey, 'pcm');
         return stream;
