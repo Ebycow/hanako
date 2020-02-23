@@ -3,7 +3,6 @@ const Discord = require('discord.js');
 const client = new Discord.Client();
 const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/replacer');
 const { DiscordServer } = require('./models/discordserver');
-const { EbyroidRequest, SoundRequest } = require('./models/audiorequest');
 const { MessageContext } = require('./contexts/messagecontext');
 const { AudioAdapterManager } = require('./adapters/audioadapter');
 const { FileAdapterManager } = require('./adapters/fileadapter');

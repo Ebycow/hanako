@@ -118,6 +118,12 @@ class SoundEffectCommand extends ConverterCommand {
             }
         }
 
+        for (const cmd of CommandNames.SE_DELETE) {
+            if (name === cmd) {
+                return this.doDelete(args);
+            }
+        }
+
         throw new Error('unreachable');
     }
 
@@ -183,6 +189,46 @@ class SoundEffectCommand extends ConverterCommand {
 
         return result;
     }
+
+    /**
+     * @param {string[]} args
+     * @returns {Promise<CommandResult>} 
+     */
+    async doDelete(args) {
+        if (args.length < 1) {
+            // 引数が指定されなかったときの処理
+            return new CommandResult(ResultType.INVALID_ARGUMENT, null);
+        }
+
+        const word = args[0];
+
+        let popId = -1;
+        this.dictionary.forEach((rep, index) => {
+            if (rep[0] == word) {
+                popId = index;
+
+            }
+
+        });
+
+        let result;
+        if (popId >= 0) {
+            const base64word = Buffer.from(word).toString('base64');
+            await FileAdapterManager.deleteSoundFile(this.id, base64word);
+            this.dictionary.splice(popId, 1);
+            result = new CommandResult(ResultType.SUCCESS, `1 2の…ポカン！${ word }のSE設定を削除しました！ :bulb:`);
+            this.dictionary.sort(dictSort);
+            await this.saveDict();
+
+        } else {
+            result = new CommandResult(ResultType.NOT_FOUND, 'その単語は設定されていません');
+        
+        }
+
+        return result;
+
+    }
+
 
     /**
      * @param {MessageContext} context

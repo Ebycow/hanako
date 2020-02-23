@@ -36,6 +36,7 @@ class Commands extends Map {
             [CommandNames.DICTIONARY, teach],
             [CommandNames.DIC_ALLDELETE, teach],
             [CommandNames.SE_ADD, soundeffect],
+            [CommandNames.SE_DELETE, soundeffect],
         ];
 
         this._replacives = [];

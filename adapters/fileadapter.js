@@ -124,6 +124,69 @@ class FileAdapter {
         }));
     }
 
+    /**
+     * @param {string} segmentKey 
+     * @param {string} descriptiveKey 
+     * @param {string} suffix 
+     * @throws {FileAdapterErrors.NOT_FOUND}
+     * @returns {Promise<Readable>}
+     */
+    deleteFile(segmentKey, descriptiveKey, suffix) {
+        const query = {
+            segment: segmentKey,
+            descriptive: descriptiveKey,
+            suffix: suffix
+        };
+
+        return new Promise((resolve, reject) => {
+            this.db.find(query, (err, docs) => {
+                if (err) {
+                    reject(err);
+                } else if (docs.length === 0) {
+                    reject(FileAdapterErrors.NOT_FOUND);
+                } else {
+                    if (docs.length > 1) {
+                        console.warn('整合性警告：複数レコード検知');
+                        console.warn(`count:${docs.length} seg:${segmentKey} desc:${descriptiveKey} suf:${suffix}`);
+                        console.warn('Delete要求なのでこのまま全て削除します。');
+                    }
+                    resolve(docs);
+                }
+            });
+        }).then((docs) => {
+            const remove = async (doc) => {
+                const fileName = doc.file;
+                const filePath = `./files/${segmentKey}/${suffix}/${fileName}.${suffix}`;
+                return new Promise((resolve, reject) => fs.unlink(filePath, err => {
+                    if (err) {
+                        if (err.code === 'ENOENT') {
+                            console.warn('整合性警告：レコード有り対象ファイル無し');
+                            console.warn('error:', err);
+                            console.warn('Delete要求なのでこのまま続行します。');
+                            resolve();
+                        } else {
+                            reject(err);
+                        }
+                    } else {
+                        resolve();
+                    }
+                }));
+            };
+            return docs.reduce((promise, doc) => promise.then(_ => remove(doc)), Promise.resolve());
+        }).then(_ => new Promise((resolve, reject) => {
+            this.db.remove(query, (err, numRemoved) => {
+                if (err) {
+                    reject(err);
+                } else if (numRemoved === 0) {
+                    console.warn('整合性警告：レコード削除数０');
+                    resolve();
+                } else {
+                    resolve();
+                }
+            });
+        }));
+    }
+
 }
 
 const FFMPEG_ARGUMENTS = [
@@ -176,6 +239,16 @@ class FileAdapterManager {
     static async readSoundFile(segmentKey, descriptiveKey) {
         const stream = await this.adapter.readFile(segmentKey, descriptiveKey, 'pcm');
         return stream;
+    }
+
+    /**
+     * 音声ファイル削除
+     * @param {string} segmentKey 
+     * @param {string} descriptiveKey
+     * @returns {Promise<void>}
+     */
+    static async deleteSoundFile(segmentKey, descriptiveKey) {
+        await this.adapter.deleteFile(segmentKey, descriptiveKey, 'pcm');
     }
 
 }

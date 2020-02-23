@@ -47,6 +47,7 @@ const CommandNames = {
     DICTIONARY: ['dictionary', 'wbook-list', "dic"],
     SEIBAI: ['seibai', 'stop'],
     SE_ADD: ['se-add'], // FIXME もっとイケてるコマンドに
+    SE_DELETE: ['se-del'], // FIXME もっとイケてるコマンドに！！
 };
 
 module.exports = {
