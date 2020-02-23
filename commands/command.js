@@ -48,6 +48,7 @@ const CommandNames = {
     SEIBAI: ['seibai', 'stop'],
     SE_ADD: ['se-add'], // FIXME もっとイケてるコマンドに
     SE_DELETE: ['se-del'], // FIXME もっとイケてるコマンドに！！
+    SE_LIST: ['se-list'], // FIXME もっとイケてるコマンドに！！！！
 };
 
 module.exports = {

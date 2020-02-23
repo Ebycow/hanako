@@ -1,4 +1,5 @@
 const Datastore = require('nedb');
+const table = require('text-table');
 const { MessageContext } = require('../contexts/messagecontext');
 const { ConverterCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
@@ -124,6 +125,12 @@ class SoundEffectCommand extends ConverterCommand {
             }
         }
 
+        for (const cmd of CommandNames.SE_LIST) {
+            if (name === cmd) {
+                return Promise.resolve(this.doShowList());
+            }
+        }
+
         throw new Error('unreachable');
     }
 
@@ -229,6 +236,13 @@ class SoundEffectCommand extends ConverterCommand {
 
     }
 
+    /**
+     * @returns {CommandResult} 
+     */
+    doShowList() {
+        let replyText = "設定されたSEの一覧だよ！:\n";
+        return new CommandResult(ResultType.SUCCESS, replyText + table(this.dictionary));
+    }
 
     /**
      * @param {MessageContext} context
