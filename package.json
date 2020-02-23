@@ -17,14 +17,12 @@
     "discord.js": "^11.5.1",
     "dotenv": "^8.2.0",
     "exit-hook": "^2.2.0",
-    "mic": "^2.1.2",
     "nedb": "^1.8.0",
     "node-emoji": "^1.10.0",
     "node-libsamplerate": "git+https://github.com/nanokina/node-libsamplerate.git#db268ad2147ca5415f29dd958de144fe49742fd9",
     "node-opus": "^0.3.3",
     "prism-media": "^1.2.0",
     "text-table": "^0.2.0",
-    "tostream": "^1.0.0",
     "uuidv4": "^6.0.2"
   },
   "devDependencies": {
