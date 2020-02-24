@@ -49,6 +49,9 @@ const CommandNames = {
     SE_ADD: ['se-add'], // FIXME もっとイケてるコマンドに
     SE_DELETE: ['se-del'], // FIXME もっとイケてるコマンドに！！
     SE_LIST: ['se-list'], // FIXME もっとイケてるコマンドに！！！！
+    BLACKLIST_ADD: ['blacklist-add'],
+    BLACKLIST_REMOVE: ['blacklist-remove'],
+    BLACKLIST_SHOW: ['blacklist-show'],
 };
 
 module.exports = {

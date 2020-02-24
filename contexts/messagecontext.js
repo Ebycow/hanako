@@ -83,6 +83,18 @@ class MessageContext {
         this.voiceCancel = (typeof options.voiceCancel !== 'undefined') ? options.voiceCancel : null;
 
         /**
+         * @type {string}
+         * @description メッセージを送信したユーザのID。
+         */
+        this.authorId = (typeof options.authorId !== 'undefined') ? options.authorId : null;
+
+        /**
+         * @type {Map<string, string>}
+         * @description メンションに含まれるユーザの名前とIDの配列。
+         */
+        this.mentionedUsers = (typeof options.mentionedUsers !== 'undefined') ? options.mentionedUsers : null;
+
+        /**
          * @type {function(string):string}
          * @returns ユーザー名の文字列。
          * @description ユーザーID文字列からユーザー名文字列を解決する処理（同期）。
