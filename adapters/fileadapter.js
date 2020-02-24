@@ -4,10 +4,13 @@ const DataStore = require('nedb');
 const { uuid } = require('uuidv4');
 const axios = require('axios').default;
 const prism = require('prism-media');
+const FileType = require('file-type');
 
 const FileAdapterErrors = {
     ALREADY_EXISTS: 'fae already exists',
     NOT_FOUND: 'fae not found',
+    DATA_TOO_LARGE: 'fae data too large',
+    INVALID_MINE_TYPE: 'fae invalid mine type',
 };
 
 /**
@@ -210,9 +213,18 @@ class FileAdapterManager {
 
     /**
      * 初期化処理
+     * @param {Object} options
+     * @param {number} [options.maxDownloadByteSize=1000000]
      */
-    static init() {
+    static init(options) {
+        /**
+         * @type {FileAdapter}
+         */
         this.adapter = new FileAdapter();
+        /**
+         * @type {number}
+         */
+        this.maxDownloadByteSize = options.maxDownloadByteSize ? options.maxDownloadByteSize : 1000000;
     }
 
     /**
@@ -221,15 +233,34 @@ class FileAdapterManager {
      * @param {string} descriptiveKey 
      * @param {string} url 
      * @returns {Promise<void>}
-     * @throws {FileAdapterErrors.ALREADY_EXISTS}
+     * @throws {FileAdapterErrors.ALREADY_EXISTS} 同じキーですでにファイルあり
+     * @throws {FileAdapterErrors.DATA_TOO_LARGE} maxDownloadByteSize超過
+     * @throws {FileAdapterErrors.INVALID_MINE_TYPE} 音声ファイルではない
+     * @throws {FileAdapterErrors.NOT_FOUND} URLのレスポンスコードが400以上
      */
     static async saveSoundFile(segmentKey, descriptiveKey, url) {
-        // TODO やっぱaxiosの404君の料理を・・・最高やな！
-        const response = await axios.get(url, { responseType: 'stream' });
+        let response;
+        try {
+            response = await axios.get(url, { responseType: 'arraybuffer', maxContentLength: this.maxDownloadByteSize });
+        } catch(err) {
+            // AXIOS null やめて
+            // cf. https://github.com/axios/axios/blob/v0.19.1/lib/adapters/http.js#L219-L220
+            if (err.message.startsWith('maxContentLength size of ')) {
+                throw FileAdapterErrors.DATA_TOO_LARGE;
+            } else if (err.response && err.response.status >= 400) {
+                throw FileAdapterErrors.NOT_FOUND;
+            } else {
+                throw err;
+            }
+        }
+        const fileType = await FileType.fromBuffer(response.data);
+        if (!fileType || !fileType.mime.startsWith('audio')) {
+            throw FileAdapterErrors.INVALID_MINE_TYPE;
+        }
         const args = FFMPEG_ARGUMENTS.slice();
         const ffmpeg = new prism.FFmpeg({ args });
-        const stream = response.data.pipe(ffmpeg);
-        await this.adapter.saveFile(segmentKey, descriptiveKey, 'pcm', stream);
+        const stream = Readable.from(response.data, { objectMode: false });
+        await this.adapter.saveFile(segmentKey, descriptiveKey, 'pcm', stream.pipe(ffmpeg));
     }
 
     /**

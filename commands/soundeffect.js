@@ -1,5 +1,6 @@
 const Datastore = require('nedb');
 const table = require('text-table');
+const prettyBytes = require('pretty-bytes');
 const { MessageContext } = require('../contexts/messagecontext');
 const { ConverterCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
@@ -149,6 +150,9 @@ class SoundEffectCommand extends ConverterCommand {
         if (args.length < 2) {
             return new CommandResult(ResultType.INVALID_ARGUMENT, 'コマンドの形式が間違っています（se-add word url） :sob:');
         }
+        if (this.dictionary.length > 50) {
+            return new CommandResult(ResultType.REQUIRE_CONFIRM, 'SEが最大数まで登録されています 何か削除してからまた追加してください :bow:');
+        }
 
         const word = args[0];
         const url = args[1];
@@ -184,7 +188,13 @@ class SoundEffectCommand extends ConverterCommand {
             try {
                 await FileAdapterManager.saveSoundFile(this.id, base64word, url);
             } catch(err) {
-                if (err === FileAdapterErrors.ALREADY_EXISTS) {
+                if (err === FileAdapterErrors.DATA_TOO_LARGE) {
+                    return new CommandResult(ResultType.INVALID_ARGUMENT, `${prettyBytes(FileAdapterManager.maxDownloadByteSize).replace(' ', '')}以上のデータは大きすぎて入らないにゃ :sob:`)
+                } else if (err === FileAdapterErrors.INVALID_MINE_TYPE) {
+                    return new CommandResult(ResultType.INVALID_ARGUMENT, 'これサウンドファイルじゃなさそう :sob:');
+                } else if (err === FileAdapterErrors.NOT_FOUND) {
+                    return new CommandResult(ResultType.INVALID_ARGUMENT, 'URLのァイルが見つからないにゃ :sob:');
+                } else if (err === FileAdapterErrors.ALREADY_EXISTS) {
                     console.warn('SoundEffectCommand: ALREADY_EXISTS 軽い不整合', this.id, word, base64word);
                     return new CommandResult(ResultType.ALREADY_EXISTS, 'すでに設定済みみたい :sob:');
                 } else {

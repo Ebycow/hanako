@@ -13,11 +13,13 @@ client.on('ready', () => {
 
 AudioAdapterManager.init({
     ebyroid: {
-        baseUrl: 'http://localhost:4090/'
-    }
+        baseUrl: 'http://localhost:4090/',
+    },
 });
 
-FileAdapterManager.init();
+FileAdapterManager.init({
+    maxDownloadByteSize: 1000 * 1000 * 2, //2MB
+});
 
 /**
  * @type {Map<string, DiscordServer>}
