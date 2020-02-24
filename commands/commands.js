@@ -10,6 +10,7 @@ const { SeibaiCommand } = require('./seibai');
 const { TeachCommand } = require('./teach');
 const { SoundEffectCommand } = require('./soundeffect');
 const { TextConverter } = require('./textconverter');
+const { BlackListCommand } = require('./blacklist');
 
 /**
  * @extends {Map<string, Command>}
@@ -24,6 +25,7 @@ class Commands extends Map {
 
         const teach = new TeachCommand(primaryKey);
         const soundeffect = new SoundEffectCommand(primaryKey);
+        const blacklist = new BlackListCommand(primaryKey);
 
         const commandDefinitions = [
             [CommandNames.JOIN, new JoinCommand()],
@@ -38,6 +40,10 @@ class Commands extends Map {
             [CommandNames.SE_ADD, soundeffect],
             [CommandNames.SE_DELETE, soundeffect],
             [CommandNames.SE_LIST, soundeffect],
+            [CommandNames.BLACKLIST_ADD, blacklist],
+            [CommandNames.BLACKLIST_REMOVE, blacklist],
+            [CommandNames.BLACKLIST_SHOW, blacklist]
+
         ];
 
         this._replacives = [];

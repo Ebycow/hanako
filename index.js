@@ -86,6 +86,8 @@ client.on('message', async (message) => {
         queuePurge: () => server.vc.clearQueue(),
         voiceJoin, voiceLeave,
         voiceCancel: (x) => server.vc.killStream(x),
+        authorId : message.author.id,
+        mentionedUsers: message.mentions.users.reduce((map, user) => map.set(user.username, user.id), new Map()),
         resolveUserName: (x) => message.mentions.users.find('id', x).username,
         resolveRoleName: (x) => message.guild.roles.find('id', x).name,
         resolveChannelName: (x) => message.guild.channels.find('id', x).name,
