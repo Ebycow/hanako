@@ -85,7 +85,6 @@ class VoiceChat {
         this.connection = await voiceChannel.join();
         const unsub = exitHook(() => this.connection.disconnect());
         this.connection.once('disconnect', _ => unsub());
-        // TODO: メインチャンネルの設定処理ここにあったけど消してる
     }
 
     /**

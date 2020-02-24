@@ -90,7 +90,7 @@ class DiscordServer {
             return Promise.resolve(result);
         } else {
             // 対応するコマンドがなかったときの処理
-            return Promise.resolve(new CommandResult(ResultType.SUCCESS, null)); // TODO: 握りつぶしでOK？
+            return Promise.resolve(new CommandResult(ResultType.SUCCESS, null));
         }
     }
 

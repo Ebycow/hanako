@@ -104,8 +104,8 @@ client.on('message', async (message) => {
                 await message.reply(result.replyText);
             }
         } catch (err) {
-            console.error(err);
-            return; // TODO: 例外処理これでいい？
+            console.error('index.js: コマンド処理でエラー', err);
+            return;
         }
 
     } else if (server.isMessageToReadOut(message)) {
@@ -129,12 +129,10 @@ client.on('message', async (message) => {
             stream = await AudioAdapterManager.request(...requests);
         } catch (err) {
             if (err === FileAdapterErrors.NOT_FOUND) {
-                console.warn('index.js: リクエストしたファイルが見つからなかった。');
-                console.warn('requests:', requests);
+                console.warn('index.js: リクエストしたファイルが見つからなかった。', requests);
                 return;
             } else {
-                console.error('index.js: 未知のエラー');
-                console.error('error:', err);
+                console.error('index.js: オーディオリクエストでエラー', err);
                 return;
             }
         }

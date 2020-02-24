@@ -33,7 +33,7 @@ class JoinCommand extends Command {
         } else if (context.isJoined()) {
             return new CommandResult(ResultType.REQUIRE_CONFIRM, 'すでに通話チャンネルに参加済みですよ、「さようなら」とリプライすると切断します');
         } else {
-            return new CommandResult(ResultType.REQUIRE_CONFIRM, 'テキストチャンネルに参加してから呼んでね'); // TODO: <-これボイスチャンネルのまちがい？
+            return new CommandResult(ResultType.REQUIRE_CONFIRM, '通話チャンネルに参加してから呼んでね！');
         }
     }
     
