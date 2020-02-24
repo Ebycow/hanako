@@ -2,7 +2,8 @@ const assert = require('assert').strict;
 
 const RequestType = {
     EBYROID: 'ebyroid',
-    SOUND: 'sound'
+    SOUND: 'sound',
+    NO_OP: 'no-op',
 };
 
 class AudioRequest {
@@ -39,6 +40,14 @@ class SoundRequest extends AudioRequest {
 
 }
 
+class NoopRequest extends AudioRequest {
+
+    constructor() {
+        super({ type: RequestType.NO_OP, text: '' });
+    }
+
+}
+
 module.exports = {
-    RequestType, AudioRequest, EbyroidRequest, SoundRequest
+    RequestType, AudioRequest, EbyroidRequest, SoundRequest, NoopRequest
 };

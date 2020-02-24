@@ -5,6 +5,7 @@ const { AudioRequest, RequestType } = require('../models/audiorequest');
 const { AudioStreamAdapter } = require('./interfaces');
 const { EbyroidAdapter } = require('./ebyroid');
 const { SoundAdapter } = require('./sound');
+const { NoopAdapter } = require('./noop');
 
 /**
  * combined-stream2用
@@ -63,6 +64,9 @@ class AudioAdapter {
         if (instances.every(x => x === null)) {
             throw new Error('読み上げには最低でもひとつのオーディオソースが必要です。');
         }
+
+        // NO-OPは常に必要
+        this.adapters.set(RequestType.NO_OP, new NoopAdapter());
     }
 
     /**

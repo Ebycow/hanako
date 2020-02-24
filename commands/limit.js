@@ -33,16 +33,16 @@ class LimitCommand extends ReplaciveCommand {
             
         });
 
+        const MAX_LIMIT = 9999;
         if (args.length > 0) {
             const num = parseInt(args[0], 10);
             if (isNaN(num)) {
                 return new CommandResult(ResultType.INVALID_ARGUMENT, null);
             }
-            // TODO: numは青天井で大丈夫？
-            this.wordLimit = num | 0;       
+            this.wordLimit = (num < 0) ? 0 : ((num < MAX_LIMIT) ? num : MAX_LIMIT);       
         } else {
             // 引数が指定されなかったときの処理
-            this.wordLimit = 9999; // TODO: 数値はこのままで大丈夫？
+            this.wordLimit = MAX_LIMIT;
         }
 
         return new CommandResult(ResultType.SUCCESS, `読み上げる文字数を${this.wordLimit}文字に制限しました :no_entry:`);
@@ -55,9 +55,11 @@ class LimitCommand extends ReplaciveCommand {
      * @override
      */
     replace(context, message) {
-        if(message.length > this.wordLimit) {
-            splitMessage = message.split(/(:.+?:)/);
-            message = "";
+        if (this.wordLimit === 0) {
+            return '';
+        } else if (message.length > this.wordLimit) {
+            const splitMessage = message.split(/(:.+?:)/);
+            message = '';
             for (const str of splitMessage) {
                 message += str;
     
@@ -66,7 +68,7 @@ class LimitCommand extends ReplaciveCommand {
                 }
     
             }
-            message = message.substr(0, this.wordLimit) + "イか略。"; // 発音が良い
+            message = message.substr(0, this.wordLimit) + 'イか略。'; // 発音が良い
         }
 
         return message;

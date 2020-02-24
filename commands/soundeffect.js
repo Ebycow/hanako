@@ -300,9 +300,7 @@ class SoundEffectCommand extends ConverterCommand {
             }
         };
 
-        const arr = this.dictionary.reduce((acc, rep) => acc.map(v => wrap(v, rep)).flat(), array);
-        console.log(array, arr);
-        return arr;
+        return this.dictionary.reduce((acc, rep) => acc.map(v => wrap(v, rep)).flat(), array);
     }
 
     /**

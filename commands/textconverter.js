@@ -1,6 +1,8 @@
 const { MessageContext } = require('../contexts/messagecontext');
-const { AudioRequest, EbyroidRequest } = require('../models/audiorequest');
+const { AudioRequest, EbyroidRequest, NoopRequest } = require('../models/audiorequest');
 const { RequestConverter } = require('./converter');
+
+const silentWordReg = new RegExp('[\s　,\.\?!\^\(\)`:\'"`;\{\}\\[\\]。、，．‥・…]+', 'g');
 
 /**
  * @param {string|AudioRequest} value
@@ -8,7 +10,19 @@ const { RequestConverter } = require('./converter');
  */
 function ebyroidF(value) {
     if (typeof value === 'string') {
-        return new EbyroidRequest(value);
+        if (value.length > 0) {
+            const toRead = value.replace(silentWordReg, '');
+            if (toRead.length === 0) {
+                return new NoopRequest();
+            } else if ((toRead.length / value.length) < 0.51) {
+                // 無音文字が占める割合が50%以上ならすべて削除する
+                return new EbyroidRequest(toRead);
+            } else {
+                return new EbyroidRequest(value);
+            }
+        } else {
+            return new NoopRequest();
+        }
     } else {
         return value;
     }

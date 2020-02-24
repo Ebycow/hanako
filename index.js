@@ -123,6 +123,8 @@ client.on('message', async (message) => {
         // リクエストコンバーターによる変換
         requests = server.createRequests(context, text);
 
+        console.info(requests);
+
         // リクエストの実行
         let stream;
         try {
