@@ -184,7 +184,7 @@ class BlackListCommand extends ConverterCommand {
         let result;
         if (popId >= 0) {
             this.userList.splice(popId, 1);
-            result = new CommandResult(ResultType.SUCCESS, `${this.userList} ごめんね、またおはなししてね :bulb:`);
+            result = new CommandResult(ResultType.SUCCESS, `${this.targetUsername} ごめんね、またおはなししてね :bulb:`);
             await this.saveUserList();
 
         } else {
