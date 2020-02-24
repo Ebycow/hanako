@@ -1,204 +1,156 @@
 require('dotenv').config();
-const fs = require('fs');
 const Discord = require('discord.js');
-const axios = require('axios').default;
 const client = new Discord.Client();
-const exitHook = require('exit-hook');
-const SampleRate = require('node-libsamplerate');
-const emoji = require('node-emoji')
-const Interleaver = require('./transforms/interleaver').Interleaver;
-const StereoByteAdjuster = require('./transforms/byteadjuster').StereoByteAdjuster;
-const WaveFileHeaderTrimmer = require('./transforms/waveheader').WaveFileHeaderTrimmer;
-const DiscordTagReplacer = require('./utils/replacer').DiscordTagReplacer;
-const UrlReplacer = require('./utils/replacer').UrlReplacer;
-
-const TeachCommand = require('./commands/teach').TeachCommand;
-const teachCommand = new TeachCommand();
-const LimitCommand = require('./commands/limit').LimitCommand;
-const limitCommand = new LimitCommand();
-
-let voiceChannelConnection = undefined;
-
-let streamCue = [];
-let playingDispatcher = undefined;
+const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/replacer');
+const { DiscordServer } = require('./models/discordserver');
+const { MessageContext } = require('./contexts/messagecontext');
+const { AudioAdapterManager } = require('./adapters/audioadapter');
+const { FileAdapterManager, FileAdapterErrors } = require('./adapters/fileadapter');
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('message', async (msg) =>
-{
-    if (msg.isMemberMentioned(client.user)　|| msg.content.startsWith("?") ) {
-
-        // VC参加
-        if(msg.content.match('plz')) {
-            if(msg.member.voiceChannel) {
-                // リプライしてきたユーザのボイスチャンネルに参加
-
-                voiceChannelConnection = await msg.member.voiceChannel.join();
-
-                msg.reply(`${msg.channel}に参加したよ、よろしくね`);
-
-                const unsubscribe = exitHook(() => {
-                   voiceChannelConnection.disconnect();
-                });
-                voiceChannelConnection.on('disconnect', (_) => {
-                    unsubscribe();
-                });
-
-            } else if(voiceChannelConnection) {
-                msg.reply('すでに通話チャンネルに参加済みですよ、「さようなら」とリプライすると切断します');
-
-            } else {
-                msg.reply('テキストチャンネルに参加してから呼んでね');
-
-            }
-
-        }
-
-        // VC切断
-        if(msg.content.match('bye')) {
-            if(voiceChannelConnection) {
-                streamCue = [];
-                voiceChannelConnection.disconnect();
-        
-            } else {
-                msg.reply("どこのチャンネルにも参加していないか、エラーが発生しています :sob:");
-            }
-
-        }
-
-        // 成敗
-        if(msg.content.match('seibai')) {
-            if(playingDispatcher){
-                for (const stream of streamCue) {
-                    stream.destroy();
-                }
-                streamCue = [];
-                playingDispatcher.end("seibai")
-                msg.reply("戯け者 余の顔を見忘れたか :knife:");
-
-            } else {
-                msg.reply("安心せい、みねうちにゃ… :knife:");
-
-            }
-
-        }
-        
-        // 文字数制限
-        if(msg.content.match('limit')) {
-            limitCommand.setLimit(msg);
-
-        }
-
-        // 教育
-        if(msg.content.match('teach')) {
-            teachCommand.doTeach(msg);
-
-        }
-
-        // 忘却
-        if(msg.content.match('forget')) {
-            teachCommand.doForget(msg);
-
-        }
-
-        // satomi
-        if(msg.content.match('ask')) {
-            if(Math.random() >= 0.5){
-                msg.reply("はい")
-
-            } else {
-                msg.reply("いいえ")
-
-            }
-
-        }
-
-    }
-
-    console.log(msg.content)
-    if(voiceChannelConnection && !msg.isMemberMentioned(client.user) && !(msg.author === client.user)) {
-
-        let message = msg.content;
-
-        // うにこーど絵文字置換
-        message = emoji.replace(message, (emoji) => `:${emoji.key}:`);
-
-        // URL置換
-        message = UrlReplacer.replace(message);
-
-        // Discordタグ置換
-        message = DiscordTagReplacer.replace(message);
-
-        // 辞書置換
-        message = teachCommand.replace(message);
-
-        // 文字数制限置換
-        message = limitCommand.replace(message);
-
-        console.log(message);
-
-        const response = await axios.get(`http://localhost:4090/`, {
-            responseType: 'stream',
-            params : {
-                text : message
-            }
-        });
-        const sampleRate = parseInt(response.headers['ebyroid-pcm-sample-rate'], 10);
-        const bitDepth = parseInt(response.headers['ebyroid-pcm-bit-depth'], 10);
-        const numChannels = parseInt(response.headers['ebyroid-pcm-number-of-channels'], 10);
-
-        let stream = response.data;
-        if (numChannels == 1) {
-            // 元データがモノラルのとき
-            stream = stream.pipe(new Interleaver());
-        } else {
-            // 元データがステレオのとき
-            stream = stream.pipe(new StereoByteAdjuster());
-        }
-
-        // # SE流す時はこう
-        //
-        // const sampleRate = 44100;
-        // const bitDepth = 16;
-        // stream = fs.createReadStream('syamu.wav').pipe(new WaveFileHeaderTrimmer).pipe(new StereoByteAdjuster);
-
-        const resample = new SampleRate({
-            type: SampleRate.SRC_SINC_MEDIUM_QUALITY,
-            channels: 2,
-            fromRate: sampleRate,
-            fromDepth: bitDepth,
-            toRate: 48000,
-            toDepth: 16
-        });
-        stream = stream.pipe(resample);
-
-        streamCue.push(stream);
-
-        if(playingDispatcher === undefined){
-            playingDispatcher = voiceChannelConnection.playConvertedStream(streamCue.shift(0), { bitrate: 'auto' });
-            playingDispatcher.on('end', value => playNextCue(value));
-
-        }
-
-    }
-    
+AudioAdapterManager.init({
+    ebyroid: {
+        baseUrl: 'http://localhost:4090/',
+    },
 });
 
-function playNextCue(flag) {
-    const stream = streamCue.shift(0)
-    console.log('streamCue', streamCue.length)
-    if (stream !== undefined) {
-        playingDispatcher = voiceChannelConnection.playConvertedStream(stream, { bitrate: 'auto' });
-        playingDispatcher.on('end', value => playNextCue(value));
+FileAdapterManager.init({
+    maxDownloadByteSize: 1000 * 1000 * 2, //2MB
+});
 
-    } else {
-        playingDispatcher = undefined;
+/**
+ * @type {Map<string, DiscordServer>}
+ */
+let servers = new Map();
 
+client.on('message', async (message) => {
+    if (message.author.id === client.user.id) {
+        // 自分のメッセージは無視
+        return;
+    }
+    if (!message.guild) {
+        // DMとかは無視
+        console.info('処理されなかったメッセージ', message);
+        return;
     }
     
-}
+    const key = message.guild.id;
+
+    /** @type {DiscordServer} */
+    let server;
+    
+    if (servers.has(key)) {
+        server = servers.get(key);
+        if (server.isInitializing) {
+            console.info('初期化中なので無視したメッセージ', message);
+            return;
+        }
+        if (!server.isCommandMessage(message) && !server.isMessageToReadOut(message)) {
+            // コマンドじゃない＆読み上げないなら，性能要件のためここで切り上げる
+            // （ここを通過してもawaitが絡むので後々の分岐で蹴られる場合がある）
+            console.info(`pass: ${message.content}`);
+            return;
+        } 
+    } else {
+        server = new DiscordServer(message.guild);
+        servers.set(key, server);
+        try {
+            await server.init();
+        } catch (err) {
+            servers.set(key, null);
+            console.error('初期化失敗', err);
+            return;
+        }
+    }
+
+    const voiceJoin = async () => {
+        await server.vc.join(message.member.voiceChannel);
+        server.mainChannel = message.channel;
+        return `${message.channel}`;
+    }
+
+    const voiceLeave = () => {
+        server.vc.leave();
+        server.mainChannel = null;
+    }
+
+    const context = new MessageContext({
+        isMainChannel: !!(server.mainChannel) && (message.channel.id === server.mainChannel.id),
+        isAuthorInVC: !!(message.member.voiceChannel),
+        isJoined: () => server.vc.isJoined,
+        isSpeaking: () => (server.vc.isStreaming || (server.vc.queueLength > 0)),
+        queueLength: () => server.vc.queueLength,
+        queuePurge: () => server.vc.clearQueue(),
+        voiceJoin, voiceLeave,
+        voiceCancel: (x) => server.vc.killStream(x),
+        authorId : message.author.id,
+        mentionedUsers: message.mentions.users.reduce((map, user) => map.set(user.username, user.id), new Map()),
+        resolveUserName: (x) => message.mentions.users.find('id', x).username,
+        resolveRoleName: (x) => message.guild.roles.find('id', x).name,
+        resolveChannelName: (x) => message.guild.channels.find('id', x).name,
+    });
+
+    // コンテキストが確定した時点で絵文字とタグの一括置換を行う
+    message.content = EmojiReplacer.replace(message.content);
+    message.content = DiscordTagReplacer.replace(context, message.content);
+
+    console.info(message.content);
+
+    if (server.isCommandMessage(message)) {
+        try {
+            const result = await server.handleMessage(context, message);
+            if (result.replyText) {
+                await message.reply(result.replyText);
+            }
+        } catch (err) {
+            console.error('index.js: コマンド処理でエラー', err);
+            return;
+        }
+
+    } else if (server.isMessageToReadOut(message)) {
+
+        let text = message.content;
+
+        // URL置換
+        text = UrlReplacer.replace(text);
+
+        // リプレーサーによる置換
+        text = server.handleReplace(context, text);
+
+        console.info(text);
+
+        // リクエストコンバーターによる変換
+        requests = server.createRequests(context, text);
+
+        console.info(requests);
+
+        // リクエストの実行
+        let stream;
+        try {
+            stream = await AudioAdapterManager.request(...requests);
+        } catch (err) {
+            if (err === FileAdapterErrors.NOT_FOUND) {
+                console.warn('index.js: リクエストしたファイルが見つからなかった。', requests);
+                return;
+            } else {
+                console.error('index.js: オーディオリクエストでエラー', err);
+                return;
+            }
+        }
+
+        // awaitが絡んだのでここではnullの可能性があるよ
+        if (!server.vc.isJoined) {
+            console.info('オーディオリクエスト中にVC切断されてました。', message.guild.name);
+            stream.destroy();
+            return;
+        }
+
+        server.vc.push(stream);
+    }
+});
 
 client.login(process.env.TOKEN);
 
