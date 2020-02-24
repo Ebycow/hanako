@@ -34,7 +34,7 @@ class LeaveCommand extends Command {
             context.voiceLeave();
             return new CommandResult(ResultType.SUCCESS, null);
         } else {
-            return new CommandResult(ResultType.PRECONDITION_FAIL, "どこのチャンネルにも参加していないか、エラーが発生しています :sob:");
+            return new CommandResult(ResultType.REQUIRE_CONFIRM, "どこのチャンネルにも参加していないか、エラーが発生しています :sob:");
         }
     }
 

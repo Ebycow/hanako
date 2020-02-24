@@ -31,9 +31,9 @@ class JoinCommand extends Command {
             const link = await context.voiceJoin();
             return new CommandResult(ResultType.SUCCESS, `${link}に参加したよ、よろしくね`);
         } else if (context.isJoined()) {
-            return new CommandResult(ResultType.PRECONDITION_FAIL, 'すでに通話チャンネルに参加済みですよ、「さようなら」とリプライすると切断します');
+            return new CommandResult(ResultType.REQUIRE_CONFIRM, 'すでに通話チャンネルに参加済みですよ、「さようなら」とリプライすると切断します');
         } else {
-            return new CommandResult(ResultType.PRECONDITION_FAIL, 'テキストチャンネルに参加してから呼んでね'); // TODO: <-これボイスチャンネルのまちがい？
+            return new CommandResult(ResultType.REQUIRE_CONFIRM, 'テキストチャンネルに参加してから呼んでね'); // TODO: <-これボイスチャンネルのまちがい？
         }
     }
     
