@@ -152,5 +152,21 @@ client.on('message', async (message) => {
     }
 });
 
+client.on('voiceStateUpdate', (oldMember, newMember) => {
+    const server = servers.get(newMember.guild.id);
+    if(server !== undefined){
+        if(server.vc.connection !== null){
+            if(server.vc.connection.channel.members.map(member => member.id).length === 1) {
+                console.log("leave")
+                server.vc.leave();
+                server.mainChannel = null;
+            }
+
+         }
+    
+    }
+
+})
+
 client.login(process.env.TOKEN);
 
