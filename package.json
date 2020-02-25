@@ -22,6 +22,7 @@
     "dotenv": "^8.2.0",
     "exit-hook": "^2.2.0",
     "file-type": "^14.1.2",
+    "log4js": "^6.1.2",
     "nedb": "^1.8.0",
     "node-emoji": "^1.10.0",
     "node-libsamplerate": "git+https://github.com/nanokina/node-libsamplerate.git#db268ad2147ca5415f29dd958de144fe49742fd9",
