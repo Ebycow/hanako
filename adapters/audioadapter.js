@@ -76,6 +76,10 @@ class AudioAdapter {
      */
     acceptAudioRequests(requests) {
         assert(requests.length > 0);
+        if (requests.every(r => r.type === RequestType.NO_OP)) {
+            // 純粋なNO-OP配列だったときの特別処理（連結しない）
+            return this.adapters.get(RequestType.NO_OP).requestAudioStream(requests[0]);
+        }
         const promises = requests.map(r => this.adapters.get(r.type).requestAudioStream(r));
         return Promise.all(promises).then(streams => atail(sconv(streams)).reduce(cs2reducer, CombinedStream.create()));
     }
