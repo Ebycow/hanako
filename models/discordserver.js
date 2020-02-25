@@ -19,7 +19,7 @@ class DiscordServer {
          * @type {string}
          * @readonly
          */
-        this.commandKey = '>';
+        this.commandKey = process.env.PREFIX_KEY ? process.env.PREFIX_KEY : '>';
 
         /**
          * @type {discord.TextChannel}
