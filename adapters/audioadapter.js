@@ -131,12 +131,11 @@ class AudioAdapterManager {
      */
     static request(...reqs) {
         if (!this.uses.ebyroid) {
-            console.warn('Ebyroidへのリクエストが要求されましたが、Ebyroid利用設定がありません。');
-            reqs = reqs.filter(req => req.type !== RequestType.EBYROID);
-        }
-        if (!this.uses.sound) {
-            console.warn('SEファイルへのリクエストが要求されましたが、SE利用設定がありません。');
-            reqs = reqs.filter(req => req.type !== RequestType.SOUND);
+            const newReqs = reqs.filter(req => req.type !== RequestType.EBYROID);
+            if (newReqs.length !== reqs.length) {
+                console.warn('Ebyroidへのリクエストが要求されましたが、Ebyroid利用設定がありません。');
+                reqs = newReqs;
+            }
         }
         if (reqs.length === 0) {
             return Promise.reject('空のリクエスト');
