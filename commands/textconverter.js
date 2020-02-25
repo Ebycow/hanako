@@ -2,7 +2,31 @@ const { MessageContext } = require('../contexts/messagecontext');
 const { AudioRequest, EbyroidRequest, NoopRequest } = require('../models/audiorequest');
 const { RequestConverter } = require('./converter');
 
-const silentWordReg = new RegExp('[\s　,\.\?!\^\(\)`:\'"`;\{\}\\[\\]。、，．‥・…！？]+', 'g');
+const silentWordReg = new RegExp('[\s　,\.\?\!\^\(\)`:\'"`;\{\}\\[\\]_。、，．‥・…！？＿]+', 'g');
+
+const brokenWordMap = (() => {
+    const map = new Map();
+    map.set('=', 'イコール');
+    map.set('-', 'マイナス');
+    map.set('\\*', 'アスタリスク');
+    map.set('%', 'パーセント');
+    map.set('@', 'アットマーク');
+    map.set('#', 'シャープ');
+    map.set('\\$', 'ドル');
+    map.set('<', '小なり');
+    map.set('>', '大なり');
+    map.set('/', 'スラッシュ');
+    map.set('\\\\', 'バクスラ');
+    map.set('\\(', 'かっこ');
+    map.set('\\)', '');
+    map.set('（', 'かっこ');
+    map.set('）', '');
+    const rMap = new Map();
+    for (const [k, v] of map) {
+        rMap.set(new RegExp(k, 'g'), v);
+    }
+    return rMap;
+})();
 
 /**
  * @param {string|AudioRequest} value
@@ -11,6 +35,9 @@ const silentWordReg = new RegExp('[\s　,\.\?!\^\(\)`:\'"`;\{\}\\[\\]。、，�
 function ebyroidF(value) {
     if (typeof value === 'string') {
         if (value.length > 0) {
+            for (const [k, v] of brokenWordMap) {
+                value = value.replace(k, v);
+            }
             const toRead = value.replace(silentWordReg, '');
             if (toRead.length === 0) {
                 return new NoopRequest();

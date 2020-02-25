@@ -76,6 +76,10 @@ class AudioAdapter {
      */
     acceptAudioRequests(requests) {
         assert(requests.length > 0);
+        if (requests.every(r => r.type === RequestType.NO_OP)) {
+            // 純粋なNO-OP配列だったときの特別処理（連結しない）
+            return this.adapters.get(RequestType.NO_OP).requestAudioStream(requests[0]);
+        }
         const promises = requests.map(r => this.adapters.get(r.type).requestAudioStream(r));
         return Promise.all(promises).then(streams => atail(sconv(streams)).reduce(cs2reducer, CombinedStream.create()));
     }
@@ -127,12 +131,11 @@ class AudioAdapterManager {
      */
     static request(...reqs) {
         if (!this.uses.ebyroid) {
-            console.warn('Ebyroidへのリクエストが要求されましたが、Ebyroid利用設定がありません。');
-            reqs = reqs.filter(req => req.type !== RequestType.EBYROID);
-        }
-        if (!this.uses.sound) {
-            console.warn('SEファイルへのリクエストが要求されましたが、SE利用設定がありません。');
-            reqs = reqs.filter(req => req.type !== RequestType.SOUND);
+            const newReqs = reqs.filter(req => req.type !== RequestType.EBYROID);
+            if (newReqs.length !== reqs.length) {
+                console.warn('Ebyroidへのリクエストが要求されましたが、Ebyroid利用設定がありません。');
+                reqs = newReqs;
+            }
         }
         if (reqs.length === 0) {
             return Promise.reject('空のリクエスト');
