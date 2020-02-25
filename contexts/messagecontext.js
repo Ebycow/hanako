@@ -20,6 +20,8 @@ class MessageContext {
      * @param {function():Promise<string>} options.voiceJoin
      * @param {function():void} options.voiceLeave
      * @param {function(string):Promise<void>} options.voiceCancel
+     * @param {string} options.authorId
+     * @param {Map<string, string>} options.mentionedUsers
      * @param {function(string):string} options.resolveRoleName
      * @param {function(string):string} options.resolveUserName
      * @param {function(string):string} options.resolveChannelName
