@@ -1,12 +1,9 @@
-const assert = require('assert').strict;
 const { Readable } = require('stream');
 const discord = require('discord.js');
 const exitHook = require('exit-hook');
 
 class VoiceChat {
-
     constructor() {
-
         /**
          * @type {Readable[]}
          * @private
@@ -24,7 +21,6 @@ class VoiceChat {
          * @private
          */
         this.dispatcher = null;
-
     }
 
     /**
@@ -58,11 +54,12 @@ class VoiceChat {
 
     /**
      * 現在再生中の音声を強制的に中止します。
-     * @param {string?} 中止する理由。
+     *
+     * @param {string?} reason 中止する理由。
      * @returns {Promise<void>}
      */
     killStream(reason) {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             if (this.dispatcher !== null) {
                 this.dispatcher.end(reason);
                 setImmediate(() => resolve());
@@ -74,6 +71,7 @@ class VoiceChat {
 
     /**
      * VCに参加します。
+     *
      * @param {discord.VoiceChannel} voiceChannel 参加するチャンネル。
      * @returns {Promise<void>}
      */
@@ -100,6 +98,7 @@ class VoiceChat {
 
     /**
      * 音声ストリームを待ち行列に追加します。
+     *
      * @param {Readable} stream 音声ストリーム。
      */
     push(stream) {
@@ -127,9 +126,8 @@ class VoiceChat {
             this.dispatcher = null;
         }
     }
-
 }
 
 module.exports = {
-    VoiceChat
+    VoiceChat,
 };

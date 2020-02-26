@@ -1,0 +1,68 @@
+{
+  "env": {
+    "node": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:jsdoc/recommended",
+    "plugin:node/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2020
+  },
+  "rules": {
+    "no-unused-vars": [
+      "error",
+      {
+        "vars": "all",
+        "args": "none",
+        "ignoreRestSiblings": false
+      }
+    ],
+    "jsdoc/require-jsdoc": "off",
+    "jsdoc/require-param-description": "off",
+    "jsdoc/require-returns-description": "off",
+    "jsdoc/require-property-description": "off",
+    "node/exports-style": [
+      "error",
+      "module.exports"
+    ],
+    "node/file-extension-in-import": [
+      "error",
+      "always"
+    ],
+    "node/prefer-global/buffer": [
+      "error",
+      "always"
+    ],
+    "node/prefer-global/console": [
+      "error",
+      "always"
+    ],
+    "node/prefer-global/process": [
+      "error",
+      "always"
+    ],
+    "node/prefer-global/url-search-params": [
+      "error",
+      "always"
+    ],
+    "node/prefer-global/url": [
+      "error",
+      "always"
+    ],
+    "node/prefer-promises/dns": "error",
+    "node/prefer-promises/fs": "off",
+    "prettier/prettier": [
+      "error",
+      {
+        "tabWidth": 4,
+        "printWidth": 120,
+        "singleQuote": true,
+        "trailingComma": "es5",
+        "endOfLine": "lf"
+      }
+    ]
+  }
+}

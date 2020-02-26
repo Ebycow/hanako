@@ -17,41 +17,38 @@ const FileAdapterErrors = {
  * セグメント(Discordサーバー)ごとのファイル読み書き用アダプタ
  */
 class FileAdapter {
-    
     constructor() {
-        /**
-         * @type {Nedb}
-         */
         this.db = new DataStore({ filename: './db/files.db', autoload: true });
         this.db.persistence.setAutocompactionInterval(86400000);
     }
 
     /**
-     * @param {string} segmentKey 
+     * @param {string} segmentKey
      * @param {string} descriptiveKey
-     * @param {string} suffix 
-     * @param {Readable} dataStream 
+     * @param {string} suffix
+     * @param {Readable} dataStream
      * @throws {FileAdapterErrors.ALREADY_EXISTS}
-     * @returns {Promise<void>} 
+     * @returns {Promise<void>}
      */
     saveFile(segmentKey, descriptiveKey, suffix, dataStream) {
         const fileName = uuid();
         const dirPath = `./files/${segmentKey}/${suffix}`;
         const filePath = `./files/${segmentKey}/${suffix}/${fileName}.${suffix}`;
- 
+
         return new Promise((resolve, reject) => {
-                fs.mkdir(dirPath, { recursive: true }, (err) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve();
-                    }
-                });
-            }).then(() => new Promise((resolve, reject) => {
+            fs.mkdir(dirPath, { recursive: true }, err => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        }).then(() =>
+            new Promise((resolve, reject) => {
                 const query = {
                     segment: segmentKey,
                     descriptive: descriptiveKey,
-                    suffix: suffix
+                    suffix: suffix,
                 };
                 this.db.find(query, (err, docs) => {
                     if (err) {
@@ -62,32 +59,38 @@ class FileAdapter {
                         resolve();
                     }
                 });
-            }).then(() => new Promise((resolve, reject) => {
-                const writable = fs.createWriteStream(filePath);
-                dataStream.pipe(writable);
-                writable.on('finish', () => resolve());
-                writable.on('error', (err) => reject(err));
-            }).then(() => new Promise((resolve, reject) => {
-                const newRecord = {
-                    segment: segmentKey,
-                    descriptive: descriptiveKey,
-                    suffix: suffix,
-                    file: fileName
-                };
-                this.db.insert(newRecord, (err, _) => {
-                    if (err) {
-                        reject(err)
-                    } else {
-                        resolve();
-                    }
-                });
-            }))));
+            }).then(() =>
+                new Promise((resolve, reject) => {
+                    const writable = fs.createWriteStream(filePath);
+                    dataStream.pipe(writable);
+                    writable.on('finish', () => resolve());
+                    writable.on('error', err => reject(err));
+                }).then(
+                    () =>
+                        new Promise((resolve, reject) => {
+                            const newRecord = {
+                                segment: segmentKey,
+                                descriptive: descriptiveKey,
+                                suffix: suffix,
+                                file: fileName,
+                            };
+                            this.db.insert(newRecord, err => {
+                                if (err) {
+                                    reject(err);
+                                } else {
+                                    resolve();
+                                }
+                            });
+                        })
+                )
+            )
+        );
     }
 
     /**
-     * @param {string} segmentKey 
-     * @param {string} descriptiveKey 
-     * @param {string} suffix 
+     * @param {string} segmentKey
+     * @param {string} descriptiveKey
+     * @param {string} suffix
      * @throws {FileAdapterErrors.NOT_FOUND}
      * @returns {Promise<Readable>}
      */
@@ -96,7 +99,7 @@ class FileAdapter {
             const query = {
                 segment: segmentKey,
                 descriptive: descriptiveKey,
-                suffix: suffix
+                suffix: suffix,
             };
             this.db.find(query, (err, docs) => {
                 if (err) {
@@ -111,26 +114,29 @@ class FileAdapter {
                     resolve(docs[0].file);
                 }
             });
-        }).then((fileName) => new Promise((resolve, reject) => {
-            const filePath = `./files/${segmentKey}/${suffix}/${fileName}.${suffix}`;
-            const readable = fs.createReadStream(filePath);
-            readable.on('ready', _ => resolve(readable));
-            readable.on('error', err => {
-                if (err.code === 'ENOENT') {
-                    console.warn('整合性警告：レコード有り対象ファイル無し');
-                    console.warn('error:', err);
-                    reject(FileAdapterErrors.NOT_FOUND);
-                } else {
-                    reject(err);
-                }
-            });
-        }));
+        }).then(
+            fileName =>
+                new Promise((resolve, reject) => {
+                    const filePath = `./files/${segmentKey}/${suffix}/${fileName}.${suffix}`;
+                    const readable = fs.createReadStream(filePath);
+                    readable.on('ready', () => resolve(readable));
+                    readable.on('error', err => {
+                        if (err.code === 'ENOENT') {
+                            console.warn('整合性警告：レコード有り対象ファイル無し');
+                            console.warn('error:', err);
+                            reject(FileAdapterErrors.NOT_FOUND);
+                        } else {
+                            reject(err);
+                        }
+                    });
+                })
+        );
     }
 
     /**
-     * @param {string} segmentKey 
-     * @param {string} descriptiveKey 
-     * @param {string} suffix 
+     * @param {string} segmentKey
+     * @param {string} descriptiveKey
+     * @param {string} suffix
      * @throws {FileAdapterErrors.NOT_FOUND}
      * @returns {Promise<Readable>}
      */
@@ -138,7 +144,7 @@ class FileAdapter {
         const query = {
             segment: segmentKey,
             descriptive: descriptiveKey,
-            suffix: suffix
+            suffix: suffix,
         };
 
         return new Promise((resolve, reject) => {
@@ -156,64 +162,58 @@ class FileAdapter {
                     resolve(docs);
                 }
             });
-        }).then((docs) => {
-            const remove = async (doc) => {
-                const fileName = doc.file;
-                const filePath = `./files/${segmentKey}/${suffix}/${fileName}.${suffix}`;
-                return new Promise((resolve, reject) => fs.unlink(filePath, err => {
-                    if (err) {
-                        if (err.code === 'ENOENT') {
-                            console.warn('整合性警告：レコード有り対象ファイル無し');
-                            console.warn('error:', err);
-                            console.warn('Delete要求なのでこのまま続行します。');
-                            resolve();
-                        } else {
-                            reject(err);
-                        }
-                    } else {
-                        resolve();
-                    }
-                }));
-            };
-            return docs.reduce((promise, doc) => promise.then(_ => remove(doc)), Promise.resolve());
-        }).then(_ => new Promise((resolve, reject) => {
-            this.db.remove(query, (err, numRemoved) => {
-                if (err) {
-                    reject(err);
-                } else if (numRemoved === 0) {
-                    console.warn('整合性警告：レコード削除数０');
-                    resolve();
-                } else {
-                    resolve();
-                }
-            });
-        }));
+        })
+            .then(docs => {
+                const remove = async doc => {
+                    const fileName = doc.file;
+                    const filePath = `./files/${segmentKey}/${suffix}/${fileName}.${suffix}`;
+                    return new Promise((resolve, reject) =>
+                        fs.unlink(filePath, err => {
+                            if (err) {
+                                if (err.code === 'ENOENT') {
+                                    console.warn('整合性警告：レコード有り対象ファイル無し');
+                                    console.warn('error:', err);
+                                    console.warn('Delete要求なのでこのまま続行します。');
+                                    resolve();
+                                } else {
+                                    reject(err);
+                                }
+                            } else {
+                                resolve();
+                            }
+                        })
+                    );
+                };
+                return docs.reduce((promise, doc) => promise.then(() => remove(doc)), Promise.resolve());
+            })
+            .then(
+                () =>
+                    new Promise((resolve, reject) => {
+                        this.db.remove(query, (err, numRemoved) => {
+                            if (err) {
+                                reject(err);
+                            } else if (numRemoved === 0) {
+                                console.warn('整合性警告：レコード削除数０');
+                                resolve();
+                            } else {
+                                resolve();
+                            }
+                        });
+                    })
+            );
     }
-
 }
 
-const FFMPEG_ARGUMENTS = [
-    '-analyzeduration', '0',
-    '-loglevel', '0',
-    '-f', 's16le',
-    '-ar', '48000',
-    '-ac', '2',
-];
+const FFMPEG_ARGUMENTS = ['-analyzeduration', '0', '-loglevel', '0', '-f', 's16le', '-ar', '48000', '-ac', '2'];
 
 /**
  * ファイル読み書きマネージャ
  */
 class FileAdapterManager {
-
-    /**
-     * @type {FileAdapter}
-     * @private
-     */
-    static adapter;
-
     /**
      * 初期化処理
-     * @param {Object} options
+     *
+     * @param {object} options
      * @param {number} [options.maxDownloadByteSize=1000000]
      */
     static init(options) {
@@ -229,9 +229,10 @@ class FileAdapterManager {
 
     /**
      * 音声ファイル保存
-     * @param {string} segmentKey 
-     * @param {string} descriptiveKey 
-     * @param {string} url 
+     *
+     * @param {string} segmentKey
+     * @param {string} descriptiveKey
+     * @param {string} url
      * @returns {Promise<void>}
      * @throws {FileAdapterErrors.ALREADY_EXISTS} 同じキーですでにファイルあり
      * @throws {FileAdapterErrors.DATA_TOO_LARGE} maxDownloadByteSize超過
@@ -241,8 +242,11 @@ class FileAdapterManager {
     static async saveSoundFile(segmentKey, descriptiveKey, url) {
         let response;
         try {
-            response = await axios.get(url, { responseType: 'arraybuffer', maxContentLength: this.maxDownloadByteSize });
-        } catch(err) {
+            response = await axios.get(url, {
+                responseType: 'arraybuffer',
+                maxContentLength: this.maxDownloadByteSize,
+            });
+        } catch (err) {
             // AXIOS null やめて
             // cf. https://github.com/axios/axios/blob/v0.19.1/lib/adapters/http.js#L219-L220
             if (err.message.startsWith('maxContentLength size of ')) {
@@ -265,8 +269,9 @@ class FileAdapterManager {
 
     /**
      * 音声ファイルから音声ストリームを取得
-     * @param {string} segmentKey 
-     * @param {string} descriptiveKey 
+     *
+     * @param {string} segmentKey
+     * @param {string} descriptiveKey
      * @returns {Promise<Readable>}
      * @throws {FileAdapterErrors.NOT_FOUND}
      */
@@ -277,7 +282,8 @@ class FileAdapterManager {
 
     /**
      * 音声ファイル削除
-     * @param {string} segmentKey 
+     *
+     * @param {string} segmentKey
      * @param {string} descriptiveKey
      * @returns {Promise<void>}
      * @throws {FileAdapterErrors.NOT_FOUND}
@@ -285,9 +291,15 @@ class FileAdapterManager {
     static async deleteSoundFile(segmentKey, descriptiveKey) {
         await this.adapter.deleteFile(segmentKey, descriptiveKey, 'pcm');
     }
-
 }
 
+/**
+ * @type {FileAdapter}
+ * @private
+ */
+FileAdapterManager.adapter = null;
+
 module.exports = {
-    FileAdapterManager, FileAdapterErrors
+    FileAdapterManager,
+    FileAdapterErrors,
 };

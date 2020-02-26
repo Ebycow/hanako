@@ -10,13 +10,12 @@ const { AudioStreamAdapter } = require('./interfaces');
  * Ebyroidから音声ストリームを取得するアダプタ
  */
 class EbyroidAdapter extends AudioStreamAdapter {
-
     /**
-     * @param {string} baseUrl 
+     * @param {string} baseUrl
      */
     constructor(baseUrl) {
         super();
-        
+
         /**
          * @type {string}
          * @private
@@ -30,7 +29,7 @@ class EbyroidAdapter extends AudioStreamAdapter {
      * @override
      */
     async requestAudioStream(request) {
-        const response = await axios.get(this.baseUrl, { responseType: 'stream', params : { text: request.text } });
+        const response = await axios.get(this.baseUrl, { responseType: 'stream', params: { text: request.text } });
 
         const sampleRate = parseInt(response.headers['ebyroid-pcm-sample-rate'], 10);
         const bitDepth = parseInt(response.headers['ebyroid-pcm-bit-depth'], 10);
@@ -52,14 +51,13 @@ class EbyroidAdapter extends AudioStreamAdapter {
             fromRate: sampleRate,
             fromDepth: bitDepth,
             toRate: 48000,
-            toDepth: 16
+            toDepth: 16,
         });
         stream = stream.pipe(resample);
         return stream;
     }
-
 }
 
 module.exports = {
-    EbyroidAdapter
+    EbyroidAdapter,
 };

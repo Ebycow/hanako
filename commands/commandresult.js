@@ -3,13 +3,11 @@
  * 現在は返信メッセージのみですが、今後コマンドが増えた場合の拡張の余地を残します。
  */
 class CommandResult {
-
     /**
      * @param {string} resultType
-     * @param {string?} replyText 
+     * @param {string?} replyText
      */
     constructor(resultType, replyText) {
-        
         /**
          * @type {string}
          * @readonly
@@ -22,7 +20,6 @@ class CommandResult {
          */
         this.replyText = replyText ? replyText : null;
     }
-
 }
 
 const ResultType = {
@@ -32,9 +29,9 @@ const ResultType = {
     REQUIRE_CONFIRM: 'error require confirm',
     REQUIRE_JOIN: 'error require channel join',
     NOT_FOUND: 'error not found',
-    
 };
 
 module.exports = {
-    CommandResult, ResultType
+    CommandResult,
+    ResultType,
 };

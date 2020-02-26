@@ -1,11 +1,9 @@
 const { Transform } = require('stream');
 
 class Interleaver extends Transform {
-
     constructor(options) {
         super(Object.assign({}, options, { objectMode: false }));
         this.fragments = [];
-
     }
 
     _transform(_buffer, _, done) {
@@ -14,7 +12,7 @@ class Interleaver extends Transform {
             const uint8value = this.fragments.pop();
             const uint8array = new Uint8Array([uint8value]);
             const newbuffer = Buffer.concat([uint8array, buffer], uint8array.length + buffer.length);
-            buffer = newbuffer
+            buffer = newbuffer;
         }
 
         const hasFragment = !!(buffer.byteLength & 1);
@@ -42,9 +40,7 @@ class Interleaver extends Transform {
         const result = Buffer.from(dest.buffer);
         this.push(result);
         done();
-
     }
-
 }
 
 module.exports = {

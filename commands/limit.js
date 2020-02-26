@@ -4,7 +4,6 @@ const { ReplaciveCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
 
 class LimitCommand extends ReplaciveCommand {
-
     constructor() {
         super();
         /**
@@ -18,19 +17,18 @@ class LimitCommand extends ReplaciveCommand {
      * @param {MessageContext} context
      * @param {string} name
      * @param {string[]} args
-     * @returns {CommandResult} 
+     * @returns {CommandResult}
      * @override
      */
     process(context, name, args) {
         assert(() => {
             for (const cmdName of CommandNames.LIMIT) {
-                if(name === cmdName){
+                if (name === cmdName) {
                     return true;
                 }
             }
 
             return false;
-            
         });
 
         const MAX_LIMIT = 9999;
@@ -39,18 +37,21 @@ class LimitCommand extends ReplaciveCommand {
             if (isNaN(num)) {
                 return new CommandResult(ResultType.INVALID_ARGUMENT, null);
             }
-            this.wordLimit = (num < 0) ? 0 : ((num < MAX_LIMIT) ? num : MAX_LIMIT);       
+            this.wordLimit = num < 0 ? 0 : num < MAX_LIMIT ? num : MAX_LIMIT;
         } else {
             // 引数が指定されなかったときの処理
             this.wordLimit = MAX_LIMIT;
         }
 
-        return new CommandResult(ResultType.SUCCESS, `読み上げる文字数を${this.wordLimit}文字に制限しました :no_entry:`);
+        return new CommandResult(
+            ResultType.SUCCESS,
+            `読み上げる文字数を${this.wordLimit}文字に制限しました :no_entry:`
+        );
     }
 
     /**
-     * @param {MessageContext} context 
-     * @param {string} message 
+     * @param {MessageContext} context
+     * @param {string} message
      * @returns {string}
      * @override
      */
@@ -62,11 +63,10 @@ class LimitCommand extends ReplaciveCommand {
             message = '';
             for (const str of splitMessage) {
                 message += str;
-    
-                if((message + str).length >= this.wordLimit){
+
+                if ((message + str).length >= this.wordLimit) {
                     break;
                 }
-    
             }
             message = message.substr(0, this.wordLimit) + 'イか略。'; // 発音が良い
         }
@@ -78,12 +78,11 @@ class LimitCommand extends ReplaciveCommand {
      * @returns {number}
      * @override
      */
-    replacePriority() { 
-        return 0xFFFF;
+    replacePriority() {
+        return 0xffff;
     }
-
 }
 
 module.exports = {
-    LimitCommand
+    LimitCommand,
 };

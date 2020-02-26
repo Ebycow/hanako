@@ -8,7 +8,7 @@ const { AudioAdapterManager } = require('./adapters/audioadapter');
 const { FileAdapterManager, FileAdapterErrors } = require('./adapters/fileadapter');
 
 client.on('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
+    console.log(`Logged in as ${client.user.tag}!`);
 });
 
 AudioAdapterManager.init({
@@ -26,7 +26,7 @@ FileAdapterManager.init({
  */
 let servers = new Map();
 
-client.on('message', async (message) => {
+client.on('message', async message => {
     if (message.author.id === client.user.id) {
         // 自分のメッセージは無視
         return;
@@ -36,12 +36,12 @@ client.on('message', async (message) => {
         console.info('処理されなかったメッセージ', message);
         return;
     }
-    
+
     const key = message.guild.id;
 
     /** @type {DiscordServer} */
     let server;
-    
+
     if (servers.has(key)) {
         server = servers.get(key);
         if (server.isInitializing) {
@@ -53,7 +53,7 @@ client.on('message', async (message) => {
             // （ここを通過してもawaitが絡むので後々の分岐で蹴られる場合がある）
             console.info(`pass: ${message.content}`);
             return;
-        } 
+        }
     } else {
         server = new DiscordServer(message.guild);
         servers.set(key, server);
@@ -70,27 +70,28 @@ client.on('message', async (message) => {
         await server.vc.join(message.member.voiceChannel);
         server.mainChannel = message.channel;
         return `${message.channel}`;
-    }
+    };
 
     const voiceLeave = () => {
         server.vc.leave();
         server.mainChannel = null;
-    }
+    };
 
     const context = new MessageContext({
-        isMainChannel: !!(server.mainChannel) && (message.channel.id === server.mainChannel.id),
-        isAuthorInVC: !!(message.member.voiceChannel),
+        isMainChannel: !!server.mainChannel && message.channel.id === server.mainChannel.id,
+        isAuthorInVC: !!message.member.voiceChannel,
         isJoined: () => server.vc.isJoined,
-        isSpeaking: () => (server.vc.isStreaming || (server.vc.queueLength > 0)),
+        isSpeaking: () => server.vc.isStreaming || server.vc.queueLength > 0,
         queueLength: () => server.vc.queueLength,
         queuePurge: () => server.vc.clearQueue(),
-        voiceJoin, voiceLeave,
-        voiceCancel: (x) => server.vc.killStream(x),
-        authorId : message.author.id,
+        voiceJoin,
+        voiceLeave,
+        voiceCancel: x => server.vc.killStream(x),
+        authorId: message.author.id,
         mentionedUsers: message.mentions.users.reduce((map, user) => map.set(user.username, user.id), new Map()),
-        resolveUserName: (x) => message.mentions.users.find('id', x).username,
-        resolveRoleName: (x) => message.guild.roles.find('id', x).name,
-        resolveChannelName: (x) => message.guild.channels.find('id', x).name,
+        resolveUserName: x => message.mentions.users.find('id', x).username,
+        resolveRoleName: x => message.guild.roles.find('id', x).name,
+        resolveChannelName: x => message.guild.channels.find('id', x).name,
     });
 
     // コンテキストが確定した時点で絵文字とタグの一括置換を行う
@@ -109,9 +110,7 @@ client.on('message', async (message) => {
             console.error('index.js: コマンド処理でエラー', err);
             return;
         }
-
     } else if (server.isMessageToReadOut(message)) {
-
         let text = message.content;
 
         // URL置換
@@ -123,7 +122,7 @@ client.on('message', async (message) => {
         console.info(text);
 
         // リクエストコンバーターによる変換
-        requests = server.createRequests(context, text);
+        const requests = server.createRequests(context, text);
 
         console.info(requests);
 
@@ -154,19 +153,15 @@ client.on('message', async (message) => {
 
 client.on('voiceStateUpdate', (oldMember, newMember) => {
     const server = servers.get(newMember.guild.id);
-    if(server !== undefined){
-        if(server.vc.connection !== null){
-            if(server.vc.connection.channel.members.map(member => member.id).length === 1) {
-                console.log("leave")
+    if (server !== undefined) {
+        if (server.vc.connection !== null) {
+            if (server.vc.connection.channel.members.map(member => member.id).length === 1) {
+                console.log('leave');
                 server.vc.leave();
                 server.mainChannel = null;
             }
-
-         }
-    
+        }
     }
-
-})
+});
 
 client.login(process.env.TOKEN);
-
