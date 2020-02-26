@@ -1,15 +1,17 @@
 const assert = require('assert').strict;
-const { Readable, Writable } = require('stream');
+const { Readable } = require('stream');
 const CombinedStream = require('combined-stream2');
 const { AudioRequest, RequestType } = require('../models/audiorequest');
 const { AudioStreamAdapter } = require('./interfaces');
 const { EbyroidAdapter } = require('./ebyroid');
 const { SoundAdapter } = require('./sound');
 const { NoopAdapter } = require('./noop');
+const { FileAdapterErrors } = require('./fileadapter');
 
 /**
  * combined-stream2用
- * @param {CombinedStream} cs2 
+ *
+ * @param {CombinedStream} cs2
  * @param {Readable} stream
  * @returns {CombinedStream}
  */
@@ -19,7 +21,7 @@ function cs2reducer(cs2, stream) {
 }
 
 // FIXME 並列複数Hz問題が解決したらいらなくなる処理
-const sconv_size = 4 * 0xFF;
+const sconv_size = 4 * 0xff;
 function sconv(streams) {
     const arr = [];
     const len = streams.length * 2 - 1;
@@ -48,7 +50,7 @@ function clean(results) {
             // 活性な（生まれたてでI/O多発）のパイプに.destroy()を使う時
             // closeがパイプ上流に行き渡ってからじゃないと登録済みの書き込みイベントが次のティックで着火して死ぬ
             // なんじゃそらふざけてんのか
-            stream.emit('close');    
+            stream.emit('close');
             setImmediate(() => {
                 stream.destroy();
                 console.info('ストリームリークを回避');
@@ -58,28 +60,27 @@ function clean(results) {
     }
     const err = results.find(r => r.reason).reason;
     const ps = results.filter(r => r.value).map(r => _clean(r.value));
-    return Promise.all(ps).then(_ => Promise.reject(err));
+    return Promise.all(ps).then(() => Promise.reject(err));
 }
 
 /**
  * 音声・サウンドリクエスト用アダプタ
  */
 class AudioAdapter {
-
     /**
-     * @param {Object} adapters
+     * @param {object} adapters
      * @param {AudioStreamAdapter?} adapters.ebyroid
-     * @param {AudioStreamAdapter?} adapters.sound 
+     * @param {AudioStreamAdapter?} adapters.sound
      */
     constructor(adapters) {
         /**
-         * @type {Map<string, AudioStreamAdapter}
+         * @type {Map<string, AudioStreamAdapter>}
          * @private
          */
         this.adapters = new Map();
         this.adapters.set(RequestType.EBYROID, adapters.ebyroid || null);
         this.adapters.set(RequestType.SOUND, adapters.sound || null);
-        
+
         const instances = Array.from(this.adapters.values());
         if (instances.every(x => x === null)) {
             throw new Error('読み上げには最低でもひとつのオーディオソースが必要です。');
@@ -101,34 +102,23 @@ class AudioAdapter {
             return this.adapters.get(RequestType.NO_OP).requestAudioStream(requests[0]);
         }
         const promises = requests.map(r => this.adapters.get(r.type).requestAudioStream(r));
-        const all = Promise.allSettled(promises).then(rs => rs.every(r => r.value) ? rs.map(r => r.value) : clean(rs));
+        const all = Promise.allSettled(promises).then(rs =>
+            rs.every(r => r.value) ? rs.map(r => r.value) : clean(rs)
+        );
         return all.then(streams => atail(sconv(streams)).reduce(cs2reducer, CombinedStream.create()));
     }
-
 }
 
 /**
  * 音声・サウンドリクエストマネージャ
  */
 class AudioAdapterManager {
-    
-    /**
-     * @type {AudioAdapter}
-     */
-    static adapter;
-
-    /**
-     * @namespace
-     * @prop {boolean} ebyroid
-     * @prop {boolean} sound
-     */
-    static uses = { ebyroid: false, sound: false };
-
     /**
      * 初期化処理
-     * @param {Object} options
-     * @param {Object?} options.ebyroid
-     * @param {string}  options.ebyroid.baseUrl 
+     *
+     * @param {object} options
+     * @param {?object} options.ebyroid
+     * @param {string}  options.ebyroid.baseUrl
      */
     static init(options) {
         const adapters = {};
@@ -140,12 +130,13 @@ class AudioAdapterManager {
 
         adapters.sound = new SoundAdapter();
         this.uses.sound = true;
-        
+
         this.adapter = new AudioAdapter(adapters);
     }
 
     /**
      * リクエストを連結して単一の音声ストリームを取得
+     *
      * @param  {...AudioRequest} reqs
      * @returns {Promise<Readable>}
      * @throws {FileAdapterErrors.NOT_FOUND}
@@ -163,9 +154,20 @@ class AudioAdapterManager {
         }
         return this.adapter.acceptAudioRequests(reqs);
     }
-
 }
 
+/**
+ * @type {AudioAdapter}
+ */
+AudioAdapterManager.adapter = null;
+
+/**
+ * @namespace
+ * @property {boolean} ebyroid
+ * @property {boolean} sound
+ */
+AudioAdapterManager.uses = { ebyroid: false, sound: false };
+
 module.exports = {
-    AudioAdapterManager
+    AudioAdapterManager,
 };

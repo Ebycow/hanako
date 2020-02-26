@@ -1,11 +1,9 @@
 const { Transform } = require('stream');
 
 class StereoByteAdjuster extends Transform {
-
     constructor(options) {
         super(Object.assign({}, options, { objectMode: false }));
         this.fragments = [];
-
     }
 
     _transform(_buffer, _, done) {
@@ -14,7 +12,7 @@ class StereoByteAdjuster extends Transform {
             const uint8array = new Uint8Array(this.fragments);
             this.fragments = [];
             const newbuffer = Buffer.concat([uint8array, buffer], uint8array.length + buffer.length);
-            buffer = newbuffer
+            buffer = newbuffer;
         }
 
         const numFragments = buffer.byteLength & 3;
@@ -31,9 +29,7 @@ class StereoByteAdjuster extends Transform {
         console.debug(`adjust: passing ${buffer.byteLength} bytes ...`);
         this.push(buffer);
         done();
-
     }
-
 }
 
 module.exports = {

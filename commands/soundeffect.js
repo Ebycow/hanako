@@ -2,7 +2,9 @@ const Datastore = require('nedb');
 const table = require('text-table');
 const prettyBytes = require('pretty-bytes');
 const { MessageContext } = require('../contexts/messagecontext');
-const { ConverterCommand, CommandNames } = require('./command');
+const { Initable } = require('./initable');
+const { Converter } = require('./converter');
+const { Command, ConverterCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
 const { FileAdapterManager, FileAdapterErrors } = require('../adapters/fileadapter');
 const { AudioRequest, SoundRequest } = require('../models/audiorequest');
@@ -20,24 +22,23 @@ const dictSort = (a, b) => {
 
     if (a[0].length < b[0].length) {
         return 1;
-    } 
+    }
 
     return 0;
-}
+};
 
 /**
- * @implements Command
- * @implements Converter
- * @implements Initable
+ * @implements {Command}
+ * @implements {Converter}
+ * @implements {Initable}
  */
 class SoundEffectCommand extends ConverterCommand {
-
     // FIXME!!
     // 以下テキストとかTeachの改変で超適当です
     // いい感じにしてください :sob:
 
     /**
-     * @param {string} primaryKey 
+     * @param {string} primaryKey
      */
     constructor(primaryKey) {
         super();
@@ -54,10 +55,6 @@ class SoundEffectCommand extends ConverterCommand {
         await this.loadDbInstance();
     }
 
-    /**
-     * @returns {Promise<Nedb>}
-     * @private
-     */
     loadDbInstance() {
         if (this._db) {
             return Promise.resolve(this._db);
@@ -67,21 +64,19 @@ class SoundEffectCommand extends ConverterCommand {
                     if (err) {
                         return reject(err);
                     }
-        
-                    if(docs) {
+
+                    if (docs) {
                         this.dictionary = docs.dict;
                         this._db = sharedDbInstance;
                         return resolve(this._db);
-
                     } else {
-                        sharedDbInstance.insert({ id : this.id, dict : []}, (err) => {
+                        sharedDbInstance.insert({ id: this.id, dict: [] }, err => {
                             if (err) {
                                 return reject(err);
                             }
 
                             this._db = sharedDbInstance;
                             resolve(this._db);
-
                         });
                     }
                 });
@@ -90,15 +85,18 @@ class SoundEffectCommand extends ConverterCommand {
     }
 
     saveDict() {
-        return this.loadDbInstance().then(db => new Promise((resolve, reject) =>
-            db.update({ id: this.id }, { $set : { dict : this.dictionary } }, (err) => {
-                if(err) {
-                    return reject(err);
-                } else {
-                    return resolve();
-                }
-    
-            })));
+        return this.loadDbInstance().then(
+            db =>
+                new Promise((resolve, reject) =>
+                    db.update({ id: this.id }, { $set: { dict: this.dictionary } }, err => {
+                        if (err) {
+                            return reject(err);
+                        } else {
+                            return resolve();
+                        }
+                    })
+                )
+        );
     }
 
     /**
@@ -109,9 +107,8 @@ class SoundEffectCommand extends ConverterCommand {
      * @override
      */
     process(context, name, args) {
-        if(!context.isJoined()) {
+        if (!context.isJoined()) {
             return Promise.resolve(this.doNotJoinError());
-
         }
 
         for (const cmd of CommandNames.SE_ADD) {
@@ -136,36 +133,47 @@ class SoundEffectCommand extends ConverterCommand {
     }
 
     /**
-     * @returns {CommandResult} 
+     * @returns {CommandResult}
      */
     doNotJoinError() {
-        return new CommandResult(ResultType.REQUIRE_JOIN, 'そのコマンドはどこかのチャンネルに私を招待してから使ってね :sob:');
+        return new CommandResult(
+            ResultType.REQUIRE_JOIN,
+            'そのコマンドはどこかのチャンネルに私を招待してから使ってね :sob:'
+        );
     }
 
     /**
      * @param {string[]} args
-     * @returns {Promise<CommandResult>} 
+     * @returns {Promise<CommandResult>}
      */
     async doAdd(args) {
         if (args.length < 2) {
-            return new CommandResult(ResultType.INVALID_ARGUMENT, 'コマンドの形式が間違っています（se-add word url） :sob:');
+            return new CommandResult(
+                ResultType.INVALID_ARGUMENT,
+                'コマンドの形式が間違っています（se-add word url） :sob:'
+            );
         }
         if (this.dictionary.length > 50) {
-            return new CommandResult(ResultType.REQUIRE_CONFIRM, 'SEが最大数まで登録されています 何か削除してからまた追加してください :bow:');
+            return new CommandResult(
+                ResultType.REQUIRE_CONFIRM,
+                'SEが最大数まで登録されています 何か削除してからまた追加してください :bow:'
+            );
         }
 
         const word = args[0];
         const url = args[1];
-        
-        // バリデーション
-        if(!(word.length >= 2)){
-            return new CommandResult(ResultType.INVALID_ARGUMENT, '一文字設定はできないよ');
 
+        // バリデーション
+        if (!(word.length >= 2)) {
+            return new CommandResult(ResultType.INVALID_ARGUMENT, '一文字設定はできないよ');
         }
 
         const MAX_TEACH_WORDLENGTH = 50;
-        if(word.length > MAX_TEACH_WORDLENGTH) {
-            return new CommandResult(ResultType.INVALID_ARGUMENT, `もじながすぎわろたwwww ${MAX_TEACH_WORDLENGTH}文字以上の設定はできません`); 
+        if (word.length > MAX_TEACH_WORDLENGTH) {
+            return new CommandResult(
+                ResultType.INVALID_ARGUMENT,
+                `もじながすぎわろたwwww ${MAX_TEACH_WORDLENGTH}文字以上の設定はできません`
+            );
         }
 
         // 重複チェック
@@ -173,23 +181,26 @@ class SoundEffectCommand extends ConverterCommand {
         this.dictionary.forEach((rep, index) => {
             if (rep[0] == word) {
                 dupId = index;
-
             }
-
         });
 
         let result;
         if (dupId >= 0) {
-            const errorMsg = `既に設定済みの単語です！${ this.dictionary[dupId][0] }`;
+            const errorMsg = `既に設定済みの単語です！${this.dictionary[dupId][0]}`;
             result = new CommandResult(ResultType.ALREADY_EXISTS, errorMsg);
-
         } else {
             const base64word = Buffer.from(word).toString('base64');
             try {
                 await FileAdapterManager.saveSoundFile(this.id, base64word, url);
-            } catch(err) {
+            } catch (err) {
                 if (err === FileAdapterErrors.DATA_TOO_LARGE) {
-                    return new CommandResult(ResultType.INVALID_ARGUMENT, `${prettyBytes(FileAdapterManager.maxDownloadByteSize).replace(' ', '')}以上のデータは大きすぎて入らないにゃ :sob:`)
+                    return new CommandResult(
+                        ResultType.INVALID_ARGUMENT,
+                        `${prettyBytes(FileAdapterManager.maxDownloadByteSize).replace(
+                            ' ',
+                            ''
+                        )}以上のデータは大きすぎて入らないにゃ :sob:`
+                    );
                 } else if (err === FileAdapterErrors.INVALID_MINE_TYPE) {
                     return new CommandResult(ResultType.INVALID_ARGUMENT, 'これサウンドファイルじゃなさそう :sob:');
                 } else if (err === FileAdapterErrors.NOT_FOUND) {
@@ -201,10 +212,9 @@ class SoundEffectCommand extends ConverterCommand {
                     throw err;
                 }
             }
-            
-            this.dictionary.push([word, url]);
-            result =  new CommandResult(ResultType.SUCCESS, `設定しました！ ${ word } -> ${ url } :bulb:`);
 
+            this.dictionary.push([word, url]);
+            result = new CommandResult(ResultType.SUCCESS, `設定しました！ ${word} -> ${url} :bulb:`);
         }
 
         this.dictionary.sort(dictSort);
@@ -217,7 +227,7 @@ class SoundEffectCommand extends ConverterCommand {
 
     /**
      * @param {string[]} args
-     * @returns {Promise<CommandResult>} 
+     * @returns {Promise<CommandResult>}
      */
     async doDelete(args) {
         if (args.length < 1) {
@@ -231,9 +241,7 @@ class SoundEffectCommand extends ConverterCommand {
         this.dictionary.forEach((rep, index) => {
             if (rep[0] == word) {
                 popId = index;
-
             }
-
         });
 
         let result;
@@ -243,33 +251,32 @@ class SoundEffectCommand extends ConverterCommand {
                 await FileAdapterManager.deleteSoundFile(this.id, base64word);
             } catch (err) {
                 if (err === FileAdapterErrors.NOT_FOUND) {
-                    console.warn('SoundEffectCommand: メモリ上のディクショナリとストレージの間に不整合があるようです。');
+                    console.warn(
+                        'SoundEffectCommand: メモリ上のディクショナリとストレージの間に不整合があるようです。'
+                    );
                     console.warn('削除失敗 NOT_FOUND');
-                    console.warn(`Word:${word} Segment:${this.id} Desc:${base64word}`)
+                    console.warn(`Word:${word} Segment:${this.id} Desc:${base64word}`);
                     return new CommandResult(ResultType.NOT_FOUND, 'ごめん、なんかエラってる :sob:');
                 } else {
                     throw err;
                 }
             }
             this.dictionary.splice(popId, 1);
-            result = new CommandResult(ResultType.SUCCESS, `1 2の…ポカン！${ word }のSE設定を削除しました！ :bulb:`);
+            result = new CommandResult(ResultType.SUCCESS, `1 2の…ポカン！${word}のSE設定を削除しました！ :bulb:`);
             this.dictionary.sort(dictSort);
             await this.saveDict();
-
         } else {
             result = new CommandResult(ResultType.NOT_FOUND, 'その単語は設定されていません');
-        
         }
 
         return result;
-
     }
 
     /**
-     * @returns {CommandResult} 
+     * @returns {CommandResult}
      */
     doShowList() {
-        let replyText = "設定されたSEの一覧だよ！:\n";
+        let replyText = '設定されたSEの一覧だよ！:\n';
         return new CommandResult(ResultType.SUCCESS, replyText + table(this.dictionary));
     }
 
@@ -281,8 +288,8 @@ class SoundEffectCommand extends ConverterCommand {
      */
     convert(context, array) {
         /**
-         * @param {string|AudioRequest} value 
-         * @param {[string, string]} rep 
+         * @param {string|AudioRequest} value
+         * @param {[string, string]} rep
          * @returns {Array<string|AudioRequest>}
          */
         const wrap = (value, rep) => {
@@ -293,7 +300,10 @@ class SoundEffectCommand extends ConverterCommand {
             const word = rep[0];
             if (text.includes(word)) {
                 const base64word = Buffer.from(word).toString('base64');
-                const xs = text.split(word).map(x => [x]).reduceRight((acc, xs) => xs.concat([new SoundRequest(this.id, base64word)], acc));
+                const xs = text
+                    .split(word)
+                    .map(x => [x])
+                    .reduceRight((acc, xs) => xs.concat([new SoundRequest(this.id, base64word)], acc));
                 return xs.filter(v => v !== '');
             } else {
                 return [text];
@@ -310,9 +320,8 @@ class SoundEffectCommand extends ConverterCommand {
     convertPriority() {
         return 0x0010;
     }
-
 }
 
 module.exports = {
-    SoundEffectCommand
+    SoundEffectCommand,
 };

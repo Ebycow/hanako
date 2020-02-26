@@ -3,30 +3,38 @@ const { AudioRequest } = require('../models/audiorequest');
 
 /**
  * 文字列をリクエストに変換する処理の共通インターフェイス
+ *
  * @interface
  */
 class RequestConverter {
-
     /**
      * @param {MessageContext} context
      * @param {Array<string|AudioRequest>} array
      * @returns {Array<string|AudioRequest>}
-     * @virtual 
+     * @abstract
      */
-    convert(context, array) { throw new Error('not implemented'); }
+    convert(context, array) {
+        throw new Error('not implemented');
+    }
 
     /**
      * @returns {number}
-     * @virtual
+     * @abstract
      */
-    convertPriority() { throw new Error('not implemented'); }
+    convertPriority() {
+        throw new Error('not implemented');
+    }
 
     /**
-     * @param {Class} klass 実装先クラス
+     * @param {object} klass 実装先クラス
      */
     static applyToClass(klass) {
         for (const prop of ['convert', 'convertPriority']) {
-            Object.defineProperty(klass.prototype, prop, Object.getOwnPropertyDescriptor(RequestConverter.prototype, prop));
+            Object.defineProperty(
+                klass.prototype,
+                prop,
+                Object.getOwnPropertyDescriptor(RequestConverter.prototype, prop)
+            );
         }
     }
 
@@ -37,9 +45,8 @@ class RequestConverter {
             return false;
         }
     }
-
 }
 
 module.exports = {
-    RequestConverter
+    RequestConverter,
 };

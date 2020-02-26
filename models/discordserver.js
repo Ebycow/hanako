@@ -9,9 +9,8 @@ const { AudioRequest } = require('./audiorequest');
 const CommandDelimiterRegexp = new RegExp('[ 　]+');
 
 class DiscordServer {
-    
     /**
-     * @param {discord.Guild} guild 
+     * @param {discord.Guild} guild
      */
     constructor(guild) {
         console.log(guild.id);
@@ -43,14 +42,14 @@ class DiscordServer {
          * @private
          */
         this.botUser = guild.client.user;
-    
+
         /**
          * @type {Commands}
          * @private
          */
         this.commands = new Commands(guild.id);
 
-        /** 
+        /**
          * @type {boolean}
          * @readonly
          */
@@ -62,17 +61,13 @@ class DiscordServer {
      */
     async init() {
         this.isInitializing = true;
-        try {
-            await this.commands.init();
-            this.isInitializing = false;
-        } catch (err) {
-            throw err;
-        }
+        await this.commands.init();
+        this.isInitializing = false;
     }
 
     /**
      * @param {MessageContext} context
-     * @param {discord.Message} message 
+     * @param {discord.Message} message
      * @returns {Promise<CommandResult>}
      */
     handleMessage(context, message) {
@@ -96,23 +91,24 @@ class DiscordServer {
 
     /**
      * @param {discord.Message} message
-     * @returns {boolean} 
+     * @returns {boolean}
      */
     isCommandMessage(message) {
         return message.isMemberMentioned(this.botUser) || message.content.startsWith(this.commandKey);
     }
 
     /**
-     * @param {discord.Message} message 
+     * @param {discord.Message} message
+     * @returns {boolean}
      */
     isMessageToReadOut(message) {
-        return this.vc.isJoined && (this.mainChannel !== null) && (this.mainChannel.id === message.channel.id);
+        return this.vc.isJoined && this.mainChannel !== null && this.mainChannel.id === message.channel.id;
     }
 
     /**
      * @param {MessageContext} context
      * @param {string} _text
-     * @returns {string} 
+     * @returns {string}
      */
     handleReplace(context, _text) {
         const replacives = this.commands.replacives.sort((a, b) => {
@@ -136,7 +132,7 @@ class DiscordServer {
     /**
      * @param {MessageContext} context
      * @param {string} text
-     * @returns {AudioRequest[]} 
+     * @returns {AudioRequest[]}
      */
     createRequests(context, text) {
         const converters = this.commands.converters.sort((a, b) => {
@@ -155,7 +151,7 @@ class DiscordServer {
     /**
      * @param {discord.Message} message
      * @returns {string[]}
-     * @private 
+     * @private
      */
     _parseCommandArgument(message) {
         if (message.content.startsWith(this.commandKey)) {
@@ -168,9 +164,8 @@ class DiscordServer {
             return splitText.slice(1);
         }
     }
-
 }
 
 module.exports = {
-    DiscordServer
+    DiscordServer,
 };

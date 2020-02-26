@@ -2,7 +2,7 @@ const { MessageContext } = require('../contexts/messagecontext');
 const { AudioRequest, EbyroidRequest, NoopRequest } = require('../models/audiorequest');
 const { RequestConverter } = require('./converter');
 
-const silentWordReg = new RegExp('[\s　,\.\?\!\^\(\)`:\'"`;\{\}\\[\\]_。、，．‥・…！？＿]+', 'g');
+const silentWordReg = new RegExp('[s　,.?!^()`:\'"`;{}\\[\\]_。、，．‥・…！？＿]+', 'g');
 
 const brokenWordMap = (() => {
     const map = new Map();
@@ -41,7 +41,7 @@ function ebyroidF(value) {
             const toRead = value.replace(silentWordReg, '');
             if (toRead.length === 0) {
                 return new NoopRequest();
-            } else if ((toRead.length / value.length) < 0.51) {
+            } else if (toRead.length / value.length < 0.51) {
                 // 無音文字が占める割合が50%以上ならすべて削除する
                 return new EbyroidRequest(toRead);
             } else {
@@ -59,7 +59,6 @@ function ebyroidF(value) {
  * 最後まで変換されなかったテキストをオーディオリクエストにするコンバーター
  */
 class TextConverter extends RequestConverter {
-
     /**
      * @param {MessageContext} context
      * @param {Array<string|AudioRequest>} array
@@ -78,11 +77,10 @@ class TextConverter extends RequestConverter {
      */
     convertPriority() {
         // 必ず一番最後に実行する
-        return 0xFFFF;
+        return 0xffff;
     }
-
 }
 
 module.exports = {
-    TextConverter
+    TextConverter,
 };

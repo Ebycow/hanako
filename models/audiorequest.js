@@ -7,47 +7,43 @@ const RequestType = {
 };
 
 class AudioRequest {
-
     constructor(options) {
         assert(typeof options.type === 'string');
         assert(typeof options.resource === 'string' || typeof options.text === 'string');
-        
+
         this.type = options.type;
 
-        this.text = (typeof options.text !== 'undefined') ? options.text : null;
+        this.text = typeof options.text !== 'undefined' ? options.text : null;
 
-        this.resource = (typeof options.resource !== 'undefined') ? options.resource : null;
+        this.resource = typeof options.resource !== 'undefined' ? options.resource : null;
 
-        this.options = (typeof options.options === 'object') ? options.options : null;
+        this.options = typeof options.options === 'object' ? options.options : null;
     }
-
 }
 
 class EbyroidRequest extends AudioRequest {
-
     constructor(text) {
         super({ type: RequestType.EBYROID, text });
     }
-
 }
 
 class SoundRequest extends AudioRequest {
-
     constructor(segment, resource) {
         super({ type: RequestType.SOUND, resource });
         this.segment = segment;
     }
-
 }
 
 class NoopRequest extends AudioRequest {
-
     constructor() {
         super({ type: RequestType.NO_OP, text: '' });
     }
-
 }
 
 module.exports = {
-    RequestType, AudioRequest, EbyroidRequest, SoundRequest, NoopRequest
+    RequestType,
+    AudioRequest,
+    EbyroidRequest,
+    SoundRequest,
+    NoopRequest,
 };

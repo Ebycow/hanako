@@ -13,12 +13,11 @@ const { TextConverter } = require('./textconverter');
 const { BlackListCommand } = require('./blacklist');
 
 /**
- * @extends {Map<string, Command>}
+ * @augments {Map<string, Command>}
  */
 class Commands extends Map {
-
     /**
-     * @param {string} primaryKey 
+     * @param {string} primaryKey
      */
     constructor(primaryKey) {
         super();
@@ -42,26 +41,26 @@ class Commands extends Map {
             [CommandNames.SE_LIST, soundeffect],
             [CommandNames.BLACKLIST_ADD, blacklist],
             [CommandNames.BLACKLIST_REMOVE, blacklist],
-            [CommandNames.BLACKLIST_SHOW, blacklist]
-
+            [CommandNames.BLACKLIST_SHOW, blacklist],
         ];
 
         this._replacives = [];
 
         this._converters = [new TextConverter()];
-        
+
         for (const cmddef of commandDefinitions) {
             for (const commandName of cmddef[0]) {
-                this.set(commandName, cmddef[1])
+                this.set(commandName, cmddef[1]);
             }
-
         }
-
     }
 
     async init() {
-        const inits = 
-            new Set(Array.from(this.values()).concat(this._replacives).filter(v => v instanceof Initable));
+        const inits = new Set(
+            Array.from(this.values())
+                .concat(this._replacives)
+                .filter(v => v instanceof Initable)
+        );
         for (const initable of inits) {
             await initable.asyncInit();
         }
@@ -82,9 +81,8 @@ class Commands extends Map {
         const convs = Array.from(this.values()).filter(v => v instanceof RequestConverter);
         return [...new Set(convs.concat(this._converters))];
     }
-    
 }
 
 module.exports = {
-    Commands
+    Commands,
 };
