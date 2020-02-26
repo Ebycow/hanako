@@ -1,5 +1,5 @@
 const assert = require('assert').strict;
-const { Readable } = require('stream');
+const { Readable, Writable } = require('stream');
 const CombinedStream = require('combined-stream2');
 const { AudioRequest, RequestType } = require('../models/audiorequest');
 const { AudioStreamAdapter } = require('./interfaces');
@@ -39,6 +39,26 @@ const atail_size = 4 * 0x10;
 function atail(streams) {
     streams.push(Readable.from(Buffer.alloc(atail_size), { objectMode: false }));
     return streams;
+}
+
+// See: https://github.com/nodejs/help/issues/2487
+function clean(results) {
+    function _clean(stream) {
+        return new Promise(resolve => {
+            // 活性な（生まれたてでI/O多発）のパイプに.destroy()を使う時
+            // closeがパイプ上流に行き渡ってからじゃないと登録済みの書き込みイベントが次のティックで着火して死ぬ
+            // なんじゃそらふざけてんのか
+            stream.emit('close');    
+            setImmediate(() => {
+                stream.destroy();
+                console.info('ストリームリークを回避');
+                resolve();
+            });
+        });
+    }
+    const err = results.find(r => r.reason).reason;
+    const ps = results.filter(r => r.value).map(r => _clean(r.value));
+    return Promise.all(ps).then(_ => Promise.reject(err));
 }
 
 /**
@@ -81,7 +101,8 @@ class AudioAdapter {
             return this.adapters.get(RequestType.NO_OP).requestAudioStream(requests[0]);
         }
         const promises = requests.map(r => this.adapters.get(r.type).requestAudioStream(r));
-        return Promise.all(promises).then(streams => atail(sconv(streams)).reduce(cs2reducer, CombinedStream.create()));
+        const all = Promise.allSettled(promises).then(rs => rs.every(r => r.value) ? rs.map(r => r.value) : clean(rs));
+        return all.then(streams => atail(sconv(streams)).reduce(cs2reducer, CombinedStream.create()));
     }
 
 }
