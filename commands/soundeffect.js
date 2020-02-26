@@ -1,3 +1,5 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const Datastore = require('nedb');
 const table = require('text-table');
 const prettyBytes = require('pretty-bytes');
@@ -206,7 +208,7 @@ class SoundEffectCommand extends ConverterCommand {
                 } else if (err === FileAdapterErrors.NOT_FOUND) {
                     return new CommandResult(ResultType.INVALID_ARGUMENT, 'URLのァイルが見つからないにゃ :sob:');
                 } else if (err === FileAdapterErrors.ALREADY_EXISTS) {
-                    console.warn('SoundEffectCommand: ALREADY_EXISTS 軽い不整合', this.id, word, base64word);
+                    logger.warn('SoundEffectCommand: ALREADY_EXISTS 軽い不整合', this.id, word, base64word);
                     return new CommandResult(ResultType.ALREADY_EXISTS, 'すでに設定済みみたい :sob:');
                 } else {
                     throw err;
@@ -220,7 +222,7 @@ class SoundEffectCommand extends ConverterCommand {
         this.dictionary.sort(dictSort);
 
         await this.saveDict();
-        console.log(this.dictionary);
+        logger.trace('this.dictionary: ', this.dictionary);
 
         return result;
     }
@@ -251,11 +253,9 @@ class SoundEffectCommand extends ConverterCommand {
                 await FileAdapterManager.deleteSoundFile(this.id, base64word);
             } catch (err) {
                 if (err === FileAdapterErrors.NOT_FOUND) {
-                    console.warn(
-                        'SoundEffectCommand: メモリ上のディクショナリとストレージの間に不整合があるようです。'
-                    );
-                    console.warn('削除失敗 NOT_FOUND');
-                    console.warn(`Word:${word} Segment:${this.id} Desc:${base64word}`);
+                    logger.warn('SoundEffectCommand: メモリ上のディクショナリとストレージの間に不整合があるようです。');
+                    logger.warn('削除失敗 NOT_FOUND');
+                    logger.warn(`Word:${word} Segment:${this.id} Desc:${base64word}`);
                     return new CommandResult(ResultType.NOT_FOUND, 'ごめん、なんかエラってる :sob:');
                 } else {
                     throw err;

@@ -1,6 +1,40 @@
 require('dotenv').config();
 const Discord = require('discord.js');
 const client = new Discord.Client();
+const path = require('path');
+const log4js = require('log4js');
+log4js.configure({
+    appenders: {
+        console: {
+            type: 'stdout',
+        },
+        app: {
+            type: 'file',
+            filename: 'log/app.log',
+            maxLogSize: 1048576,
+            numBackups: 10,
+        },
+        errorFile: {
+            type: 'file',
+            filename: 'log/errors.log',
+            maxLogSize: 1048576,
+            numBackups: 10,
+        },
+        errors: {
+            type: 'logLevelFilter',
+            level: 'ERROR',
+            appender: 'errorFile',
+        },
+    },
+    categories: {
+        default: {
+            appenders: ['console', 'app', 'errors'],
+            level: 'TRACE',
+        },
+    },
+});
+const logger = log4js.getLogger(path.basename(__filename));
+
 const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/replacer');
 const { DiscordServer } = require('./models/discordserver');
 const { MessageContext } = require('./contexts/messagecontext');
@@ -8,7 +42,7 @@ const { AudioAdapterManager } = require('./adapters/audioadapter');
 const { FileAdapterManager, FileAdapterErrors } = require('./adapters/fileadapter');
 
 client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
+    logger.info(`Logged in as ${client.user.tag}!`);
 });
 
 AudioAdapterManager.init({
@@ -33,7 +67,7 @@ client.on('message', async message => {
     }
     if (!message.guild) {
         // DMとかは無視
-        console.info('処理されなかったメッセージ', message);
+        logger.trace('処理されなかったメッセージ', message);
         return;
     }
 
@@ -45,13 +79,13 @@ client.on('message', async message => {
     if (servers.has(key)) {
         server = servers.get(key);
         if (server.isInitializing) {
-            console.info('初期化中なので無視したメッセージ', message);
+            logger.trace('初期化中なので無視したメッセージ', message);
             return;
         }
         if (!server.isCommandMessage(message) && !server.isMessageToReadOut(message)) {
             // コマンドじゃない＆読み上げないなら，性能要件のためここで切り上げる
             // （ここを通過してもawaitが絡むので後々の分岐で蹴られる場合がある）
-            console.info(`pass: ${message.content}`);
+            logger.trace(`pass: ${message.content}`);
             return;
         }
     } else {
@@ -61,7 +95,7 @@ client.on('message', async message => {
             await server.init();
         } catch (err) {
             servers.set(key, null);
-            console.error('初期化失敗', err);
+            logger.error('初期化失敗', err);
             return;
         }
     }
@@ -98,7 +132,7 @@ client.on('message', async message => {
     message.content = EmojiReplacer.replace(message.content);
     message.content = DiscordTagReplacer.replace(context, message.content);
 
-    console.info(message.content);
+    logger.trace(message.content);
 
     if (server.isCommandMessage(message)) {
         try {
@@ -107,7 +141,7 @@ client.on('message', async message => {
                 await message.reply(result.replyText);
             }
         } catch (err) {
-            console.error('index.js: コマンド処理でエラー', err);
+            logger.error('index.js: コマンド処理でエラー', err);
             return;
         }
     } else if (server.isMessageToReadOut(message)) {
@@ -119,12 +153,12 @@ client.on('message', async message => {
         // リプレーサーによる置換
         text = server.handleReplace(context, text);
 
-        console.info(text);
+        logger.trace(text);
 
         // リクエストコンバーターによる変換
         const requests = server.createRequests(context, text);
 
-        console.info(requests);
+        logger.trace(requests);
 
         // リクエストの実行
         let stream;
@@ -132,17 +166,17 @@ client.on('message', async message => {
             stream = await AudioAdapterManager.request(...requests);
         } catch (err) {
             if (err === FileAdapterErrors.NOT_FOUND) {
-                console.warn('index.js: リクエストしたファイルが見つからなかった。', requests);
+                logger.warn('index.js: リクエストしたファイルが見つからなかった。', requests);
                 return;
             } else {
-                console.error('index.js: オーディオリクエストでエラー', err);
+                logger.error('index.js: オーディオリクエストでエラー', err);
                 return;
             }
         }
 
         // awaitが絡んだのでここではnullの可能性があるよ
         if (!server.vc.isJoined) {
-            console.info('オーディオリクエスト中にVC切断されてました。', message.guild.name);
+            logger.info('オーディオリクエスト中にVC切断されてました。', message.guild.name);
             stream.destroy();
             return;
         }
@@ -156,7 +190,7 @@ client.on('voiceStateUpdate', (oldMember, newMember) => {
     if (server !== undefined) {
         if (server.vc.connection !== null) {
             if (server.vc.connection.channel.members.map(member => member.id).length === 1) {
-                console.log('leave');
+                logger.info('誰もいないので退出した。', newMember.guild.name, server.vc.connection.channel.name);
                 server.vc.leave();
                 server.mainChannel = null;
             }

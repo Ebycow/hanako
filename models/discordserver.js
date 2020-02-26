@@ -1,3 +1,5 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const discord = require('discord.js');
 const { Commands } = require('../commands/commands');
@@ -13,7 +15,7 @@ class DiscordServer {
      * @param {discord.Guild} guild
      */
     constructor(guild) {
-        console.log(guild.id);
+        logger.trace('handleMessage args: ', 'guild.id', guild.id);
         /**
          * @type {string}
          * @readonly
@@ -74,7 +76,7 @@ class DiscordServer {
         assert(this.isCommandMessage(message));
 
         const args = this._parseCommandArgument(message);
-        console.log(args);
+        logger.trace('handleMessage args: ', args);
         if (args.length === 0) {
             return Promise.resolve(new CommandResult(ResultType.INVALID_ARGUMENT, null));
         }
