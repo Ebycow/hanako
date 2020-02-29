@@ -1,3 +1,5 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const { Transform } = require('stream');
 
 class StereoByteAdjuster extends Transform {
@@ -26,7 +28,7 @@ class StereoByteAdjuster extends Transform {
             buffer = buffer.subarray(0, -numFragments);
         }
 
-        console.debug(`adjust: passing ${buffer.byteLength} bytes ...`);
+        logger.trace(`adjust: passing ${buffer.byteLength} bytes ...`);
         this.push(buffer);
         done();
     }

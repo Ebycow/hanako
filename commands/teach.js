@@ -1,3 +1,5 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const Datastore = require('nedb');
 const table = require('text-table');
 const { MessageContext } = require('../contexts/messagecontext');
@@ -195,7 +197,7 @@ class TeachCommand extends ReplaciveCommand {
         this.dictionary.sort(dictSort);
 
         await this.saveDict();
-        console.log(this.dictionary);
+        logger.trace('this.dictionary: ', this.dictionary);
 
         return result;
     }

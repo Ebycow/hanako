@@ -1,3 +1,5 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const { Readable } = require('stream');
 const CombinedStream = require('combined-stream2');
@@ -53,7 +55,7 @@ function clean(results) {
             stream.emit('close');
             setImmediate(() => {
                 stream.destroy();
-                console.info('ストリームリークを回避');
+                logger.info('ストリームリークを回避');
                 resolve();
             });
         });
@@ -145,7 +147,7 @@ class AudioAdapterManager {
         if (!this.uses.ebyroid) {
             const newReqs = reqs.filter(req => req.type !== RequestType.EBYROID);
             if (newReqs.length !== reqs.length) {
-                console.warn('Ebyroidへのリクエストが要求されましたが、Ebyroid利用設定がありません。');
+                logger.warn('Ebyroidへのリクエストが要求されましたが、Ebyroid利用設定がありません。');
                 reqs = newReqs;
             }
         }
