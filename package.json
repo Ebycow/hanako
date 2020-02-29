@@ -25,7 +25,7 @@
     "log4js": "^6.1.2",
     "nedb": "^1.8.0",
     "node-emoji": "^1.10.0",
-    "node-libsamplerate": "git+https://github.com/nanokina/node-libsamplerate.git#db268ad2147ca5415f29dd958de144fe49742fd9",
+    "node-libsamplerate": "git+https://github.com/nanokina/node-libsamplerate.git#8c33698dae902b790505247db1cc36ec88b43155",
     "node-opus": "^0.3.3",
     "pretty-bytes": "^5.3.0",
     "prism-media": "^1.2.0",
