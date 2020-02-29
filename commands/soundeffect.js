@@ -9,7 +9,7 @@ const { Initable } = require('./initable');
 const { Converter } = require('./converter');
 const { Responsive } = require('./responsive');
 const { Command, ResponsiveConverterCommand, CommandNames } = require('./command');
-const { CommandResult, ResultType } = require('./commandresult');
+const { CommandResult, ResultType, ContentType } = require('./commandresult');
 const { FileAdapterManager, FileAdapterErrors } = require('../adapters/fileadapter');
 const { AudioRequest, SoundRequest } = require('../models/audiorequest');
 const { UserAction, ActionResult, SoundEffectPagingAction } = require('../models/useraction');
@@ -280,8 +280,9 @@ class SoundEffectCommand extends ResponsiveConverterCommand {
      * @returns {CommandResult}
      */
     doShowList() {
-        let replyText = '設定されたSEの一覧だよ！:\n';
-        return new CommandResult(ResultType.SUCCESS, replyText + table(this.dictionary));
+        const maxPage = Math.round(this.dictionary.length / 5) - 1;
+        let replyText = `se-list 1 / ${maxPage} page\n------------------------------\n`;
+        return new CommandResult(ResultType.SUCCESS, replyText + table(this.dictionary.slice(0, 5)), ContentType.PAGER);
     }
 
     /**
@@ -332,8 +333,19 @@ class SoundEffectCommand extends ResponsiveConverterCommand {
      * @override
      */
     respond(context, action) {
-        // TODO ここにえびコード
-        return new ActionResult('ねこ！！');
+        const maxPage = Math.round(this.dictionary.length / 5) - 1;
+        if (action.targetIndex < 0) {
+            action.targetIndex = 0;
+        }
+
+        if (action.targetIndex >= maxPage) {
+            action.targetIndex = maxPage;
+        }
+
+        let replyText = `se-list ${action.targetIndex} / ${maxPage} page\n------------------------------\n`;
+        return new ActionResult(
+            replyText + table(this.dictionary.slice(action.targetIndex * 5, action.targetIndex * 5 + 5))
+        );
     }
 
     /**

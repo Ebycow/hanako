@@ -13,6 +13,7 @@ const { ActionContext } = require('./contexts/actioncontext');
 const { TeachPagingAction, SoundEffectPagingAction } = require('./models/useraction');
 const { AudioAdapterManager } = require('./adapters/audioadapter');
 const { FileAdapterManager, FileAdapterErrors } = require('./adapters/fileadapter');
+const { ContentType } = require('./commands/commandresult');
 
 client.on('ready', () => {
     logger.info(`Logged in as ${client.user.tag}!`);
@@ -111,7 +112,11 @@ client.on('message', async message => {
         try {
             const result = await server.handleMessage(context, message);
             if (result.replyText) {
-                await message.reply(result.replyText);
+                const sendedMessage = await message.channel.send(result.replyText);
+                if (result.contentType === ContentType.PAGER) {
+                    await sendedMessage.react('👈');
+                    await sendedMessage.react('👉');
+                }
             }
         } catch (err) {
             logger.error('コマンド処理でエラー', err);
@@ -179,6 +184,11 @@ client.on('messageReactionAdd', async (reaction, user) => {
         return;
     }
 
+    // FIX-ME: 自分自身のリアクションは無視
+    if (reaction.users.size === 1) {
+        return;
+    }
+
     const server = servers.get(reaction.message.guild.id);
     if (!server) {
         // 未初期化のサーバーなので無視
@@ -188,16 +198,26 @@ client.on('messageReactionAdd', async (reaction, user) => {
     const emoji = Buffer.from(reaction.emoji.name, 'utf-8');
     logger.trace('リアクションがついたにゃ', emoji, reaction.message.content);
 
+    const commandName = reaction.message.content.split('\n')[0].split(' ')[0];
+    const page = parseInt(reaction.message.content.split('\n')[0].split(' ')[1], 10);
     const context = new ActionContext({});
 
-    if (emoji.equals(EMOJI_POINT_LEFT)) {
-        // TODO ここにえびコード
-        const result = await server.handleAction(context, new TeachPagingAction(512810));
-        await reaction.message.edit(result.text);
-    } else if (emoji.equals(EMOJI_POINT_RIGHT)) {
-        // TODO ここにえびコード
-        const result = await server.handleAction(context, new SoundEffectPagingAction(114514));
-        await reaction.message.edit(result.text);
+    if (commandName === 'se-list') {
+        if (emoji.equals(EMOJI_POINT_LEFT)) {
+            const result = await server.handleAction(context, new SoundEffectPagingAction(page - 1));
+            await reaction.message.edit(result.text);
+        } else if (emoji.equals(EMOJI_POINT_RIGHT)) {
+            const result = await server.handleAction(context, new SoundEffectPagingAction(page + 1));
+            await reaction.message.edit(result.text);
+        }
+    } else if (commandName === 'dictionary') {
+        if (emoji.equals(EMOJI_POINT_LEFT)) {
+            const result = await server.handleAction(context, new TeachPagingAction(page - 1));
+            await reaction.message.edit(result.text);
+        } else if (emoji.equals(EMOJI_POINT_RIGHT)) {
+            const result = await server.handleAction(context, new TeachPagingAction(page + 1));
+            await reaction.message.edit(result.text);
+        }
     }
 });
 
