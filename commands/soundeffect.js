@@ -4,12 +4,15 @@ const Datastore = require('nedb');
 const table = require('text-table');
 const prettyBytes = require('pretty-bytes');
 const { MessageContext } = require('../contexts/messagecontext');
+const { ActionContext } = require('../contexts/actioncontext');
 const { Initable } = require('./initable');
 const { Converter } = require('./converter');
-const { Command, ConverterCommand, CommandNames } = require('./command');
+const { Responsive } = require('./responsive');
+const { Command, ResponsiveConverterCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
 const { FileAdapterManager, FileAdapterErrors } = require('../adapters/fileadapter');
 const { AudioRequest, SoundRequest } = require('../models/audiorequest');
+const { UserAction, ActionResult, SoundEffectPagingAction } = require('../models/useraction');
 
 const sharedDbInstance = new Datastore({ filename: './db/soundeffect.db', autoload: true });
 sharedDbInstance.loadDatabase();
@@ -32,9 +35,10 @@ const dictSort = (a, b) => {
 /**
  * @implements {Command}
  * @implements {Converter}
+ * @implements {Responsive}
  * @implements {Initable}
  */
-class SoundEffectCommand extends ConverterCommand {
+class SoundEffectCommand extends ResponsiveConverterCommand {
     // FIXME!!
     // 以下テキストとかTeachの改変で超適当です
     // いい感じにしてください :sob:
@@ -319,6 +323,30 @@ class SoundEffectCommand extends ConverterCommand {
      */
     convertPriority() {
         return 0x0010;
+    }
+
+    /**
+     * @param {ActionContext} context
+     * @param {UserAction} action
+     * @returns {Promise<ActionResult>|ActionResult}
+     * @override
+     */
+    respond(context, action) {
+        // TODO ここにえびコード
+        return new ActionResult('ねこ！！');
+    }
+
+    /**
+     * @param {UserAction} action
+     * @returns {boolean}
+     * @override
+     */
+    canRespond(action) {
+        if (action instanceof SoundEffectPagingAction) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 

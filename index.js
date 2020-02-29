@@ -9,6 +9,8 @@ const logger = log4js.getLogger(path.basename(__filename));
 const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/replacer');
 const { DiscordServer } = require('./models/discordserver');
 const { MessageContext } = require('./contexts/messagecontext');
+const { ActionContext } = require('./contexts/actioncontext');
+const { TeachPagingAction, SoundEffectPagingAction } = require('./models/useraction');
 const { AudioAdapterManager } = require('./adapters/audioadapter');
 const { FileAdapterManager, FileAdapterErrors } = require('./adapters/fileadapter');
 
@@ -166,6 +168,36 @@ client.on('voiceStateUpdate', (oldMember, newMember) => {
                 server.mainChannel = null;
             }
         }
+    }
+});
+
+const EMOJI_POINT_LEFT = new Uint8Array([0xf0, 0x9f, 0x91, 0x88]);
+const EMOJI_POINT_RIGHT = new Uint8Array([0xf0, 0x9f, 0x91, 0x89]);
+client.on('messageReactionAdd', async (reaction, user) => {
+    if (reaction.message.author.id !== client.user.id) {
+        // 花子以外のメッセージについたリアクションは無視
+        return;
+    }
+
+    const server = servers.get(reaction.message.guild.id);
+    if (!server) {
+        // 未初期化のサーバーなので無視
+        return;
+    }
+
+    const emoji = Buffer.from(reaction.emoji.name, 'utf-8');
+    logger.trace('リアクションがついたにゃ', emoji, reaction.message.content);
+
+    const context = new ActionContext({});
+
+    if (emoji.equals(EMOJI_POINT_LEFT)) {
+        // TODO ここにえびコード
+        const result = await server.handleAction(context, new TeachPagingAction(512810));
+        await reaction.message.edit(result.text);
+    } else if (emoji.equals(EMOJI_POINT_RIGHT)) {
+        // TODO ここにえびコード
+        const result = await server.handleAction(context, new SoundEffectPagingAction(114514));
+        await reaction.message.edit(result.text);
     }
 });
 

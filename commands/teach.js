@@ -3,10 +3,13 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const Datastore = require('nedb');
 const table = require('text-table');
 const { MessageContext } = require('../contexts/messagecontext');
+const { ActionContext } = require('../contexts/actioncontext');
 const { Initable } = require('./initable');
 const { Replacive } = require('./replacive');
-const { Command, ReplaciveCommand, CommandNames } = require('./command');
+const { Responsive } = require('./responsive');
+const { Command, ResponsiveReplacerCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
+const { UserAction, ActionResult, TeachPagingAction } = require('../models/useraction');
 
 const sharedDbInstance = new Datastore({ filename: './db/teach.db', autoload: true });
 sharedDbInstance.loadDatabase();
@@ -29,9 +32,10 @@ const dictSort = (a, b) => {
 /**
  * @implements {Command}
  * @implements {Replacive}
+ * @implements {Responsive}
  * @implements {Initable}
  */
-class TeachCommand extends ReplaciveCommand {
+class TeachCommand extends ResponsiveReplacerCommand {
     /**
      * @param {string} primaryKey
      */
@@ -286,7 +290,6 @@ class TeachCommand extends ReplaciveCommand {
      * @param {string} before
      * @param {string} after
      * @returns {string}
-     * @override
      */
     wordReplacer(str, before, after) {
         return str.split(before).join(after);
@@ -298,6 +301,30 @@ class TeachCommand extends ReplaciveCommand {
      */
     replacePriority() {
         return 0x0010;
+    }
+
+    /**
+     * @param {ActionContext} context
+     * @param {UserAction} action
+     * @returns {Promise<ActionResult>|ActionResult}
+     * @override
+     */
+    respond(context, action) {
+        // TODO ここにえびコード
+        return new ActionResult('にゃーん！！');
+    }
+
+    /**
+     * @param {UserAction} action
+     * @returns {boolean}
+     * @override
+     */
+    canRespond(action) {
+        if (action instanceof TeachPagingAction) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 

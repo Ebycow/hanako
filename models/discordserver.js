@@ -5,8 +5,10 @@ const discord = require('discord.js');
 const { Commands } = require('../commands/commands');
 const { CommandResult, ResultType } = require('../commands/commandresult');
 const { MessageContext } = require('../contexts/messagecontext');
+const { ActionContext } = require('../contexts/actioncontext');
 const { VoiceChat } = require('./voicechat');
 const { AudioRequest } = require('./audiorequest');
+const { UserAction, ActionResult } = require('./useraction');
 
 const CommandDelimiterRegexp = new RegExp('[ 　]+');
 
@@ -148,6 +150,23 @@ class DiscordServer {
         });
 
         return converters.reduce((acc, conv) => conv.convert(context, acc), [text]);
+    }
+
+    /**
+     * @param {ActionContext} context
+     * @param {UserAction} action
+     * @returns {Promise<ActionResult>}
+     */
+    handleAction(context, action) {
+        const responsives = this.commands.responsives;
+
+        for (const responsive of responsives) {
+            if (responsive.canRespond(action)) {
+                return Promise.resolve(responsive.respond(context, action));
+            }
+        }
+
+        return Promise.reject('アクションに対応するResponsiveがない');
     }
 
     /**
