@@ -2,7 +2,7 @@ const { MessageContext } = require('../contexts/messagecontext');
 const { AudioRequest, EbyroidRequest, NoopRequest } = require('../models/audiorequest');
 const { RequestConverter } = require('./converter');
 
-const silentWordReg = new RegExp('[s　,.?!^()`:\'"`;{}\\[\\]_。、，．‥・…！？＿]+', 'g');
+const silentWordReg = new RegExp('[\\s　,.?!^()`:\'"`;{}\\[\\]_。、，．‥・…！？＿]+', 'g');
 
 const brokenWordMap = (() => {
     const map = new Map();
