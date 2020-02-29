@@ -1,0 +1,34 @@
+{
+    "appenders": {
+        "console": {
+            "type": "stdout"
+        },
+        "app": {
+            "type": "file",
+            "filename": "log/app.log",
+            "maxLogSize": 1048576,
+            "numBackups": 10
+        },
+        "errorFile": {
+            "type": "file",
+            "filename": "log/errors.log",
+            "maxLogSize": 1048576,
+            "numBackups": 10
+        },
+        "errors": {
+            "type": "logLevelFilter",
+            "level": "ERROR",
+            "appender": "errorFile"
+        }
+    },
+    "categories": {
+        "default": {
+            "appenders": [
+                "console",
+                "app",
+                "errors"
+            ],
+            "level": "TRACE"
+        }
+    }
+}

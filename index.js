@@ -3,36 +3,7 @@ const Discord = require('discord.js');
 const client = new Discord.Client();
 const path = require('path');
 const log4js = require('log4js');
-log4js.configure({
-    appenders: {
-        console: {
-            type: 'stdout',
-        },
-        app: {
-            type: 'file',
-            filename: 'log/app.log',
-            maxLogSize: 1048576,
-            numBackups: 10,
-        },
-        errorFile: {
-            type: 'file',
-            filename: 'log/errors.log',
-            maxLogSize: 1048576,
-            numBackups: 10,
-        },
-        errors: {
-            type: 'logLevelFilter',
-            level: 'ERROR',
-            appender: 'errorFile',
-        },
-    },
-    categories: {
-        default: {
-            appenders: ['console', 'app', 'errors'],
-            level: 'TRACE',
-        },
-    },
-});
+log4js.configure('./log4js-config.json');
 const logger = log4js.getLogger(path.basename(__filename));
 
 const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/replacer');
@@ -132,7 +103,7 @@ client.on('message', async message => {
     message.content = EmojiReplacer.replace(message.content);
     message.content = DiscordTagReplacer.replace(context, message.content);
 
-    logger.trace(message.content);
+    logger.trace('元々のmessage.content:', message.content);
 
     if (server.isCommandMessage(message)) {
         try {
@@ -141,7 +112,7 @@ client.on('message', async message => {
                 await message.reply(result.replyText);
             }
         } catch (err) {
-            logger.error('index.js: コマンド処理でエラー', err);
+            logger.error('コマンド処理でエラー', err);
             return;
         }
     } else if (server.isMessageToReadOut(message)) {
@@ -153,7 +124,7 @@ client.on('message', async message => {
         // リプレーサーによる置換
         text = server.handleReplace(context, text);
 
-        logger.trace(text);
+        logger.trace('リクエスト直前のtext:', text);
 
         // リクエストコンバーターによる変換
         const requests = server.createRequests(context, text);
@@ -166,10 +137,10 @@ client.on('message', async message => {
             stream = await AudioAdapterManager.request(...requests);
         } catch (err) {
             if (err === FileAdapterErrors.NOT_FOUND) {
-                logger.warn('index.js: リクエストしたファイルが見つからなかった。', requests);
+                logger.warn('リクエストしたファイルが見つからなかった。', requests);
                 return;
             } else {
-                logger.error('index.js: オーディオリクエストでエラー', err);
+                logger.error('オーディオリクエストでエラー', err);
                 return;
             }
         }
