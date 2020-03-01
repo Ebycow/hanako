@@ -10,7 +10,6 @@ const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/repl
 const { DiscordServer } = require('./models/discordserver');
 const { MessageContext } = require('./contexts/messagecontext');
 const { ActionContext } = require('./contexts/actioncontext');
-const { TeachPagingAction, SoundEffectPagingAction } = require('./models/useraction');
 const { AudioAdapterManager } = require('./adapters/audioadapter');
 const { FileAdapterManager, FileAdapterErrors } = require('./adapters/fileadapter');
 const { ContentType } = require('./commands/commandresult');
@@ -176,16 +175,14 @@ client.on('voiceStateUpdate', (oldMember, newMember) => {
     }
 });
 
-const EMOJI_POINT_LEFT = new Uint8Array([0xf0, 0x9f, 0x91, 0x88]);
-const EMOJI_POINT_RIGHT = new Uint8Array([0xf0, 0x9f, 0x91, 0x89]);
 client.on('messageReactionAdd', async (reaction, user) => {
     if (reaction.message.author.id !== client.user.id) {
         // 花子以外のメッセージについたリアクションは無視
         return;
     }
 
-    // FIX-ME: 自分自身のリアクションは無視
-    if (reaction.users.size === 1) {
+    if (user.id === client.user.id) {
+        // 自分が付けたリアクションは無視
         return;
     }
 
@@ -198,26 +195,15 @@ client.on('messageReactionAdd', async (reaction, user) => {
     const emoji = Buffer.from(reaction.emoji.name, 'utf-8');
     logger.trace('リアクションがついたにゃ', emoji, reaction.message.content);
 
-    const commandName = reaction.message.content.split('\n')[0].split(' ')[0];
-    const page = parseInt(reaction.message.content.split('\n')[0].split(' ')[1], 10);
     const context = new ActionContext({});
 
-    if (commandName === 'se-list') {
-        if (emoji.equals(EMOJI_POINT_LEFT)) {
-            const result = await server.handleAction(context, new SoundEffectPagingAction(page - 1));
-            await reaction.message.edit(result.text);
-        } else if (emoji.equals(EMOJI_POINT_RIGHT)) {
-            const result = await server.handleAction(context, new SoundEffectPagingAction(page + 1));
+    try {
+        const result = await server.handleReaction(context, reaction, emoji);
+        if (result.text) {
             await reaction.message.edit(result.text);
         }
-    } else if (commandName === 'dictionary') {
-        if (emoji.equals(EMOJI_POINT_LEFT)) {
-            const result = await server.handleAction(context, new TeachPagingAction(page - 1));
-            await reaction.message.edit(result.text);
-        } else if (emoji.equals(EMOJI_POINT_RIGHT)) {
-            const result = await server.handleAction(context, new TeachPagingAction(page + 1));
-            await reaction.message.edit(result.text);
-        }
+    } catch (error) {
+        logger.error(error);
     }
 });
 
