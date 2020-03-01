@@ -9,8 +9,10 @@ const logger = log4js.getLogger(path.basename(__filename));
 const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/replacer');
 const { DiscordServer } = require('./models/discordserver');
 const { MessageContext } = require('./contexts/messagecontext');
+const { ActionContext } = require('./contexts/actioncontext');
 const { AudioAdapterManager } = require('./adapters/audioadapter');
 const { FileAdapterManager, FileAdapterErrors } = require('./adapters/fileadapter');
+const { ContentType } = require('./commands/commandresult');
 
 client.on('ready', () => {
     logger.info(`Logged in as ${client.user.tag}!`);
@@ -109,7 +111,11 @@ client.on('message', async message => {
         try {
             const result = await server.handleMessage(context, message);
             if (result.replyText) {
-                await message.reply(result.replyText);
+                const sentMessage = await message.channel.send(result.replyText);
+                if (result.contentType === ContentType.PAGER) {
+                    await sentMessage.react('👈');
+                    await sentMessage.react('👉');
+                }
             }
         } catch (err) {
             logger.error('コマンド処理でエラー', err);
@@ -166,6 +172,38 @@ client.on('voiceStateUpdate', (oldMember, newMember) => {
                 server.mainChannel = null;
             }
         }
+    }
+});
+
+client.on('messageReactionAdd', async (reaction, user) => {
+    if (reaction.message.author.id !== client.user.id) {
+        // 花子以外のメッセージについたリアクションは無視
+        return;
+    }
+
+    if (user.id === client.user.id) {
+        // 自分が付けたリアクションは無視
+        return;
+    }
+
+    const server = servers.get(reaction.message.guild.id);
+    if (!server) {
+        // 未初期化のサーバーなので無視
+        return;
+    }
+
+    const emoji = Buffer.from(reaction.emoji.name, 'utf-8');
+    logger.trace('リアクションがついたにゃ', emoji, reaction.message.content);
+
+    const context = new ActionContext({});
+
+    try {
+        const result = await server.handleReaction(context, reaction, emoji);
+        if (result.text) {
+            await reaction.message.edit(result.text);
+        }
+    } catch (error) {
+        logger.error(error);
     }
 });
 

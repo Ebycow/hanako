@@ -1,4 +1,5 @@
 const { Replacive } = require('./replacive');
+const { Responsive } = require('./responsive');
 const { RequestConverter } = require('./converter');
 const { CommandResult } = require('./commandresult');
 const { MessageContext } = require('../contexts/messagecontext');
@@ -32,11 +33,40 @@ class ReplaciveCommand extends Command {}
 Replacive.applyToClass(ReplaciveCommand);
 
 /**
+ * ResponsiveかつCommandなクラス
+ *
+ * @implements {Responsive}
+ * @implements {Command}
+ */
+class ResponsiveCommand extends Command {}
+
+Responsive.applyToClass(ResponsiveCommand);
+
+/**
  * RequestConverterかつCommandなクラス
+ *
+ * @implements {RequestConverter}
+ * @implements {Command}
  */
 class ConverterCommand extends Command {}
 
 RequestConverter.applyToClass(ConverterCommand);
+
+/**
+ * ResponsiveかつRequestConverterかつCommandなクラス
+ */
+class ResponsiveConverterCommand extends Command {}
+
+Responsive.applyToClass(ResponsiveConverterCommand);
+RequestConverter.applyToClass(ResponsiveConverterCommand);
+
+/**
+ * ResponsiveかつReplaciveかつCommandなクラス
+ */
+class ResponsiveReplacerCommand extends Command {}
+
+Responsive.applyToClass(ResponsiveReplacerCommand);
+Replacive.applyToClass(ResponsiveReplacerCommand);
 
 const CommandNames = {
     JOIN: ['お願い', 'plz', 'summon', 's'],
@@ -59,6 +89,9 @@ const CommandNames = {
 module.exports = {
     Command,
     ReplaciveCommand,
+    ResponsiveCommand,
     ConverterCommand,
+    ResponsiveConverterCommand,
+    ResponsiveReplacerCommand,
     CommandNames,
 };

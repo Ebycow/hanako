@@ -1,5 +1,6 @@
 const { Initable } = require('./initable');
 const { Replacive } = require('./replacive');
+const { Responsive } = require('./responsive');
 const { RequestConverter } = require('./converter');
 const { Command, CommandNames } = require('./command');
 const { JoinCommand } = require('./join');
@@ -45,7 +46,7 @@ class Commands extends Map {
         ];
 
         this._replacives = [];
-
+        this._responsives = [];
         this._converters = [new TextConverter()];
 
         for (const cmddef of commandDefinitions) {
@@ -80,6 +81,14 @@ class Commands extends Map {
     get converters() {
         const convs = Array.from(this.values()).filter(v => v instanceof RequestConverter);
         return [...new Set(convs.concat(this._converters))];
+    }
+
+    /**
+     * @returns {Responsive[]}
+     */
+    get responsives() {
+        const resps = Array.from(this.values()).filter(v => v instanceof Responsive);
+        return [...new Set(resps.concat(this._responsives))];
     }
 }
 
