@@ -243,7 +243,7 @@ class TeachCommand extends ResponsiveReplacerCommand {
      */
     doShowList() {
         const maxPage = Math.round(this.dictionary.length / 10) - 1;
-        let replyText = `dictionary 1 / ${maxPage} page\n------------------------------\n`;
+        let replyText = `dictionary 0 / ${maxPage} page\n------------------------------\n`;
         return new CommandResult(
             ResultType.SUCCESS,
             replyText + table(this.dictionary.slice(0, 10)),
@@ -315,7 +315,7 @@ class TeachCommand extends ResponsiveReplacerCommand {
      * @override
      */
     respond(context, action) {
-        const maxPage = Math.round(this.dictionary.length / 10) - 1;
+        const maxPage = Math.ceil(this.dictionary.length / 10) - 1;
         if (action.targetIndex < 0) {
             action.targetIndex = 0;
         }

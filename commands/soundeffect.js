@@ -281,7 +281,7 @@ class SoundEffectCommand extends ResponsiveConverterCommand {
      */
     doShowList() {
         const maxPage = Math.round(this.dictionary.length / 5) - 1;
-        let replyText = `se-list 1 / ${maxPage} page\n------------------------------\n`;
+        let replyText = `se-list 0 / ${maxPage} page\n------------------------------\n`;
         return new CommandResult(ResultType.SUCCESS, replyText + table(this.dictionary.slice(0, 5)), ContentType.PAGER);
     }
 
@@ -333,7 +333,7 @@ class SoundEffectCommand extends ResponsiveConverterCommand {
      * @override
      */
     respond(context, action) {
-        const maxPage = Math.round(this.dictionary.length / 5) - 1;
+        const maxPage = Math.ceil(this.dictionary.length / 5) - 1;
         if (action.targetIndex < 0) {
             action.targetIndex = 0;
         }

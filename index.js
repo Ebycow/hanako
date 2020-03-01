@@ -111,10 +111,10 @@ client.on('message', async message => {
         try {
             const result = await server.handleMessage(context, message);
             if (result.replyText) {
-                const sendedMessage = await message.channel.send(result.replyText);
+                const sentMessage = await message.channel.send(result.replyText);
                 if (result.contentType === ContentType.PAGER) {
-                    await sendedMessage.react('👈');
-                    await sendedMessage.react('👉');
+                    await sentMessage.react('👈');
+                    await sentMessage.react('👉');
                 }
             }
         } catch (err) {
