@@ -1,5 +1,5 @@
 # Hanako
-汎用Discordチャット読み上げBot
+汎用Discordチャット読み上げ(TTS)Bot
 
 ![img20200222233956](https://user-images.githubusercontent.com/18446038/75094313-4a370d80-55cd-11ea-9af1-71cec1bf1d20.png)
 
