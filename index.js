@@ -6,17 +6,15 @@ const log4js = require('log4js');
 log4js.configure('./log4js-config.json');
 const logger = log4js.getLogger(path.basename(__filename));
 
+const { GracefulShutdown } = require('./utils/shutdown');
 const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/replacer');
 const { DiscordServer } = require('./models/discordserver');
 const { MessageContext } = require('./contexts/messagecontext');
 const { ActionContext } = require('./contexts/actioncontext');
 const { AudioAdapterManager } = require('./adapters/audioadapter');
 const { FileAdapterManager, FileAdapterErrors } = require('./adapters/fileadapter');
+const { RecoveryAdapterManager } = require('./adapters/recoveryadapter');
 const { ContentType } = require('./commands/commandresult');
-
-client.on('ready', () => {
-    logger.info(`Logged in as ${client.user.tag}!`);
-});
 
 AudioAdapterManager.init({
     ebyroid: {
@@ -28,16 +26,80 @@ FileAdapterManager.init({
     maxDownloadByteSize: 1000 * 1000 * 2, //2MB
 });
 
+RecoveryAdapterManager.init();
+
 /**
  * @type {Map<string, DiscordServer>}
  */
 let servers = new Map();
 
+client.on('ready', async () => {
+    logger.info(`Logged in as ${client.user.tag}!`);
+
+    try {
+        await RecoveryAdapterManager.recover(info => {
+            const guild = client.guilds.get(info.serverId);
+            if (!guild) {
+                logger.warn('復帰情報からギルド情報が取得できない。', info);
+                return Promise.resolve();
+            }
+            /** @type {Discord.VoiceChannel} */
+            const voiceChannel = guild.channels.get(info.voiceChannelId);
+            if (!voiceChannel) {
+                logger.warn('復帰先の音声チャンネルが見つからない。', info);
+                return Promise.resolve();
+            }
+            /** @type {Discord.TextChannel} */
+            const textChannel = guild.channels.get(info.textChannelId);
+            if (!textChannel) {
+                logger.warn('復帰後読み上げ対象のテキストチャネルが見つからない。', info);
+                return Promise.resolve();
+            }
+            if (voiceChannel.members.size === 0) {
+                logger.info('復帰しようとしたが、VCに誰もいなかった。', info);
+                return Promise.resolve();
+            }
+
+            return voiceChannel
+                .join()
+                .then(() =>
+                    textChannel.send(`${client.user} は再接続を試みています。ふごにゃ～んごろごろんみゅ……`, {
+                        nonce: 0xebeb0001,
+                    })
+                )
+                .catch(e => logger.warn('復帰中のDiscordエラー', e))
+                .then(() => Promise.resolve());
+        });
+    } catch (err) {
+        logger.error('VC復帰処理中のエラー', err);
+    }
+});
+
 client.on('message', async message => {
     if (message.author.id === client.user.id) {
-        // 自分のメッセージは無視
-        return;
+        // 花子自身のメッセージ
+        if (typeof message.nonce === 'number' && message.nonce >>> 16 === 0xebeb) {
+            // 命令が埋め込まれていた場合
+            logger.info('インターナル命令を受信', message.nonce.toString(16));
+            const opcode = (message.nonce & 0xffff) >>> 0;
+            let tmp;
+            switch (opcode) {
+                case 1:
+                    // 復帰命令
+                    tmp = message.content.split(' ');
+                    tmp[1] = 'plz';
+                    message.content = tmp.slice(0, 2).join(' ');
+                    break;
+                default:
+                    logger.error('未知のインターナル命令', message);
+                    return;
+            }
+        } else {
+            // 自分のメッセージは無視
+            return;
+        }
     }
+
     if (!message.guild) {
         // DMとかは無視
         logger.trace('処理されなかったメッセージ', message);
@@ -205,6 +267,21 @@ client.on('messageReactionAdd', async (reaction, user) => {
     } catch (error) {
         logger.error(error);
     }
+});
+
+GracefulShutdown.onExit(async () => {
+    const regs = [];
+    for (const server of servers.values()) {
+        if (server.vc.isJoined) {
+            regs.push({
+                serverId: server.id,
+                textChannelId: server.mainChannel.id,
+                voiceChannelId: server.vc.connection.channel.id,
+            });
+            server.vc.leave();
+        }
+    }
+    await RecoveryAdapterManager.book(...regs);
 });
 
 client.login(process.env.TOKEN);
