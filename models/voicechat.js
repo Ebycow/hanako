@@ -1,6 +1,5 @@
 const { Readable } = require('stream');
 const discord = require('discord.js');
-const exitHook = require('exit-hook');
 
 class VoiceChat {
     constructor() {
@@ -81,8 +80,6 @@ class VoiceChat {
             await this.killStream('joining another voice channel');
         }
         this.connection = await voiceChannel.join();
-        const unsub = exitHook(() => this.connection.disconnect());
-        this.connection.once('disconnect', _ => unsub());
     }
 
     /**
