@@ -20,7 +20,7 @@ client.on('ready', () => {
 
 AudioAdapterManager.init({
     ebyroid: {
-        baseUrl: 'http://localhost:4090/',
+        baseUrl: 'http://localhost:4090/api/v1/audiostream',
     },
 });
 
