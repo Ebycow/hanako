@@ -101,8 +101,8 @@ client.on('message', async message => {
         }
     }
 
-    if (!message.guild) {
-        // DMとかは無視
+    if (!message.guild || !message.member) {
+        // DMとかWebhookBotは無視
         logger.trace('処理されなかったメッセージ', message);
         return;
     }
