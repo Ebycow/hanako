@@ -18,7 +18,7 @@ class MessageContext {
      * @param {function():void} options.queuePurge
      * @param {function():Promise<string>} options.voiceJoin
      * @param {function():void} options.voiceLeave
-     * @param {function(string):Promise<void>} options.voiceCancel
+     * @param {function():Promise<void>} options.voiceCancel
      * @param {string} options.authorId
      * @param {Map<string, string>} options.mentionedUsers
      * @param {function(string):string} options.resolveRoleName
@@ -77,8 +77,8 @@ class MessageContext {
         this.voiceLeave = typeof options.voiceLeave !== 'undefined' ? options.voiceLeave : null;
 
         /**
-         * @type {function(string):Promise<void>}
-         * @description 花子が送信中の音声ストリームを中止する処理（非同期）。キューが残っていれば続けて再生される。引数は中止する理由。
+         * @type {function():Promise<void>}
+         * @description 花子が送信中の音声ストリームを中止する処理（非同期）。キューが残っていれば続けて再生される。
          */
         this.voiceCancel = typeof options.voiceCancel !== 'undefined' ? options.voiceCancel : null;
 

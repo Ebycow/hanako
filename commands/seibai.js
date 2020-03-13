@@ -29,7 +29,7 @@ class SeibaiCommand extends Command {
             if (context.queueLength() > 0) {
                 context.queuePurge();
             }
-            await context.voiceCancel('seibai');
+            await context.voiceCancel();
             return new CommandResult(ResultType.SUCCESS, '戯け者 余の顔を見忘れたか :knife:');
         } else {
             // 一応異常系だけど今まで通り握りつぶしてます

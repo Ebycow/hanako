@@ -39,19 +39,19 @@ client.on('ready', async () => {
 
     try {
         await RecoveryAdapterManager.recover(info => {
-            const guild = client.guilds.get(info.serverId);
+            const guild = client.guilds.resolve(info.serverId);
             if (!guild) {
                 logger.warn('復帰情報からギルド情報が取得できない。', info);
                 return Promise.resolve();
             }
             /** @type {Discord.VoiceChannel} */
-            const voiceChannel = guild.channels.get(info.voiceChannelId);
+            const voiceChannel = guild.channels.resolve(info.voiceChannelId);
             if (!voiceChannel) {
                 logger.warn('復帰先の音声チャンネルが見つからない。', info);
                 return Promise.resolve();
             }
             /** @type {Discord.TextChannel} */
-            const textChannel = guild.channels.get(info.textChannelId);
+            const textChannel = guild.channels.resolve(info.textChannelId);
             if (!textChannel) {
                 logger.warn('復帰後読み上げ対象のテキストチャネルが見つからない。', info);
                 return Promise.resolve();
@@ -99,11 +99,9 @@ client.on('message', async message => {
             // 自分のメッセージは無視
             return;
         }
-    }
-
-    if (!message.guild || !message.member) {
-        // DMとかWebhookBotは無視
-        logger.trace('処理されなかったメッセージ', message);
+    } else if (message.author.bot || message.channel.type !== 'text') {
+        // BotとDMは無視
+        logger.trace(`${message.author.username}の${message.channel.type}メッセージを無視`);
         return;
     }
 
@@ -138,7 +136,7 @@ client.on('message', async message => {
         if (!server.isCommandMessage(message) && !server.isMessageToReadOut(message)) {
             // コマンドじゃない＆読み上げないなら，性能要件のためここで切り上げる
             // （ここを通過してもawaitが絡むので後々の分岐で蹴られる場合がある）
-            logger.trace(`pass: ${message.content}`);
+            logger.trace(`pass: ${message.author.username} ${message.content}`);
             return;
         }
     } else {
@@ -154,7 +152,7 @@ client.on('message', async message => {
     }
 
     const voiceJoin = async () => {
-        await server.vc.join(message.member.voiceChannel);
+        await server.vc.join(message.member.voice.channel);
         server.mainChannel = message.channel;
         return `${message.channel}`;
     };
@@ -166,19 +164,19 @@ client.on('message', async message => {
 
     const context = new MessageContext({
         isMainChannel: !!server.mainChannel && message.channel.id === server.mainChannel.id,
-        isAuthorInVC: !!message.member.voiceChannel,
+        isAuthorInVC: !!message.member.voice.channel,
         isJoined: () => server.vc.isJoined,
         isSpeaking: () => server.vc.isStreaming || server.vc.queueLength > 0,
         queueLength: () => server.vc.queueLength,
         queuePurge: () => server.vc.clearQueue(),
         voiceJoin,
         voiceLeave,
-        voiceCancel: x => server.vc.killStream(x),
+        voiceCancel: () => server.vc.killStream(),
         authorId: message.author.id,
         mentionedUsers: message.mentions.users.reduce((map, user) => map.set(user.username, user.id), new Map()),
-        resolveUserName: x => message.mentions.users.find('id', x).username,
-        resolveRoleName: x => message.guild.roles.find('id', x).name,
-        resolveChannelName: x => message.guild.channels.find('id', x).name,
+        resolveUserName: x => message.mentions.users.find(u => x === u.id).username,
+        resolveRoleName: x => message.mentions.roles.find(r => x === r.id).name,
+        resolveChannelName: x => message.mentions.channels.find(c => x === c.id).name,
     });
 
     // コンテキストが確定した時点で絵文字とタグの一括置換を行う
@@ -242,12 +240,12 @@ client.on('message', async message => {
     }
 });
 
-client.on('voiceStateUpdate', (oldMember, newMember) => {
-    const server = servers.get(newMember.guild.id);
-    if (server !== undefined) {
+client.on('voiceStateUpdate', (oldState, newState) => {
+    const server = servers.get(newState.guild.id);
+    if (server) {
         if (server.vc.connection !== null) {
-            if (server.vc.connection.channel.members.map(member => member.id).length === 1) {
-                logger.info('誰もいないので退出した。', newMember.guild.name, server.vc.connection.channel.name);
+            if (server.vc.connection.channel.members.size === 1) {
+                logger.info('誰もいないので退出した。', newState.guild.name, server.vc.connection.channel.name);
                 server.vc.leave();
                 server.mainChannel = null;
             }
