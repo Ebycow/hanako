@@ -90,7 +90,7 @@ class MessageContext {
 
         /**
          * @type {Map<string, string>}
-         * @description メンションに含まれるユーザの名前とIDの配列。
+         * @description メンションに含まれるユーザの名前とIDの辞書配列。送信元サーバーと紐ついているユーザーに限られる。
          */
         this.mentionedUsers = typeof options.mentionedUsers !== 'undefined' ? options.mentionedUsers : null;
 

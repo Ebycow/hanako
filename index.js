@@ -162,6 +162,16 @@ client.on('message', async message => {
         server.mainChannel = null;
     };
 
+    const resolveUserName = userId => {
+        const member = message.mentions.members.find(m => userId === m.id);
+        if (member) {
+            return member.displayName;
+        } else {
+            // Discordタグ直打ちの場合
+            return '誰ですか？';
+        }
+    };
+
     const context = new MessageContext({
         isMainChannel: !!server.mainChannel && message.channel.id === server.mainChannel.id,
         isAuthorInVC: !!message.member.voice.channel,
@@ -173,8 +183,8 @@ client.on('message', async message => {
         voiceLeave,
         voiceCancel: () => server.vc.killStream(),
         authorId: message.author.id,
-        mentionedUsers: message.mentions.users.reduce((map, user) => map.set(user.username, user.id), new Map()),
-        resolveUserName: x => message.mentions.users.find(u => x === u.id).username,
+        mentionedUsers: message.mentions.members.reduce((map, m) => map.set(m.displayName, m.id), new Map()),
+        resolveUserName,
         resolveRoleName: x => message.mentions.roles.find(r => x === r.id).name,
         resolveChannelName: x => message.mentions.channels.find(c => x === c.id).name,
     });
