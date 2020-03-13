@@ -7,6 +7,7 @@ log4js.configure('./log4js-config.json');
 const logger = log4js.getLogger(path.basename(__filename));
 
 const { GracefulShutdown } = require('./utils/shutdown');
+const { EbyAsync } = require('./utils/ebyasync');
 const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/replacer');
 const { DiscordServer } = require('./models/discordserver');
 const { MessageContext } = require('./contexts/messagecontext');
@@ -114,8 +115,25 @@ client.on('message', async message => {
     if (servers.has(key)) {
         server = servers.get(key);
         if (server.isInitializing) {
-            logger.trace('初期化中なので無視したメッセージ', message);
-            return;
+            const MAX = 100;
+            let count = 0;
+            while (count < MAX) {
+                count += 1;
+                await EbyAsync.sleep(100);
+                server = servers.get(key);
+                if (!server) {
+                    logger.warn('初期化待ち中にサーバーが消えたので無視したメッセージ', message);
+                    return;
+                }
+                if (!server.isInitializing) {
+                    logger.info(`サーバーが初期化中だったので${count}回待った。`);
+                    break;
+                }
+            }
+            if (server.isInitializing) {
+                logger.error(`${MAX}回待ったのに初期化が終わらなかった。`, server);
+                return;
+            }
         }
         if (!server.isCommandMessage(message) && !server.isMessageToReadOut(message)) {
             // コマンドじゃない＆読み上げないなら，性能要件のためここで切り上げる
