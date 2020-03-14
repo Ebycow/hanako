@@ -141,6 +141,12 @@ class BlackListCommand extends ConverterCommand {
 
         const targetUsername = args[0].slice(1);
         const targetUserId = users.get(targetUsername);
+
+        if (!targetUserId) {
+            // ユーザーがいない（Discordタグ直打ち等）
+            return new CommandResult(ResultType.INVALID_ARGUMENT, null);
+        }
+
         this.userList.push(targetUserId);
 
         await this.saveUserList();
@@ -166,6 +172,11 @@ class BlackListCommand extends ConverterCommand {
 
         const targetUsername = args[0].slice(1);
         const targetUserId = users.get(targetUsername);
+
+        if (!targetUserId) {
+            // ユーザーがいない（Discordタグ直打ち等）
+            return new CommandResult(ResultType.INVALID_ARGUMENT, null);
+        }
 
         let popId = -1;
         this.userList.forEach((id, index) => {

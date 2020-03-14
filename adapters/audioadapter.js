@@ -2,48 +2,13 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const { Readable } = require('stream');
-const CombinedStream = require('combined-stream2');
+const { EbyStream } = require('../utils/ebystream');
 const { AudioRequest, RequestType } = require('../models/audiorequest');
 const { AudioStreamAdapter } = require('./interfaces');
 const { EbyroidAdapter } = require('./ebyroid');
 const { SoundAdapter } = require('./sound');
 const { NoopAdapter } = require('./noop');
 const { FileAdapterErrors } = require('./fileadapter');
-
-/**
- * combined-stream2用
- *
- * @param {CombinedStream} cs2
- * @param {Readable} stream
- * @returns {CombinedStream}
- */
-function cs2reducer(cs2, stream) {
-    cs2.append(stream);
-    return cs2;
-}
-
-// FIXME 並列複数Hz問題が解決したらいらなくなる処理
-const sconv_size = 4 * 0xff;
-function sconv(streams) {
-    const arr = [];
-    const len = streams.length * 2 - 1;
-    for (let i = 0; i < len; i++) {
-        if (!(i & 1)) {
-            arr[i] = streams.shift();
-        } else {
-            arr[i] = Readable.from(Buffer.alloc(sconv_size), { objectMode: false });
-        }
-    }
-    return arr;
-}
-
-// FIXME discord.jsがStream3 APIに移行してcombined-stream2が不要になったらいらなくなる処理
-//       配列の最後がFileStreamのときcombined-stream2君が処理できない
-const atail_size = 4 * 0x10;
-function atail(streams) {
-    streams.push(Readable.from(Buffer.alloc(atail_size), { objectMode: false }));
-    return streams;
-}
 
 // See: https://github.com/nodejs/help/issues/2487
 function clean(results) {
@@ -107,7 +72,7 @@ class AudioAdapter {
         const all = Promise.allSettled(promises).then(rs =>
             rs.every(r => r.value) ? rs.map(r => r.value) : clean(rs)
         );
-        return all.then(streams => atail(sconv(streams)).reduce(cs2reducer, CombinedStream.create()));
+        return all.then(streams => new EbyStream(streams));
     }
 }
 

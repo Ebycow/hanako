@@ -99,7 +99,7 @@ class DiscordServer {
      * @returns {boolean}
      */
     isCommandMessage(message) {
-        return message.isMemberMentioned(this.botUser) || message.content.startsWith(this.commandKey);
+        return message.mentions.has(this.botUser) || message.content.startsWith(this.commandKey);
     }
 
     /**
