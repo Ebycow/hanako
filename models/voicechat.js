@@ -120,6 +120,7 @@ class VoiceChat {
                         type: 'converted',
                         bitrate: 'auto',
                         volume: false,
+                        highWaterMark: 64,
                     });
                     this.dispatcher.once('finish', () => this._play());
                 } else {
