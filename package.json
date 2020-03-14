@@ -19,7 +19,6 @@
     "@discordjs/opus": "^0.1.0",
     "async-exit-hook": "^2.0.1",
     "axios": "^0.19.2",
-    "combined-stream2": "^1.1.2",
     "discord.js": "^12.0.2",
     "dotenv": "^8.2.0",
     "file-type": "^14.1.2",
