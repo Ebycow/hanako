@@ -1,10 +1,15 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const discord = require('discord.js');
 const { Commands } = require('../commands/commands');
 const { CommandResult, ResultType } = require('../commands/commandresult');
 const { MessageContext } = require('../contexts/messagecontext');
+const { ActionContext } = require('../contexts/actioncontext');
 const { VoiceChat } = require('./voicechat');
 const { AudioRequest } = require('./audiorequest');
+const { UserAction, ActionResult } = require('./useraction');
+const { PagingAction, TeachPagingAction, SoundEffectPagingAction } = require('./useraction');
 
 const CommandDelimiterRegexp = new RegExp('[ 　]+');
 
@@ -13,7 +18,7 @@ class DiscordServer {
      * @param {discord.Guild} guild
      */
     constructor(guild) {
-        console.log(guild.id);
+        logger.trace('guild.id:', guild.id);
         /**
          * @type {string}
          * @readonly
@@ -74,7 +79,7 @@ class DiscordServer {
         assert(this.isCommandMessage(message));
 
         const args = this._parseCommandArgument(message);
-        console.log(args);
+        logger.trace('handleMessage args:', args);
         if (args.length === 0) {
             return Promise.resolve(new CommandResult(ResultType.INVALID_ARGUMENT, null));
         }
@@ -94,7 +99,7 @@ class DiscordServer {
      * @returns {boolean}
      */
     isCommandMessage(message) {
-        return message.isMemberMentioned(this.botUser) || message.content.startsWith(this.commandKey);
+        return message.mentions.has(this.botUser) || message.content.startsWith(this.commandKey);
     }
 
     /**
@@ -146,6 +151,58 @@ class DiscordServer {
         });
 
         return converters.reduce((acc, conv) => conv.convert(context, acc), [text]);
+    }
+
+    /**
+     * @param {ActionContext} context
+     * @param {UserAction} action
+     * @returns {Promise<ActionResult>}
+     */
+    handleAction(context, action) {
+        const responsives = this.commands.responsives;
+
+        for (const responsive of responsives) {
+            if (responsive.canRespond(action)) {
+                return Promise.resolve(responsive.respond(context, action));
+            }
+        }
+
+        return Promise.reject('アクションに対応するResponsiveがない');
+    }
+
+    /**
+     * @param {ActionContext} context
+     * @param {discord.MessageReaction} reaction
+     * @param {Buffer} emoji
+     * @returns {Promise<ActionResult>}
+     */
+    async handleReaction(context, reaction, emoji) {
+        const EMOJI_POINT_LEFT = new Uint8Array([0xf0, 0x9f, 0x91, 0x88]);
+        const EMOJI_POINT_RIGHT = new Uint8Array([0xf0, 0x9f, 0x91, 0x89]);
+        /**
+         * @type {Map<string, PagingAction>}
+         * @readonly
+         */
+        const pagerContents = new Map();
+        pagerContents.set('se-list', SoundEffectPagingAction);
+        pagerContents.set('dictionary', TeachPagingAction);
+
+        const commandName = reaction.message.content.split('\n')[0].split(' ')[0];
+        const page = parseInt(reaction.message.content.split('\n')[0].split(' ')[1], 10);
+
+        const pagerActionClass = pagerContents.get(commandName);
+
+        if (!pagerActionClass) {
+            return Promise.reject('アクションに対応するpagerがない');
+        }
+
+        if (emoji.equals(EMOJI_POINT_LEFT)) {
+            const result = await this.handleAction(context, new pagerActionClass(page - 1));
+            return Promise.resolve(result);
+        } else if (emoji.equals(EMOJI_POINT_RIGHT)) {
+            const result = await this.handleAction(context, new pagerActionClass(page + 1));
+            return Promise.resolve(result);
+        }
     }
 
     /**

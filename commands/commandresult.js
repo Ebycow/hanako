@@ -6,8 +6,9 @@ class CommandResult {
     /**
      * @param {string} resultType
      * @param {string?} replyText
+     * @param {string?} contentType
      */
-    constructor(resultType, replyText) {
+    constructor(resultType, replyText, contentType) {
         /**
          * @type {string}
          * @readonly
@@ -19,6 +20,12 @@ class CommandResult {
          * @readonly
          */
         this.replyText = replyText ? replyText : null;
+
+        /**
+         * @type {string}
+         * @readonly
+         */
+        this.contentType = contentType ? contentType : null;
     }
 }
 
@@ -31,7 +38,12 @@ const ResultType = {
     NOT_FOUND: 'error not found',
 };
 
+const ContentType = {
+    PAGER: 'pager',
+};
+
 module.exports = {
     CommandResult,
     ResultType,
+    ContentType,
 };

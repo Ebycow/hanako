@@ -1,15 +1,37 @@
 # Hanako
-汎用Discordチャット読み上げBot
+汎用Discordチャット読み上げ(TTS)Bot
 
 ![img20200222233956](https://user-images.githubusercontent.com/18446038/75094313-4a370d80-55cd-11ea-9af1-71cec1bf1d20.png)
 
 # Usage
+## はなことの対話
+はなこにコマンド入力してあげると、様々な機能を利用できる  
+コマンド入力は、テキストチャンネルに`@botname コマンド名` のリプライ形式、もしくは `>コマンド名`と発言することで行う
+## コマンド一覧
+
+| 機能               | コマンド                    | 例                                                     |
+|--------------------|-----------------------------|--------------------------------------------------------|
+| VC参加             | お願い plz summon s         | @hanako お願い                                         |
+| VC離脱             | さようなら bye b            | @hanako bye                                            |
+| 文字数制限         | limit readlimit             | @hanako limit 20                                       |
+| 教育（辞書機能）   | 教育 teach wbook-add mk     | @hanako 教育 HIKAKIN ヒカキン                          |
+| 忘却（辞書機能）   | 忘却 forget wbook-delete rm | @hanako 忘却 SEIKIN                                    |
+| 辞書全削除         | wbook-alldel alldelete      | @hanako alldelete                                      |
+| 辞書一覧           | dictionary wbook-list dic   | @hanako dictionary                                     |
+| 読上の中止         | seibai stop                 | @hanako seibai                                         |
+| SEの追加           | se-add                      | @hanako se-add （泣く） https://...(音声ファイルのURL) |
+| SEの削除           | se-del                      | @hanako se-del :seikin-osusume:                        |
+| SEの一覧           | se-list                     | @hanako se-list                                        |
+| ブラックリスト追加 | blacklist-add               | @hanako blacklist-add @seikin                          |
+| ブラックリスト除外 | blacklist-remove            | @hanako blacklist-remove @hikakin                      |
+| ブラックリスト一覧 | blacklist-show              | @hanako blacklist-show                                 |
+
 ## ボイスチャットへの参加、退出
 参加させたいボイスチャットに参加し、読み上げたいテキストチャンネルに`@botname plz` と発言(または、`summon` `s`)
 `@botname bye`(または、`bye` `b` ) で退出
 
 ## 単語の教育
-ボイスチャットにボットを参加させた状態で `@botname teach 置換前の単語 置換後の単語` と発言  
+ボイスチャットにはなこを参加させた状態で `@botname teach 置換前の単語 置換後の単語` と発言  
 `@botname forget 置換前の単語` と発言し削除  
 `@botname alldelete` ですべての単語を削除  
 `@botname dictionary` で教育済みの単語の一覧を表示
@@ -19,12 +41,12 @@
  
 ## SE機能
 Discord上に音声ファイルをドラッグアンドドロップするなどして、音声ファイルのリンクを作成する  
-ボイスチャットにボットを参加させた状態で `@botname se-add SE化する単語 SEの音声ファイルリンク( .wav mp3 )` と発言  
+ボイスチャットにはなこを参加させた状態で `@botname se-add SE化する単語 SEの音声ファイルリンク( .wav mp3 )` と発言  
 `@botname se-del SE化した単語` でSEを解除  
 `@botname se-list` でSEの一覧を表示
  
 ## ブラックリスト（ユーザのミュート）
-ボイスチャットにボットを参加させた状態で `@botname blacklist-add @username` と発言、@usernameの発言は読まれなくなる  
+ボイスチャットにはなこを参加させた状態で `@botname blacklist-add @username` と発言、@usernameの発言は読まれなくなる  
 `@botname blacklist-remove @username` で解除  
 `@botname blacklist-show` でミュート中のユーザの一覧を表示
  

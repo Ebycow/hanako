@@ -1,13 +1,18 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const Datastore = require('nedb');
 const table = require('text-table');
 const prettyBytes = require('pretty-bytes');
 const { MessageContext } = require('../contexts/messagecontext');
+const { ActionContext } = require('../contexts/actioncontext');
 const { Initable } = require('./initable');
 const { Converter } = require('./converter');
-const { Command, ConverterCommand, CommandNames } = require('./command');
-const { CommandResult, ResultType } = require('./commandresult');
+const { Responsive } = require('./responsive');
+const { Command, ResponsiveConverterCommand, CommandNames } = require('./command');
+const { CommandResult, ResultType, ContentType } = require('./commandresult');
 const { FileAdapterManager, FileAdapterErrors } = require('../adapters/fileadapter');
 const { AudioRequest, SoundRequest } = require('../models/audiorequest');
+const { UserAction, ActionResult, SoundEffectPagingAction } = require('../models/useraction');
 
 const sharedDbInstance = new Datastore({ filename: './db/soundeffect.db', autoload: true });
 sharedDbInstance.loadDatabase();
@@ -30,9 +35,10 @@ const dictSort = (a, b) => {
 /**
  * @implements {Command}
  * @implements {Converter}
+ * @implements {Responsive}
  * @implements {Initable}
  */
-class SoundEffectCommand extends ConverterCommand {
+class SoundEffectCommand extends ResponsiveConverterCommand {
     // FIXME!!
     // 以下テキストとかTeachの改変で超適当です
     // いい感じにしてください :sob:
@@ -206,7 +212,7 @@ class SoundEffectCommand extends ConverterCommand {
                 } else if (err === FileAdapterErrors.NOT_FOUND) {
                     return new CommandResult(ResultType.INVALID_ARGUMENT, 'URLのァイルが見つからないにゃ :sob:');
                 } else if (err === FileAdapterErrors.ALREADY_EXISTS) {
-                    console.warn('SoundEffectCommand: ALREADY_EXISTS 軽い不整合', this.id, word, base64word);
+                    logger.warn('SoundEffectCommand: ALREADY_EXISTS 軽い不整合', this.id, word, base64word);
                     return new CommandResult(ResultType.ALREADY_EXISTS, 'すでに設定済みみたい :sob:');
                 } else {
                     throw err;
@@ -220,7 +226,7 @@ class SoundEffectCommand extends ConverterCommand {
         this.dictionary.sort(dictSort);
 
         await this.saveDict();
-        console.log(this.dictionary);
+        logger.trace('this.dictionary: ', this.dictionary);
 
         return result;
     }
@@ -251,11 +257,9 @@ class SoundEffectCommand extends ConverterCommand {
                 await FileAdapterManager.deleteSoundFile(this.id, base64word);
             } catch (err) {
                 if (err === FileAdapterErrors.NOT_FOUND) {
-                    console.warn(
-                        'SoundEffectCommand: メモリ上のディクショナリとストレージの間に不整合があるようです。'
-                    );
-                    console.warn('削除失敗 NOT_FOUND');
-                    console.warn(`Word:${word} Segment:${this.id} Desc:${base64word}`);
+                    logger.warn('SoundEffectCommand: メモリ上のディクショナリとストレージの間に不整合があるようです。');
+                    logger.warn('削除失敗 NOT_FOUND');
+                    logger.warn(`Word:${word} Segment:${this.id} Desc:${base64word}`);
                     return new CommandResult(ResultType.NOT_FOUND, 'ごめん、なんかエラってる :sob:');
                 } else {
                     throw err;
@@ -276,8 +280,9 @@ class SoundEffectCommand extends ConverterCommand {
      * @returns {CommandResult}
      */
     doShowList() {
-        let replyText = '設定されたSEの一覧だよ！:\n';
-        return new CommandResult(ResultType.SUCCESS, replyText + table(this.dictionary));
+        const maxPage = Math.round(this.dictionary.length / 5) - 1;
+        let replyText = `se-list 0 / ${maxPage} page\n------------------------------\n`;
+        return new CommandResult(ResultType.SUCCESS, replyText + table(this.dictionary.slice(0, 5)), ContentType.PAGER);
     }
 
     /**
@@ -319,6 +324,41 @@ class SoundEffectCommand extends ConverterCommand {
      */
     convertPriority() {
         return 0x0010;
+    }
+
+    /**
+     * @param {ActionContext} context
+     * @param {UserAction} action
+     * @returns {Promise<ActionResult>|ActionResult}
+     * @override
+     */
+    respond(context, action) {
+        const maxPage = Math.ceil(this.dictionary.length / 5) - 1;
+        if (action.targetIndex < 0) {
+            action.targetIndex = 0;
+        }
+
+        if (action.targetIndex >= maxPage) {
+            action.targetIndex = maxPage;
+        }
+
+        let replyText = `se-list ${action.targetIndex} / ${maxPage} page\n------------------------------\n`;
+        return new ActionResult(
+            replyText + table(this.dictionary.slice(action.targetIndex * 5, action.targetIndex * 5 + 5))
+        );
+    }
+
+    /**
+     * @param {UserAction} action
+     * @returns {boolean}
+     * @override
+     */
+    canRespond(action) {
+        if (action instanceof SoundEffectPagingAction) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
 

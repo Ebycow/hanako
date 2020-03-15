@@ -1,6 +1,5 @@
 const { Readable } = require('stream');
 const discord = require('discord.js');
-const exitHook = require('exit-hook');
 
 class VoiceChat {
     constructor() {
@@ -55,14 +54,17 @@ class VoiceChat {
     /**
      * 現在再生中の音声を強制的に中止します。
      *
-     * @param {string?} reason 中止する理由。
      * @returns {Promise<void>}
      */
-    killStream(reason) {
+    killStream() {
         return new Promise(resolve => {
             if (this.dispatcher !== null) {
-                this.dispatcher.end(reason);
-                setImmediate(() => resolve());
+                const disp = this.dispatcher;
+                disp.emit('finish');
+                setImmediate(() => {
+                    disp.destroy();
+                    resolve();
+                });
             } else {
                 resolve();
             }
@@ -78,11 +80,9 @@ class VoiceChat {
     async join(voiceChannel) {
         if (this.connection !== null) {
             this.clearQueue();
-            await this.killStream('joining another voice channel');
+            await this.killStream();
         }
         this.connection = await voiceChannel.join();
-        const unsub = exitHook(() => this.connection.disconnect());
-        this.connection.once('disconnect', _ => unsub());
     }
 
     /**
@@ -116,8 +116,13 @@ class VoiceChat {
         if (stream && this.connection) {
             setImmediate(() => {
                 if (this.connection) {
-                    this.dispatcher = this.connection.playConvertedStream(stream, { bitrate: 'auto' });
-                    this.dispatcher.on('end', _ => this._play());
+                    this.dispatcher = this.connection.play(stream, {
+                        type: 'converted',
+                        bitrate: 'auto',
+                        volume: false,
+                        highWaterMark: 64,
+                    });
+                    this.dispatcher.once('finish', () => this._play());
                 } else {
                     this.dispatcher = null;
                 }

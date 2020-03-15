@@ -1,3 +1,5 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const { Transform } = require('stream');
 
 class Interleaver extends Transform {
@@ -18,7 +20,7 @@ class Interleaver extends Transform {
         const hasFragment = !!(buffer.byteLength & 1);
         const byteSize = hasFragment ? buffer.byteLength - 1 : buffer.byteLength;
         const size = (byteSize / 2) | 0;
-        console.debug(`wave: processing ${byteSize} bytes ...`);
+        logger.trace(`wave: processing ${byteSize} bytes ...`);
 
         const src = new Int16Array(size);
         for (let i = 0; i < size; i++) {

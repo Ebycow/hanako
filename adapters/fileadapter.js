@@ -1,3 +1,5 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const fs = require('fs');
 const { Readable } = require('stream');
 const DataStore = require('nedb');
@@ -108,8 +110,8 @@ class FileAdapter {
                     reject(FileAdapterErrors.NOT_FOUND);
                 } else {
                     if (docs.length > 1) {
-                        console.warn('整合性警告：複数レコード検知');
-                        console.warn(`count:${docs.length} seg:${segmentKey} desc:${descriptiveKey} suf:${suffix}`);
+                        logger.warn('整合性警告：複数レコード検知');
+                        logger.warn(`count:${docs.length} seg:${segmentKey} desc:${descriptiveKey} suf:${suffix}`);
                     }
                     resolve(docs[0].file);
                 }
@@ -122,8 +124,8 @@ class FileAdapter {
                     readable.on('ready', () => resolve(readable));
                     readable.on('error', err => {
                         if (err.code === 'ENOENT') {
-                            console.warn('整合性警告：レコード有り対象ファイル無し');
-                            console.warn('error:', err);
+                            logger.warn('整合性警告：レコード有り対象ファイル無し');
+                            logger.warn('error:', err);
                             reject(FileAdapterErrors.NOT_FOUND);
                         } else {
                             reject(err);
@@ -155,9 +157,9 @@ class FileAdapter {
                     reject(FileAdapterErrors.NOT_FOUND);
                 } else {
                     if (docs.length > 1) {
-                        console.warn('整合性警告：複数レコード検知');
-                        console.warn(`count:${docs.length} seg:${segmentKey} desc:${descriptiveKey} suf:${suffix}`);
-                        console.warn('Delete要求なのでこのまま全て削除します。');
+                        logger.warn('整合性警告：複数レコード検知');
+                        logger.warn(`count:${docs.length} seg:${segmentKey} desc:${descriptiveKey} suf:${suffix}`);
+                        logger.warn('Delete要求なのでこのまま全て削除します。');
                     }
                     resolve(docs);
                 }
@@ -171,9 +173,9 @@ class FileAdapter {
                         fs.unlink(filePath, err => {
                             if (err) {
                                 if (err.code === 'ENOENT') {
-                                    console.warn('整合性警告：レコード有り対象ファイル無し');
-                                    console.warn('error:', err);
-                                    console.warn('Delete要求なのでこのまま続行します。');
+                                    logger.warn('整合性警告：レコード有り対象ファイル無し');
+                                    logger.warn('error:', err);
+                                    logger.warn('Delete要求なのでこのまま続行します。');
                                     resolve();
                                 } else {
                                     reject(err);
@@ -193,7 +195,7 @@ class FileAdapter {
                             if (err) {
                                 reject(err);
                             } else if (numRemoved === 0) {
-                                console.warn('整合性警告：レコード削除数０');
+                                logger.warn('整合性警告：レコード削除数０');
                                 resolve();
                             } else {
                                 resolve();
