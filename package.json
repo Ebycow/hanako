@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "files": [
+    "src",
+    "log4js-config.json"
+  ],
   "scripts": {
     "start": "node index",
     "debug": "node index --trace-warnings --trace-uncaught",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "keywords": [],
   "author": "",

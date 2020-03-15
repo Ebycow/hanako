@@ -1,6 +1,7 @@
 {
   "env": {
-    "node": true
+    "node": true,
+    "mocha": true
   },
   "extends": [
     "eslint:recommended",
@@ -16,6 +17,7 @@
       {
         "vars": "all",
         "args": "none",
+        "varsIgnorePattern": "should",
         "ignoreRestSiblings": false
       }
     ],
