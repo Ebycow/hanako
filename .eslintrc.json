@@ -4,7 +4,6 @@
   },
   "extends": [
     "eslint:recommended",
-    "plugin:jsdoc/recommended",
     "plugin:node/recommended",
     "plugin:prettier/recommended"
   ],
@@ -20,10 +19,6 @@
         "ignoreRestSiblings": false
       }
     ],
-    "jsdoc/require-jsdoc": "off",
-    "jsdoc/require-param-description": "off",
-    "jsdoc/require-returns-description": "off",
-    "jsdoc/require-property-description": "off",
     "node/exports-style": [
       "error",
       "module.exports"
