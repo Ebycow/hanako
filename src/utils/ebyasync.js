@@ -17,6 +17,4 @@ class EbyAsync {
     }
 }
 
-module.exports = {
-    EbyAsync,
-};
+module.exports = EbyAsync;
