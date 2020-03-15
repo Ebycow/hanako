@@ -1,5 +1,4 @@
 const { Readable } = require('stream');
-const { NoopRequest } = require('../models/audiorequest');
 const { AudioStreamAdapter } = require('./interfaces');
 
 class NoopReadable extends Readable {

@@ -1,5 +1,4 @@
 const assert = require('assert').strict;
-const { MessageContext } = require('../contexts/messagecontext');
 const { ReplaciveCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
 

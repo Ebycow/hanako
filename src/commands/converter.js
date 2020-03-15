@@ -1,6 +1,3 @@
-const { MessageContext } = require('../contexts/messagecontext');
-const { AudioRequest } = require('../models/audiorequest');
-
 /**
  * 文字列をリクエストに変換する処理の共通インターフェイス
  *

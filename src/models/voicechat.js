@@ -1,5 +1,7 @@
-const { Readable } = require('stream');
-const discord = require('discord.js');
+/** @typedef {import('stream').Readable} Readable */
+/** @typedef {import('discord.js').VoiceChannel} discord.VoiceChannel */
+/** @typedef {import('discord.js').VoiceConnection} discord.VoiceConnection */
+/** @typedef {import('discord.js').StreamDispatcher} discord.StreamDispatcher */
 
 class VoiceChat {
     constructor() {

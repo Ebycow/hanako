@@ -1,5 +1,3 @@
-const { MessageContext } = require('../contexts/messagecontext');
-
 /**
  * 文字列変換受け入れ可能クラス共通インターフェイス
  *

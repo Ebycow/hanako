@@ -1,10 +1,10 @@
-const { Readable } = require('stream');
 const axios = require('axios').default;
 const SampleRate = require('node-libsamplerate');
 const { Interleaver } = require('../transforms/interleaver');
 const { StereoByteAdjuster } = require('../transforms/byteadjuster');
-const { EbyroidRequest } = require('../models/audiorequest');
 const { AudioStreamAdapter } = require('./interfaces');
+
+/** @typedef {import('stream').Readable} Readable */
 
 /**
  * Ebyroidから音声ストリームを取得するアダプタ

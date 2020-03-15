@@ -1,7 +1,5 @@
-const { Readable } = require('stream');
 const { StereoByteAdjuster } = require('../transforms/byteadjuster');
-const { SoundRequest } = require('../models/audiorequest');
-const { FileAdapterManager, FileAdapterErrors } = require('./fileadapter');
+const { FileAdapterManager } = require('./fileadapter');
 const { AudioStreamAdapter } = require('./interfaces');
 
 /**

@@ -8,12 +8,12 @@ const { AudioAdapterManager } = require('../adapters/audioadapter');
 const { FileAdapterErrors } = require('../adapters/fileadapter');
 const { ContentType } = require('../commands/commandresult');
 
-/** @typedef {import('discord.js').Client} Client */
-/** @typedef {import('discord.js').Message} Message */
+/** @typedef {import('discord.js').Client} discord.Client */
+/** @typedef {import('discord.js').Message} discord.Message */
 
 class MessageCtrl {
     /**
-     * @param {Client} client
+     * @param {discord.Client} client
      */
     constructor(client, servers) {
         this.client = client; // TODO 持ってないとだめ？
@@ -23,8 +23,7 @@ class MessageCtrl {
     }
 
     /**
-     *
-     * @param {Message} message
+     * @param {discord.Message} message
      */
     async onMessage(message) {
         const servers = this.servers; // TODO FIX

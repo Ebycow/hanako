@@ -1,8 +1,6 @@
 const { Replacive } = require('./replacive');
 const { Responsive } = require('./responsive');
 const { RequestConverter } = require('./converter');
-const { CommandResult } = require('./commandresult');
-const { MessageContext } = require('../contexts/messagecontext');
 
 /**
  * コマンドクラス共通インターフェイス

@@ -1,5 +1,4 @@
 const emoji = require('node-emoji');
-const { MessageContext } = require('../contexts/messagecontext');
 
 const re_url = /((ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-/]))?)/gi;
 

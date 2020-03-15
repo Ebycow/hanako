@@ -1,10 +1,8 @@
 const Datastore = require('nedb');
 const table = require('text-table');
-const { MessageContext } = require('../contexts/messagecontext');
-const { Initable } = require('./initable');
-const { Command, ConverterCommand, CommandNames } = require('./command');
+const { ConverterCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
-const { AudioRequest, NoopRequest } = require('../models/audiorequest');
+const { NoopRequest } = require('../models/audiorequest');
 
 const sharedDbInstance = new Datastore({ filename: './db/blacklist.db', autoload: true });
 sharedDbInstance.loadDatabase();
@@ -13,8 +11,8 @@ sharedDbInstance.loadDatabase();
 sharedDbInstance.persistence.setAutocompactionInterval(86400000);
 
 /**
- * @implements {Command}
- * @implements {Initable}
+ * @argument {Command}
+ * @argument {Initable}
  */
 class BlackListCommand extends ConverterCommand {
     /**

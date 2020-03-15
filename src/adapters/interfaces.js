@@ -1,6 +1,3 @@
-const { Readable } = require('stream');
-const { AudioRequest } = require('../models/audiorequest');
-
 /**
  * 音声ストリームを取得するアダプタクラスの共通インターフェイス
  */

@@ -2,14 +2,9 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const Datastore = require('nedb');
 const table = require('text-table');
-const { MessageContext } = require('../contexts/messagecontext');
-const { ActionContext } = require('../contexts/actioncontext');
-const { Initable } = require('./initable');
-const { Replacive } = require('./replacive');
-const { Responsive } = require('./responsive');
-const { Command, ResponsiveReplacerCommand, CommandNames } = require('./command');
+const { ResponsiveReplacerCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType, ContentType } = require('./commandresult');
-const { UserAction, ActionResult, TeachPagingAction } = require('../models/useraction');
+const { ActionResult, TeachPagingAction } = require('../models/useraction');
 
 const sharedDbInstance = new Datastore({ filename: './db/teach.db', autoload: true });
 sharedDbInstance.loadDatabase();

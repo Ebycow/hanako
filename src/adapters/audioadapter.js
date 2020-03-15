@@ -1,14 +1,13 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const { Readable } = require('stream');
 const { EbyStream } = require('../utils/ebystream');
-const { AudioRequest, RequestType } = require('../models/audiorequest');
-const { AudioStreamAdapter } = require('./interfaces');
+const { RequestType } = require('../models/audiorequest');
 const { EbyroidAdapter } = require('./ebyroid');
 const { SoundAdapter } = require('./sound');
 const { NoopAdapter } = require('./noop');
-const { FileAdapterErrors } = require('./fileadapter');
+
+/** @typedef {import('stream').Readable} Readable */
 
 // See: https://github.com/nodejs/help/issues/2487
 function clean(results) {

@@ -1,7 +1,6 @@
 const assert = require('assert').strict;
 const { Command, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
-const { MessageContext } = require('../contexts/messagecontext');
 
 /**
  * 成敗コマンド

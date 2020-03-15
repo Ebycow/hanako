@@ -1,6 +1,3 @@
-const { UserAction, ActionResult } = require('../models/useraction');
-const { ActionContext } = require('../contexts/actioncontext');
-
 /**
  * メッセージ以外の入力に対し反応するクラスの共通インターフェイス
  *

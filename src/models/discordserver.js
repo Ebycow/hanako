@@ -1,15 +1,16 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const discord = require('discord.js');
 const { Commands } = require('../commands/commands');
 const { CommandResult, ResultType } = require('../commands/commandresult');
-const { MessageContext } = require('../contexts/messagecontext');
-const { ActionContext } = require('../contexts/actioncontext');
 const { VoiceChat } = require('./voicechat');
-const { AudioRequest } = require('./audiorequest');
-const { UserAction, ActionResult } = require('./useraction');
-const { PagingAction, TeachPagingAction, SoundEffectPagingAction } = require('./useraction');
+const { TeachPagingAction, SoundEffectPagingAction } = require('./useraction');
+
+/** @typedef {import('discord.js').Guild} discord.Guild */
+/** @typedef {import('discord.js').TextChannel} discord.TextChannel */
+/** @typedef {import('discord.js').ClientUser} discord.ClientUser */
+/** @typedef {import('discord.js').Message} discord.Message */
+/** @typedef {import('discord.js').MessageReaction} discord.MessageReaction */
 
 const CommandDelimiterRegexp = new RegExp('[ 　]+');
 
