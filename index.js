@@ -6,16 +6,16 @@ const log4js = require('log4js');
 log4js.configure('./log4js-config.json');
 const logger = log4js.getLogger(path.basename(__filename));
 
-const { GracefulShutdown } = require('./utils/shutdown');
-const { EbyAsync } = require('./utils/ebyasync');
-const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./utils/replacer');
-const { DiscordServer } = require('./models/discordserver');
-const { MessageContext } = require('./contexts/messagecontext');
-const { ActionContext } = require('./contexts/actioncontext');
-const { AudioAdapterManager } = require('./adapters/audioadapter');
-const { FileAdapterManager, FileAdapterErrors } = require('./adapters/fileadapter');
-const { RecoveryAdapterManager } = require('./adapters/recoveryadapter');
-const { ContentType } = require('./commands/commandresult');
+const { GracefulShutdown } = require('./src/utils/shutdown');
+const { EbyAsync } = require('./src/utils/ebyasync');
+const { DiscordTagReplacer, UrlReplacer, EmojiReplacer } = require('./src/utils/replacer');
+const { DiscordServer } = require('./src/models/discordserver');
+const { MessageContext } = require('./src/contexts/messagecontext');
+const { ActionContext } = require('./src/contexts/actioncontext');
+const { AudioAdapterManager } = require('./src/adapters/audioadapter');
+const { FileAdapterManager, FileAdapterErrors } = require('./src/adapters/fileadapter');
+const { RecoveryAdapterManager } = require('./src/adapters/recoveryadapter');
+const { ContentType } = require('./src/commands/commandresult');
 
 AudioAdapterManager.init({
     ebyroid: {
