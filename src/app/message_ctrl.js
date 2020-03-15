@@ -1,7 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const EbyAsync = require('../utils/ebyasync');
-const { DiscordServer } = require('../models/discordserver');
+const { DiscordServer } = require('../domain/models/discordserver');
 const { MessageContext } = require('../contexts/messagecontext');
 const { EmojiReplacer, DiscordTagReplacer, UrlReplacer } = require('../utils/replacer');
 const { AudioAdapterManager } = require('../adapters/audioadapter');

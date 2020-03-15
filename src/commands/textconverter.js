@@ -1,4 +1,4 @@
-const { EbyroidRequest, NoopRequest } = require('../models/audiorequest');
+const { EbyroidRequest, NoopRequest } = require('../domain/models/audiorequest');
 const { RequestConverter } = require('./converter');
 
 const silentWordReg = new RegExp('[\\s　,.?!^()`:\'"`;{}\\[\\]_。、，．‥・…！？＿]+', 'g');

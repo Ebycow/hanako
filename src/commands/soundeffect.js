@@ -6,8 +6,8 @@ const prettyBytes = require('pretty-bytes');
 const { ResponsiveConverterCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType, ContentType } = require('./commandresult');
 const { FileAdapterManager, FileAdapterErrors } = require('../adapters/fileadapter');
-const { SoundRequest } = require('../models/audiorequest');
-const { ActionResult, SoundEffectPagingAction } = require('../models/useraction');
+const { SoundRequest } = require('../domain/models/audiorequest');
+const { ActionResult, SoundEffectPagingAction } = require('../domain/models/useraction');
 
 const sharedDbInstance = new Datastore({ filename: './db/soundeffect.db', autoload: true });
 sharedDbInstance.loadDatabase();

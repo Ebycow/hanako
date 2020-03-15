@@ -2,7 +2,7 @@ const Datastore = require('nedb');
 const table = require('text-table');
 const { ConverterCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType } = require('./commandresult');
-const { NoopRequest } = require('../models/audiorequest');
+const { NoopRequest } = require('../domain/models/audiorequest');
 
 const sharedDbInstance = new Datastore({ filename: './db/blacklist.db', autoload: true });
 sharedDbInstance.loadDatabase();

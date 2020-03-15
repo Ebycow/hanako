@@ -4,7 +4,7 @@ const Datastore = require('nedb');
 const table = require('text-table');
 const { ResponsiveReplacerCommand, CommandNames } = require('./command');
 const { CommandResult, ResultType, ContentType } = require('./commandresult');
-const { ActionResult, TeachPagingAction } = require('../models/useraction');
+const { ActionResult, TeachPagingAction } = require('../domain/models/useraction');
 
 const sharedDbInstance = new Datastore({ filename: './db/teach.db', autoload: true });
 sharedDbInstance.loadDatabase();

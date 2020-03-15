@@ -1,8 +1,8 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const { Commands } = require('../commands/commands');
-const { CommandResult, ResultType } = require('../commands/commandresult');
+const { Commands } = require('../../commands/commands');
+const { CommandResult, ResultType } = require('../../commands/commandresult');
 const { VoiceChat } = require('./voicechat');
 const { TeachPagingAction, SoundEffectPagingAction } = require('./useraction');
 
