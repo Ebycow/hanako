@@ -10,7 +10,7 @@ describe('Interface', () => {
         IDisposable.should.be.a('function');
     });
 
-    describe('#apply', () => {
+    describe('#comprise', () => {
         context('正常系', () => {
             specify('正しく実装されていれば適用できる', () => {
                 class IDisposable extends Interface {
@@ -23,7 +23,7 @@ describe('Interface', () => {
                     }
                 }
 
-                (() => IDisposable.apply(Cat)).should.not.throw();
+                (() => IDisposable.comprise(Cat)).should.not.throw();
             });
 
             specify('ねこは IDisposable のインスタンスになる', () => {
@@ -39,7 +39,7 @@ describe('Interface', () => {
 
                 class Dog {}
 
-                IDisposable.apply(Cat);
+                IDisposable.comprise(Cat);
 
                 const neko = new Cat();
                 (neko instanceof Cat).should.be.true;
@@ -67,8 +67,8 @@ describe('Interface', () => {
                     }
                 }
 
-                IDisposable.apply(Cat);
-                IAnimal.apply(Cat);
+                IDisposable.comprise(Cat);
+                IAnimal.comprise(Cat);
 
                 const neko = new Cat();
                 (neko instanceof Cat).should.be.true;
@@ -94,7 +94,7 @@ describe('Interface', () => {
                     }
                 }
 
-                (() => IDisposable.apply(Cat)).should.throw();
+                (() => IDisposable.comprise(Cat)).should.throw();
             });
 
             specify('同じクラスに２回適用すると失敗する', () => {
@@ -112,8 +112,8 @@ describe('Interface', () => {
                     }
                 }
 
-                (() => IDisposable.apply(Cat)).should.not.throw();
-                (() => IDisposable.apply(Cat)).should.throw();
+                (() => IDisposable.comprise(Cat)).should.not.throw();
+                (() => IDisposable.comprise(Cat)).should.throw();
             });
 
             specify('空の定義は失敗する', () => {
@@ -121,7 +121,7 @@ describe('Interface', () => {
 
                 class Cat {}
 
-                (() => IDisposable.apply(Cat)).should.throw();
+                (() => IDisposable.comprise(Cat)).should.throw();
             });
 
             specify('extendsは失敗する', () => {
@@ -156,7 +156,7 @@ describe('Interface', () => {
                     }
                 }
 
-                (() => IDisposable.apply(Cat)).should.throw();
+                (() => IDisposable.comprise(Cat)).should.throw();
             });
 
             specify('対象がインターフェースだと失敗する', () => {
@@ -170,21 +170,7 @@ describe('Interface', () => {
                     }
                 }
 
-                (() => IDisposable.apply(Cat)).should.throw();
-            });
-
-            specify('対象もインターフェースだと失敗する', () => {
-                class IDisposable extends Interface {
-                    dispose() {}
-                }
-
-                class Cat extends Interface {
-                    dispose() {
-                        this.dead = true;
-                    }
-                }
-
-                (() => IDisposable.apply(Cat)).should.throw();
+                (() => IDisposable.comprise(Cat)).should.throw();
             });
 
             specify('メソッド以外を宣言すると失敗する', () => {
@@ -204,7 +190,7 @@ describe('Interface', () => {
                     }
                 }
 
-                (() => IDisposable.apply(Cat)).should.throw();
+                (() => IDisposable.comprise(Cat)).should.throw();
             });
         });
     });

@@ -56,7 +56,7 @@ class Interface {
      *
      * @param {Function} klass インターフェースを実装するクラス
      */
-    static apply(klass) {
+    static comprise(klass) {
         // 初めて登録されるインターフェース（this）について
         if (!interfaces.includes(this)) {
             // インターフェース (this) に対する制約
