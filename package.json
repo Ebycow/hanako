@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node index",
     "debug": "node index --trace-warnings --trace-uncaught",
-    "test": "mocha"
+    "test": "mocha --reporter nyan"
   },
   "keywords": [],
   "author": "",
