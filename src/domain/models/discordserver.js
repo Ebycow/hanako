@@ -16,10 +16,9 @@ const CommandDelimiterRegexp = new RegExp('[ 　]+');
 
 class DiscordServer {
     /**
-     * @param {discord.Guild} guild
+     * @param {string} id
      */
-    constructor(guild) {
-        logger.trace('guild.id:', guild.id);
+    constructor(id) {
         /**
          * @type {string}
          * @readonly
@@ -41,19 +40,13 @@ class DiscordServer {
          * @type {string}
          * @private
          */
-        this.id = guild.id;
-
-        /**
-         * @type {discord.ClientUser}
-         * @private
-         */
-        this.botUser = guild.client.user;
+        this.id = id;
 
         /**
          * @type {Commands}
          * @private
          */
-        this.commands = new Commands(guild.id);
+        this.commands = new Commands(id);
 
         /**
          * @type {boolean}
@@ -100,7 +93,8 @@ class DiscordServer {
      * @returns {boolean}
      */
     isCommandMessage(message) {
-        return message.mentions.has(this.botUser) || message.content.startsWith(this.commandKey);
+        // TODO FIX 元々は message.mentions.has(this.botUser) || message.content.startsWith(this.commandKey)
+        return message.mentions.users.some(x => x.username === 'shrimp') || message.content.startsWith(this.commandKey);
     }
 
     /**
