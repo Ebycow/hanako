@@ -45,13 +45,13 @@ class Hanako {
 
     /**
      * コントローラをバインド
-     * @param {*} event Discordイベント名
-     * @param {*} instance コントローラのインスタンス
+     * @param {string} event Discordイベント名
+     * @param {{[key: string]: function(...):Promise<void>}} ctrl コントローラのインスタンス
      * @private
      */
-    bind(event, instance) {
+    bind(event, ctrl) {
         const method = 'on' + event.slice(0, 1).toUpperCase() + event.slice(1);
-        this.client.on(event, (...args) => instance[method](...args).catch(handleUncaughtError));
+        this.client.on(event, (...args) => ctrl[method](...args).catch(handleUncaughtError));
     }
 }
 
