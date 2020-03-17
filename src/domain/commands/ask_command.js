@@ -1,9 +1,9 @@
 const assert = require('assert').strict;
-const { Command, CommandNames } = require('./command');
-const { CommandResult, ResultType } = require('./commandresult');
+const { Command, CommandNames } = require('../../commands/command');
+const { CommandResult, ResultType } = require('../../commands/commandresult');
 
 /**
- * 里見コマンド
+ * askコマンド
  */
 class AskCommand extends Command {
     /**
