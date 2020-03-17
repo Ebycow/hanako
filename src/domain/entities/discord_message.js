@@ -35,7 +35,7 @@ class DiscordMessage {
     }
 
     /**
-     * @type {'command'|'data'}
+     * @type {'command'|'read'}
      */
     get type() {
         return this.data.type;
