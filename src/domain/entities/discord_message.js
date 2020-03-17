@@ -15,7 +15,7 @@ class DiscordMessage {
         Object.defineProperty(this, 'data', {
             value: data,
             writable: false,
-            enumerable: false,
+            enumerable: true,
             configurable: false,
         });
     }
@@ -39,6 +39,10 @@ class DiscordMessage {
      */
     get type() {
         return this.data.type;
+    }
+
+    toString() {
+        return `DiscordMessage(type=${this.type}, content=${this.content})`;
     }
 }
 
