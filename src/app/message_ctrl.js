@@ -6,33 +6,17 @@ const MessageService = require('../service/message_service');
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
 
-function handleUncaughtError(err) {
-    if (err === 0) {
-        // TODO FIX 中断エラー共通化
-        return Promise.resolve();
-    }
-
-    // Note: ここまでエラーが来る === 未知のエラー
-    logger.error('予期されないエラーが発生。', err);
-    return Promise.resolve();
-}
-
 class MessageCtrl {
-    /**
-     * @param {discord.Client} client
-     */
-    constructor(client, servers) {
-        this.client = client; // TODO 持ってないとだめ？
-        this.servers = servers; // TODO FIX
-
-        this.client.on('message', message => this.onMessage(message).catch(handleUncaughtError));
+    constructor() {
+        // TODO Fix
     }
 
     /**
      * @param {discord.Message} message
      */
     async onMessage(message) {
-        const builder = new MessageBuilder(this.client, message, null);
+        // TODO FIX
+        const builder = new MessageBuilder(null, message, null);
         const dmessage = await builder.build({
             id: message.id,
             content: message.content,
