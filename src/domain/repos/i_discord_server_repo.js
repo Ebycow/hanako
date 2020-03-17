@@ -4,7 +4,7 @@ class IDiscordServerRepo extends Interface {
     /**
      * DiscordServerを取得または新規生成
      * @param {string} id サーバーID
-     * @returns {Promise<DiscordServer>}
+     * @returns {Promise<import('../models/discord_server')>}
      */
     async loadOrCreate(id) {}
 }
