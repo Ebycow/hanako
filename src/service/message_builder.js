@@ -76,25 +76,32 @@ class MessageBuilder {
  * @returns {Promise<MessageBuilderData>}
  */
 async function processSecretF(data) {
-    if (data.isHanako && data.secret >>> 16 === 0xebeb) {
-        // 命令が埋め込まれていた場合
-        logger.info('インターナル命令を受信', data.secret.toString(16));
-        const opcode = (data.secret & 0xffff) >>> 0;
-        let content = data.content;
-        let tmp;
-        switch (opcode) {
-            case 0x0001:
-                // 復帰命令
-                tmp = content.split(' ');
-                tmp[1] = 'plz';
-                content = tmp.slice(0, 2).join(' ');
-                break;
-            default:
-                logger.error('未知のインターナル命令', data);
-                // TODO FIX 中断エラーの共通化
-                return Promise.reject(0);
+    if (data.isHanako) {
+        if (data.secret >>> 16 === 0xebeb) {
+            // インターナル命令が埋め込まれていた場合
+            logger.info('インターナル命令を受信', data.secret.toString(16));
+            const opcode = (data.secret & 0xffff) >>> 0;
+            let content = data.content;
+            let tmp;
+            switch (opcode) {
+                case 0x0001:
+                    // 復帰命令
+                    tmp = content.split(' ');
+                    tmp[1] = 'plz';
+                    content = tmp.slice(0, 2).join(' ');
+                    break;
+                default:
+                    logger.error('未知のインターナル命令', data);
+                    // TODO FIX 中断エラーの共通化
+                    return Promise.reject(0);
+            }
+            data.content = content;
+        } else {
+            // インターナル命令じゃない花子は常に無視
+            logger.trace(`pass-self: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
+            // TODO FIX 中断エラーの共通化
+            return Promise.reject(0);
         }
-        data.content = content;
     }
     return Promise.resolve(data);
 }
@@ -120,14 +127,16 @@ async function processReplaceF(data) {
 async function inferMessageTypeF(data, server) {
     // 花子がメンションされているか、コマンドプリフィクスを持つならコマンド
     if (data.isHanakoMentioned || server.hasCommandPrefix(data.content)) {
+        logger.info(`command: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
         return Promise.resolve('command');
     }
     // それ以外で、読み上げ対象のチャンネルなら読み上げ
     if (server.isReadingChannel(data.channelId)) {
+        logger.info(`read: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
         return Promise.resolve('read');
     }
     // どちらでもなければ無視
-    logger.trace(`pass: ${data.serverName} #${data.channelName} @${data.userName} ${data.content}`);
+    logger.trace(`pass: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
     // TODO FIX errortype
     return Promise.reject(0);
 }
