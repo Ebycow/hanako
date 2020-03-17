@@ -1,15 +1,28 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const EbyAsync = require('../utils/ebyasync');
+const MessageBuilder = require('../service/message_builder');
+const MessageService = require('../service/message_service');
 const { DiscordServer } = require('../domain/models/discordserver');
 const { MessageContext } = require('../contexts/messagecontext');
-const { EmojiReplacer, DiscordTagReplacer, UrlReplacer } = require('../utils/replacer');
+const { UrlReplacer } = require('../utils/replacer');
 const { AudioAdapterManager } = require('../adapters/audioadapter');
 const { FileAdapterErrors } = require('../adapters/fileadapter');
 const { ContentType } = require('../commands/commandresult');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
+
+function handleUncaughtError(err) {
+    if (err === 0) {
+        // TODO FIX 中断エラー共通化
+        return Promise.resolve();
+    }
+
+    // Note: ここまでエラーが来る === 未知のエラー
+    logger.error('予期されないエラーが発生。', err);
+    return Promise.resolve();
+}
 
 class MessageCtrl {
     /**
@@ -19,42 +32,17 @@ class MessageCtrl {
         this.client = client; // TODO 持ってないとだめ？
         this.servers = servers; // TODO FIX
 
-        this.client.on('message', message => this.onMessage(message)); // TODO いけてない
+        this.client.on('message', message => this.onMessage(message).catch(handleUncaughtError));
     }
 
     /**
      * @param {discord.Message} message
      */
     async onMessage(message) {
-        const servers = this.servers; // TODO FIX
-        if (message.author.id === this.client.user.id) {
-            // 花子自身のメッセージ
-            if (typeof message.nonce === 'number' && message.nonce >>> 16 === 0xebeb) {
-                // 命令が埋め込まれていた場合
-                logger.info('インターナル命令を受信', message.nonce.toString(16));
-                const opcode = (message.nonce & 0xffff) >>> 0;
-                let tmp;
-                switch (opcode) {
-                    case 1:
-                        // 復帰命令
-                        tmp = message.content.split(' ');
-                        tmp[1] = 'plz';
-                        message.content = tmp.slice(0, 2).join(' ');
-                        break;
-                    default:
-                        logger.error('未知のインターナル命令', message);
-                        return;
-                }
-            } else {
-                // 自分のメッセージは無視
-                return;
-            }
-        } else if (message.author.bot || message.channel.type !== 'text') {
-            // BotとDMは無視
-            logger.trace(`${message.author.username}の${message.channel.type}メッセージを無視`);
-            return;
-        }
-
+        // TODO FIX
+        if (!message.guild) return;
+        // TODO FIX
+        const servers = this.servers;
         const key = message.guild.id;
 
         /** @type {DiscordServer} */
@@ -139,11 +127,29 @@ class MessageCtrl {
             resolveChannelName: x => message.mentions.channels.find(c => x === c.id).name,
         });
 
-        // コンテキストが確定した時点で絵文字とタグの一括置換を行う
-        message.content = EmojiReplacer.replace(message.content);
-        message.content = DiscordTagReplacer.replace(context, message.content);
+        const builder = new MessageBuilder(this.client, message, context);
+        const dmessage = await builder.build({
+            id: message.id,
+            content: message.content,
+            userId: message.author.id,
+            userName: message.author.username,
+            channelId: message.channel.id,
+            channelName: message.channel.name,
+            serverId: message.guild.id,
+            serverName: message.guild.name,
+            type: message.channel.type,
+            isBot: message.author.bot,
+            secret: typeof message.nonce === 'number' ? message.nonce >>> 0 : 0,
+        });
+        logger.info(dmessage);
 
-        logger.trace('元々のmessage.content:', message.content);
+        // TODO FIX これはモック
+        const service = new MessageService();
+        const tmp = await service.serve(dmessage);
+        logger.info(tmp);
+
+        // TODO FIX とりあえず動かすためにやっている
+        message.content = dmessage.content;
 
         if (server.isCommandMessage(message)) {
             try {
