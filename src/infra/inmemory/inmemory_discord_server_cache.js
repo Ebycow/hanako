@@ -3,7 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert');
 const EbyAsync = require('../../utils/ebyasync');
 const IDiscordServerRepo = require('../../domain/repos/i_discord_server_repo');
-const { DiscordServer } = require('../../domain/models/discordserver');
+const DiscordServer = require('../../domain/models/discord_server');
 
 const cache = new Map();
 

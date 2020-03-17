@@ -218,6 +218,4 @@ class DiscordServer {
     }
 }
 
-module.exports = {
-    DiscordServer,
-};
+module.exports = DiscordServer;
