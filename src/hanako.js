@@ -35,7 +35,7 @@ class Hanako {
      * アプリケーションのエントリポイント
      */
     start() {
-        this.bind('message', new MessageCtrl());
+        this.bind('message', new MessageCtrl(this.client));
 
         // TODO FIX
         this.client.on('ready', () => logger.info('ready'));

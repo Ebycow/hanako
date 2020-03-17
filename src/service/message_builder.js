@@ -2,7 +2,8 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const emoji = require('node-emoji');
-const { DiscordTagReplacer } = require('../utils/replacer');
+const Injector = require('../core/injector');
+const IDiscordServerRepo = require('../domain/repos/i_discord_server_repo');
 const DiscordMessage = require('../domain/entities/discord_message');
 
 /**
@@ -10,6 +11,8 @@ const DiscordMessage = require('../domain/entities/discord_message');
  * @type {object}
  *
  * @property {string} id
+ * @property {boolean} isHanako
+ * @property {boolean} isHanakoMentioned
  * @property {string} content
  * @property {string} userId
  * @property {string} userName
@@ -17,8 +20,6 @@ const DiscordMessage = require('../domain/entities/discord_message');
  * @property {string} channelName
  * @property {string} serverId
  * @property {string} serverName
- * @property {'text'|'dm'} type
- * @property {boolean} isBot
  * @property {number} secret
  */
 
@@ -27,39 +28,37 @@ const DiscordMessage = require('../domain/entities/discord_message');
  * DiscordMessageエンティティの構築
  */
 class MessageBuilder {
-    // TODO FIX こんなモノたちは受け取らない
-    constructor(client, message, context) {
-        // TODO FIX DI
-        this.client = client;
-        this.message = message;
-        this.context = context;
-        // TODO FIX こんなもの持たない
-        this.commandKey = '!';
+    /**
+     * @param {IDiscordServerRepo?} serverRepo
+     */
+    constructor(serverRepo = null) {
+        this.serverRepo = serverRepo || Injector.resolve(IDiscordServerRepo);
     }
 
     /**
      * DiscordMessageエンティティの構築
-     * @param {Promise<MessageBuilderData>} obj
-     * @param {Promise<DiscordMessage>}
+     * @param {MessageBuilderData} param
+     * @returns {Promise<DiscordMessage>}
      */
-    async build(obj) {
-        assert(typeof obj.id === 'string');
-        assert(typeof obj.content === 'string');
-        assert(typeof obj.userId === 'string');
-        assert(typeof obj.userName === 'string');
-        assert(typeof obj.channelId === 'string');
-        assert(typeof obj.channelName === 'string');
-        assert(typeof obj.serverId === 'string');
-        assert(typeof obj.serverName === 'string');
-        assert(obj.type === 'text' || obj.type === 'dm');
-        assert(typeof obj.isBot === 'boolean');
-        assert(typeof obj.secret === 'number' && Number.isInteger(obj.secret) && obj.secret >= 0);
+    async build(param) {
+        assert(typeof param.id === 'string');
+        assert(typeof param.isHanako === 'boolean');
+        assert(typeof param.isHanakoMentioned === 'boolean');
+        assert(typeof param.content === 'string');
+        assert(typeof param.userId === 'string');
+        assert(typeof param.userName === 'string');
+        assert(typeof param.channelId === 'string');
+        assert(typeof param.channelName === 'string');
+        assert(typeof param.serverId === 'string');
+        assert(typeof param.serverName === 'string');
+        assert(typeof param.secret === 'number' && Number.isInteger(param.secret) && param.secret >= 0);
 
-        let data = Object.assign({}, obj);
+        let data = Object.assign({}, param);
         data = await processSecretF.call(this, data);
-        data = await processValidateF.call(this, data);
-        let type = await inferMessageTypeF.call(this, data);
         data = await processReplaceF.call(this, data);
+
+        const server = await this.serverRepo.loadOrCreate(data.serverId);
+        const type = await inferMessageTypeF.call(this, data, server);
 
         const dmessage = new DiscordMessage({
             id: data.id,
@@ -77,65 +76,27 @@ class MessageBuilder {
  * @returns {Promise<MessageBuilderData>}
  */
 async function processSecretF(data) {
-    if (!(data.secret >>> 16 === 0xebeb)) {
-        return Promise.resolve(data);
-    }
-    let content = data.content;
-    let isBot = data.isBot;
-    // TODO FIX
-    if (data.userId === this.client.user.id) {
+    if (data.isHanako && data.secret >>> 16 === 0xebeb) {
         // 命令が埋め込まれていた場合
         logger.info('インターナル命令を受信', data.secret.toString(16));
         const opcode = (data.secret & 0xffff) >>> 0;
+        let content = data.content;
         let tmp;
         switch (opcode) {
-            case 1:
+            case 0x0001:
                 // 復帰命令
                 tmp = content.split(' ');
                 tmp[1] = 'plz';
                 content = tmp.slice(0, 2).join(' ');
-                isBot = false;
                 break;
             default:
                 logger.error('未知のインターナル命令', data);
                 // TODO FIX 中断エラーの共通化
                 return Promise.reject(0);
         }
-    }
-    data.content = content;
-    data.isBot = isBot;
-    return Promise.resolve(data);
-}
-
-/**
- * @this {MessageBuilder}
- * @param {MessageBuilderData} data
- * @returns {Promise<MessageBuilderData>}
- */
-async function processValidateF(data) {
-    if (data.isBot || data.type !== 'text') {
-        // BotとDMは無視
-        logger.trace(`${data.userName}の${data.type}メッセージを無視`);
-        // TODO FIX 中断エラーの共通化
-        return Promise.reject(0);
+        data.content = content;
     }
     return Promise.resolve(data);
-}
-
-/**
- * @this {MessageBuilder}
- * @param {MessageBuilderData} data
- * @returns {Promise<'command'|'read'>}
- */
-async function inferMessageTypeF(data) {
-    // TODO FIX
-    if (this.message.mentions.has(this.client.user) || data.content.startsWith(this.commandKey)) {
-        return Promise.resolve('command');
-    }
-    // TODO FIX もとは this.vc.isJoined && this.mainChannel !== null && this.mainChannel.id === message.channel.id
-    if (this.message) {
-        return Promise.resolve('read');
-    }
 }
 
 /**
@@ -146,8 +107,29 @@ async function inferMessageTypeF(data) {
 async function processReplaceF(data) {
     data.content = emoji.replace(data.content, emoji => `:${emoji.key}:`);
     // TODO FIX 境界に依存するDiscordTagReplacerはUtilではない
-    data.content = DiscordTagReplacer.replace(this.context, data.content);
+    // data.content = DiscordTagReplacer.replace(this.context, data.content);
     return Promise.resolve(data);
+}
+
+/**
+ * @this {MessageBuilder}
+ * @param {MessageBuilderData} data
+ * @param {import('../domain/models/discord_server')} server
+ * @returns {Promise<'command'|'read'>}
+ */
+async function inferMessageTypeF(data, server) {
+    // 花子がメンションされているか、コマンドプリフィクスを持つならコマンド
+    if (data.isHanakoMentioned || server.hasCommandPrefix(data.content)) {
+        return Promise.resolve('command');
+    }
+    // それ以外で、読み上げ対象のチャンネルなら読み上げ
+    if (server.isReadingChannel(data.channelId)) {
+        return Promise.resolve('read');
+    }
+    // どちらでもなければ無視
+    logger.trace(`pass: ${data.serverName} #${data.channelName} @${data.userName} ${data.content}`);
+    // TODO FIX errortype
+    return Promise.reject(0);
 }
 
 module.exports = MessageBuilder;
