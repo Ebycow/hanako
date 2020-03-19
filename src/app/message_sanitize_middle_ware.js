@@ -14,9 +14,10 @@ const emojiRe = /:(.+):/;
  */
 function replaceDiscordTags(message) {
     const maybe = m => (m ? m : {});
-    const resolveUserName = x => maybe(message.mentions.members.find(m => x === m.id)).displayName;
     const resolveRoleName = x => maybe(message.mentions.roles.find(r => x === r.id)).name;
     const resolveChannelName = x => maybe(message.mentions.channels.find(c => x === c.id)).name;
+    const resolveUserName = x =>
+        message.mentions.members ? maybe(message.mentions.members.find(m => x === m.id)).displayName : undefined;
 
     let content = message.content;
     content = content.replace(tagRe, (_, emojiTag, userTag, channelTag, roleTag) => {
