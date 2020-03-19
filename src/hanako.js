@@ -7,7 +7,8 @@ const MessageSanitizeMiddleWare = require('./app/message_sanitize_middle_ware');
 
 /**
  * 最上位までハンドルされなかった例外をエラーログとして出力
- * @param {any} err
+ *
+ * @param {any} err エラーオブジェクト
  */
 function handleUncaughtError(err) {
     if (err === 0) {
@@ -49,14 +50,13 @@ class Hanako {
      *
      * @param {string} event Discordイベント名
      * @param {Function} C コントローラのクラス
-     * @param {Function[]} [middlewares=[]] ミドルウェアのクラス
+     * @param {Function[]} [middlewares=[]] ミドルウェアのクラス配列（実行順）
      * @private
      */
     bind(event, C, middlewares = []) {
         const chain = middlewares.map(M => new M(this.client)).map(o => o.transform.bind(o));
         const method = 'on' + event.slice(0, 1).toUpperCase() + event.slice(1);
-        const ctrl = new C(this.client);
-        chain.push(ctrl[method].bind(ctrl));
+        chain.push(C.prototype[method].bind(new C(this.client)));
         const callp = zP => chain.reduce((p, f) => p.then(r => (Array.isArray(r) ? f(...r) : f(r))), zP);
         this.client.on(event, (...args) => callp(Promise.resolve(args)).catch(handleUncaughtError));
     }

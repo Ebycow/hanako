@@ -1,7 +1,6 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const emoji = require('node-emoji');
 const Injector = require('../core/injector');
 const IDiscordServerRepo = require('../domain/repos/i_discord_server_repo');
 const DiscordMessage = require('../domain/entities/discord_message');
@@ -29,7 +28,7 @@ const DiscordMessage = require('../domain/entities/discord_message');
  */
 class MessageBuilder {
     /**
-     * @param {IDiscordServerRepo?} serverRepo
+     * @param {null} serverRepo
      */
     constructor(serverRepo = null) {
         this.serverRepo = serverRepo || Injector.resolve(IDiscordServerRepo);
@@ -37,8 +36,9 @@ class MessageBuilder {
 
     /**
      * DiscordMessageエンティティの構築
-     * @param {MessageBuilderData} param
-     * @returns {Promise<DiscordMessage>}
+     *
+     * @param {MessageBuilderData} param 構築に必要な情報
+     * @returns {Promise<DiscordMessage>} 構築されたエンティティ
      */
     async build(param) {
         assert(typeof param.id === 'string');
@@ -55,7 +55,6 @@ class MessageBuilder {
 
         let data = Object.assign({}, param);
         data = await processSecretF.call(this, data);
-        data = await processReplaceF.call(this, data);
 
         const server = await this.serverRepo.loadOrCreate(data.serverId);
         const type = await inferMessageTypeF.call(this, data, server);
@@ -64,6 +63,7 @@ class MessageBuilder {
             id: data.id,
             content: data.content,
             type: type,
+            serverId: data.serverId,
         });
 
         return Promise.resolve(dmessage);
@@ -71,6 +71,8 @@ class MessageBuilder {
 }
 
 /**
+ * (private) インターナル命令を処理
+ *
  * @this {MessageBuilder}
  * @param {MessageBuilderData} data
  * @returns {Promise<MessageBuilderData>}
@@ -91,6 +93,7 @@ async function processSecretF(data) {
                     content = tmp.slice(0, 2).join(' ');
                     break;
                 default:
+                    // TODO ここでlogger.errorは何かがおかしい
                     logger.error('未知のインターナル命令', data);
                     // TODO FIX 中断エラーの共通化
                     return Promise.reject(0);
@@ -107,18 +110,8 @@ async function processSecretF(data) {
 }
 
 /**
- * @this {MessageBuilder}
- * @param {MessageBuilderData} data
- * @returns {Promise<MessageBuilderData>}
- */
-async function processReplaceF(data) {
-    data.content = emoji.replace(data.content, emoji => `:${emoji.key}:`);
-    // TODO FIX 境界に依存するDiscordTagReplacerはUtilではない
-    // data.content = DiscordTagReplacer.replace(this.context, data.content);
-    return Promise.resolve(data);
-}
-
-/**
+ * (private) コマンドか読み上げか無視かを判断する。無視しないならタイプを返す。
+ *
  * @this {MessageBuilder}
  * @param {MessageBuilderData} data
  * @param {import('../domain/models/discord_server')} server
@@ -127,12 +120,12 @@ async function processReplaceF(data) {
 async function inferMessageTypeF(data, server) {
     // 花子がメンションされているか、コマンドプリフィクスを持つならコマンド
     if (data.isHanakoMentioned || server.hasCommandPrefix(data.content)) {
-        logger.info(`command: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
+        logger.trace(`command: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
         return Promise.resolve('command');
     }
     // それ以外で、読み上げ対象のチャンネルなら読み上げ
     if (server.isReadingChannel(data.channelId)) {
-        logger.info(`read: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
+        logger.trace(`read: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
         return Promise.resolve('read');
     }
     // どちらでもなければ無視

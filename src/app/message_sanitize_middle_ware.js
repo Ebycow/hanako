@@ -1,3 +1,5 @@
+const emoji = require('node-emoji');
+
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
 
@@ -44,6 +46,17 @@ function replaceDiscordTags(message) {
 }
 
 /**
+ * Unicodeコードポイントで表現される絵文字を":英名:"に変換
+ *
+ * @param {discord.Message} message
+ * @returns {discord.Message}
+ */
+function replaceUnicodeEmojis(message) {
+    message.content = emoji.replace(message.content, emoji => `:${emoji.key}:`);
+    return message;
+}
+
+/**
  * ミドルウェア
  * メッセージ内容を標準化する
  */
@@ -62,7 +75,8 @@ class MessageSanitizeMiddleWare {
      * @returns {Promise<discord.Message>} 標準化済みメッセージ
      */
     async transform(message) {
-        const newMessage = replaceDiscordTags(message);
+        let newMessage = replaceDiscordTags(message);
+        newMessage = replaceUnicodeEmojis(newMessage);
         return Promise.resolve(newMessage);
     }
 }
