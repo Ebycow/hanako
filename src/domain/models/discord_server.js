@@ -1,9 +1,17 @@
+const Commando = require('./commando');
+
+/**
+ * ドメインモデル
+ * ディスコードサーバー
+ */
 class DiscordServer {
     /**
-     * @param {string} id
+     * @param {string} id サーバーID
      */
     constructor(id) {
         /**
+         * サーバーID
+         *
          * @type {string}
          */
         this.id = id;
@@ -12,15 +20,17 @@ class DiscordServer {
         this.prefix = process.env.PREFIX_KEY || '>';
 
         /**
-         * @type {boolean}
-         * @readonly
+         * コマンドー
+         *
+         * @type {Commando}
          */
+        this.commando = new Commando();
+
+        // TODO FIX
         this.isInitializing = false;
     }
 
-    /**
-     * @returns {Promise<void>}
-     */
+    // TODO 無くせるはず
     async init() {
         this.isInitializing = true;
         // TODO FIX
@@ -28,7 +38,7 @@ class DiscordServer {
     }
 
     /**
-     * @param {string} channelId
+     * @param {string} channelId チャンネルID
      * @returns {boolean} 読み上げ対象のチャンネルか否か
      */
     isReadingChannel(channelId) {
@@ -37,8 +47,8 @@ class DiscordServer {
     }
 
     /**
-     * @param {string} text
-     * @returns {boolean} コマンドプリフィクスが付いているか否か
+     * @param {string} text 任意のテキスト
+     * @returns {boolean} テキストにコマンドプリフィクスが付いているか否か
      */
     hasCommandPrefix(text) {
         return text.startsWith(this.prefix);
