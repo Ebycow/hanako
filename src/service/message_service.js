@@ -29,7 +29,7 @@ class MessageService {
         const server = await this.serverRepo.loadOrCreate(dmessage.serverId);
 
         if (dmessage.type === 'command') {
-            let input;
+            let command, input;
             try {
                 input = CommandInput.tryParse(dmessage, server.prefix);
             } catch (e) {
@@ -41,14 +41,11 @@ class MessageService {
                     return Promise.reject(e);
                 }
             }
-            const [command, consumed] = server.commando.resolve(...input.argv);
+            [command, input] = server.commando.resolve(input);
             if (!command) {
                 logger.info(`コマンドが見当たらない ${input}`);
                 // TODO FIX errortype
                 return Promise.reject(0);
-            }
-            for (let i = 0; i < consumed; i++) {
-                input = input.consume();
             }
             const response = command.process(input);
 

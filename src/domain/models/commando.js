@@ -1,5 +1,8 @@
 const commands = require('./commands');
 
+/** @typedef {import('./commands/command.js')} Command */
+/** @typedef {import('../entities/command_input')} CommandInput */
+
 /**
  * ドメインモデル
  * コマンドー
@@ -13,7 +16,7 @@ const commands = require('./commands');
  */
 class Commando {
     constructor() {
-        /** @type {[(name:string) => import('./commands/command')]} */
+        /** @type {Array<(name:string) => Command>} */
         this.resolvers = [];
         for (const K of Object.values(commands)) {
             const I = new K();
@@ -23,12 +26,12 @@ class Commando {
     }
 
     /**
-     * 引数からコマンドを解決
+     * 入力からコマンドを解決
      *
-     * @param  {...string} args
-     * @returns {[import('./commands/command'), number]} コマンドインスタンスと引数消費量のペア 見つからない場合Commandはnull
+     * @param  {CommandInput} input コマンド引数
+     * @returns {[Command, CommandInput]} コマンドインスタンスと消費済みコマンド引数のペア（コマンドが見つからない場合インスタンスはnull）
      */
-    resolve(...args) {
+    resolve(input) {
         const go = (c, name, ...rest) => {
             for (const F of this.resolvers) {
                 const I = F(name);
@@ -41,7 +44,17 @@ class Commando {
             }
         };
 
-        return go(1, ...args);
+        // コマンド名を解決
+        const [cmd, consumed] = go(1, ...input.argv);
+        if (!cmd) {
+            return [null, input];
+        }
+
+        // コマンド名で消費した分の引数をCommandInputでも消費させる
+        let output = input;
+        for (let i = 0; i < consumed; i++) output = output.consume();
+
+        return [cmd, output];
     }
 }
 
