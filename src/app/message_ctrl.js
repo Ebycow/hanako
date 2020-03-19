@@ -7,6 +7,10 @@ const MessageService = require('../service/message_service');
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
 
+/**
+ * メッセージコントローラ
+ * Discordのmessageイベントに対応する
+ */
 class MessageCtrl {
     /**
      * @param {discord.Client} client Discord Botのクライアント
@@ -15,10 +19,13 @@ class MessageCtrl {
         this.client = client;
         this.validator = new MessageValidator();
         this.builder = new MessageBuilder();
+        this.service = new MessageService();
     }
 
     /**
-     * @param {discord.Message} message
+     * on('message')イベント
+     *
+     * @param {discord.Message} message 受信したDiscordのメッセージ
      */
     async onMessage(message) {
         // バリデーション
@@ -30,7 +37,8 @@ class MessageCtrl {
             channelType: message.channel.type,
         };
         await this.validator.validate(validatorParam);
-        // エンティティの作成
+
+        // メッセージエンティティの作成
         const builderParam = {
             id: message.id,
             isHanako: message.author.id === this.client.user.id,
@@ -45,10 +53,12 @@ class MessageCtrl {
             secret: typeof message.nonce === 'number' ? message.nonce >>> 0 : 0,
         };
         const entity = await this.builder.build(builderParam);
-        logger.info(entity);
-        // TODO FIX これはモック
-        const service = new MessageService();
-        await service.serve(entity);
+
+        // メッセージに対する花子のレスポンスを取得
+        const response = await this.service.serve(entity);
+
+        // TODO
+        logger.info(response);
     }
 }
 

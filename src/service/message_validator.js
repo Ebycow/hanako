@@ -22,7 +22,8 @@ class MessageValidator {
 
     /**
      * メッセージの基本バリデーション
-     * @param {MessageValidatorData} data
+     *
+     * @param {MessageValidatorData} data バリデーションに必要な情報
      */
     async validate(data) {
         assert(typeof data.isBot === 'boolean');
