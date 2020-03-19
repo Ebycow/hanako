@@ -1,6 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const MessageCtrl = require('./app/message_ctrl');
+const MessageSanitizeMiddleWare = require('./app/message_sanitize_middle_ware');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 
@@ -35,7 +36,7 @@ class Hanako {
      * アプリケーションのエントリポイント
      */
     start() {
-        this.bind('message', new MessageCtrl(this.client));
+        this.bind('message', MessageCtrl, [MessageSanitizeMiddleWare]);
 
         // TODO FIX
         this.client.on('ready', () => logger.info('ready'));
@@ -45,13 +46,19 @@ class Hanako {
 
     /**
      * コントローラをバインド
+     *
      * @param {string} event Discordイベント名
-     * @param {{[key: string]: function(...):Promise<void>}} ctrl コントローラのインスタンス
+     * @param {Function} C コントローラのクラス
+     * @param {Function[]} [middlewares=[]] ミドルウェアのクラス
      * @private
      */
-    bind(event, ctrl) {
+    bind(event, C, middlewares = []) {
+        const chain = middlewares.map(M => new M(this.client)).map(o => o.transform.bind(o));
         const method = 'on' + event.slice(0, 1).toUpperCase() + event.slice(1);
-        this.client.on(event, (...args) => ctrl[method](...args).catch(handleUncaughtError));
+        const ctrl = new C(this.client);
+        chain.push(ctrl[method].bind(ctrl));
+        const callp = zP => chain.reduce((p, f) => p.then(r => (Array.isArray(r) ? f(...r) : f(r))), zP);
+        this.client.on(event, (...args) => callp(Promise.resolve(args)).catch(handleUncaughtError));
     }
 }
 
