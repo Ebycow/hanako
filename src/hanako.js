@@ -11,8 +11,8 @@ const MessageSanitizeMiddleWare = require('./app/message_sanitize_middle_ware');
  * @param {any} err エラーオブジェクト
  */
 function handleUncaughtError(err) {
-    if (err === 0) {
-        // TODO FIX 中断エラー共通化
+    if (err.eby && err.type === 'abort') {
+        // === EbyAbortError
         return Promise.resolve();
     }
 
@@ -54,7 +54,7 @@ class Hanako {
      * @private
      */
     bind(event, C, middlewares = []) {
-        const chain = middlewares.map(M => new M(this.client)).map(o => o.transform.bind(o));
+        const chain = middlewares.map(M => M.prototype.transform.bind(new M(this.client)));
         const method = 'on' + event.slice(0, 1).toUpperCase() + event.slice(1);
         chain.push(C.prototype[method].bind(new C(this.client)));
         const callp = zP => chain.reduce((p, f) => p.then(r => (Array.isArray(r) ? f(...r) : f(r))), zP);

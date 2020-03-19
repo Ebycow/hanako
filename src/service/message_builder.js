@@ -1,6 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
+const errors = require('../core/errors').promises;
 const Injector = require('../core/injector');
 const IDiscordServerRepo = require('../domain/repos/i_discord_server_repo');
 const DiscordMessage = require('../domain/entities/discord_message');
@@ -95,15 +96,13 @@ async function processSecretF(data) {
                 default:
                     // TODO ここでlogger.errorは何かがおかしい
                     logger.error('未知のインターナル命令', data);
-                    // TODO FIX 中断エラーの共通化
-                    return Promise.reject(0);
+                    return errors.abort();
             }
             data.content = content;
         } else {
             // インターナル命令じゃない花子は常に無視
             logger.trace(`pass-self: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
-            // TODO FIX 中断エラーの共通化
-            return Promise.reject(0);
+            return errors.abort();
         }
     }
     return Promise.resolve(data);
@@ -130,8 +129,7 @@ async function inferMessageTypeF(data, server) {
     }
     // どちらでもなければ無視
     logger.trace(`pass: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
-    // TODO FIX errortype
-    return Promise.reject(0);
+    return errors.abort();
 }
 
 module.exports = MessageBuilder;

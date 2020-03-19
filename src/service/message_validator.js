@@ -1,6 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
+const errors = require('../core/errors').promises;
 
 /**
  * @typedef MessageValidatorData
@@ -35,20 +36,17 @@ class MessageValidator {
         if (data.isBot && !data.isHanako) {
             // 花子以外のBotは常に無視
             logger.trace(`${data.userName}はBotなので無視した`);
-            // TODO FIX errortype
-            return Promise.reject(0);
+            return errors.abort();
         }
         if (data.content === '') {
             // 空のメッセージは無視（ファイル添付時の挙動）
             logger.trace(`${data.userName}の空のメッセージを無視した`);
-            // TODO FIX errortype
-            return Promise.reject(0);
+            return errors.abort();
         }
         if (data.channelType === 'dm') {
             // DMは無視
-            logger.trace(`${data.userName}からのDMを無視した ${data.content}`);
-            // TODO FIX errortype
-            return Promise.reject(0);
+            logger.trace(`${data.userName}からのDMを無視した "${data.content}"`);
+            return errors.abort();
         }
 
         return Promise.resolve();

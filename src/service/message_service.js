@@ -1,6 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
+const errors = require('../core/errors').promises;
 const Injector = require('../core/injector');
 const IDiscordServerRepo = require('../domain/repos/i_discord_server_repo');
 const CommandInput = require('../domain/entities/command_input');
@@ -35,8 +36,7 @@ class MessageService {
             } catch (e) {
                 if (e instanceof TypeError) {
                     logger.warn(`パースできないコマンドを受信した ${dmessage}`);
-                    // TODO FIX errortype
-                    return Promise.reject(0);
+                    return errors.abort();
                 } else {
                     return Promise.reject(e);
                 }
@@ -44,15 +44,14 @@ class MessageService {
             [command, input] = server.commando.resolve(input);
             if (!command) {
                 logger.info(`コマンドが見当たらない ${input}`);
-                // TODO FIX errortype
-                return Promise.reject(0);
+                return errors.abort();
             }
             const response = command.process(input);
 
             return Promise.resolve(response);
         } else if (dmessage.type === 'read') {
             // TODO 読み上げ処理
-            return Promise.reject(0);
+            return errors.abort('TODO');
         } else {
             throw new Error('unreachable');
         }
