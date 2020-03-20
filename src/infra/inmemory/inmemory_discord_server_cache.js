@@ -54,6 +54,17 @@ class InmemoryDiscordServerCache {
             return Promise.resolve(newServer);
         }
     }
+
+    async load(id) {
+        assert(typeof id === 'string');
+
+        const maybeServer = cache.get(id);
+        if (maybeServer) {
+            return Promise.resolve(maybeServer);
+        } else {
+            return errors.unexpected(`no-such-server-exists ${id}`);
+        }
+    }
 }
 
 IDiscordServerRepo.comprise(InmemoryDiscordServerCache);

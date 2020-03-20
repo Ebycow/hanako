@@ -27,7 +27,7 @@ class MessageService {
     async serve(dmessage) {
         assert(typeof dmessage === 'object');
 
-        const server = await this.serverRepo.loadOrCreate(dmessage.serverId);
+        const server = await this.serverRepo.load(dmessage.serverId);
 
         if (dmessage.type === 'command') {
             let command, input;
