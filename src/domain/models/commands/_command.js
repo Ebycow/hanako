@@ -9,7 +9,7 @@ class Command {
     /**
      * コマンドタイプ
      *
-     * @type {'ask'}
+     * @type {'ask', 'join'}
      */
     get type() {
         throw new Error('unreachable');
@@ -28,7 +28,7 @@ class Command {
      * コマンドを処理
      *
      * @param {import('../../entities/command_input')} input
-     * @returns {import('../../entities/responses/response')}
+     * @returns {import('../../entities/responses/_response')}
      */
     process(input) {
         throw new Error('unreachable');

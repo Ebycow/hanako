@@ -1,6 +1,6 @@
 const commands = require('./commands');
 
-/** @typedef {import('./commands/command.js')} Command */
+/** @typedef {import('./commands/_command.js')} Command */
 /** @typedef {import('../entities/command_input')} CommandInput */
 
 /**

@@ -3,4 +3,5 @@
  */
 module.exports = {
     ask: require('./ask_command'),
+    join: require('./join_command'),
 };
