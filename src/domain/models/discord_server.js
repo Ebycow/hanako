@@ -1,4 +1,7 @@
 const Commando = require('./commando');
+const Reado = require('./reado');
+
+/** @typedef {import('../entities/server_status')} ServerStatus */
 
 /**
  * ドメインモデル
@@ -7,14 +10,22 @@ const Commando = require('./commando');
 class DiscordServer {
     /**
      * @param {string} id サーバーID
+     * @param {ServerStatus} status サーバー状態
      */
-    constructor(id) {
+    constructor(id, status) {
         /**
          * サーバーID
          *
          * @type {string}
          */
         this.id = id;
+
+        /**
+         * 読み取り専用のサーバー状態
+         *
+         * @type {ServerStatus}
+         */
+        this.status = status;
 
         // TODO FIX
         this.prefix = process.env.PREFIX_KEY || '>';
@@ -26,15 +37,12 @@ class DiscordServer {
          */
         this.commando = new Commando();
 
-        // TODO FIX
-        this.isInitializing = false;
-    }
-
-    // TODO 無くせるはず
-    async init() {
-        this.isInitializing = true;
-        // TODO FIX
-        this.isInitializing = false;
+        /**
+         * リードー
+         *
+         * @type {Reado}
+         */
+        this.reado = new Reado();
     }
 
     /**
@@ -42,8 +50,7 @@ class DiscordServer {
      * @returns {boolean} 読み上げ対象のチャンネルか否か
      */
     isReadingChannel(channelId) {
-        // TODO FIX
-        return false;
+        return this.status.readingChannels.includes(channelId);
     }
 
     /**
