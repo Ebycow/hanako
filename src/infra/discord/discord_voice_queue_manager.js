@@ -9,7 +9,8 @@ const IDiscordVcActionRepo = require('../../domain/repos/i_discord_vc_action_rep
 const VoiceChatModel = require('./voice_chat_model');
 
 /** @typedef {import('stream').Readable} Readable */
-/** @typedef {import('../../domain/entities/actions/join_voice_action')} VoiceJoinAction */
+/** @typedef {import('../../domain/entities/actions/join_voice_action')} JoinVoiceAction */
+/** @typedef {import('../../domain/entities/actions/leave_voice_action')} LeaveVoiceAction */
 /** @typedef {import('../../domain/entities/responses/voice_response')} VoiceResponse */
 
 /** @type {Map<string, VoiceChatModel>} */
@@ -35,7 +36,7 @@ class DiscordVoiceQueueManager {
 
     /**
      *
-     * @param {VoiceJoinAction} action
+     * @param {JoinVoiceAction} action
      */
     async postJoinVoice(action) {
         const voiceChannel = this.client.channels.resolve(action.voiceChannelId);
@@ -60,6 +61,24 @@ class DiscordVoiceQueueManager {
 
         // 読み上げチャネルに追加
         vc.addReadingChannel(textChannel);
+
+        return Promise.resolve();
+    }
+
+    /**
+     *
+     * @param {LeaveVoiceAction} action
+     */
+    async postLeaveVoice(action) {
+        const vc = cache.get(action.serverId);
+        if (!vc) {
+            return errors.unexpected(`leave-voice-before-join ${action}`);
+        }
+
+        // VCから退出
+        vc.leave();
+
+        return Promise.resolve();
     }
 
     /**

@@ -66,6 +66,9 @@ async function handleActionResponseF(response) {
         case 'join_voice':
             promise = this.vcActionRepo.postJoinVoice(response.action);
             break;
+        case 'leave_voice':
+            promise = this.vcActionRepo.postLeaveVoice(response.action);
+            break;
         default:
             throw new Error('unreachable');
     }
