@@ -3,17 +3,23 @@ const readers = require('./readers');
 const Plain = require('../entities/audios/plain');
 
 /** @typedef {import('../entities/audios/_audio')} Audio */
+/** @typedef {import('../entities/server_status')} ServerStatus */
 
 /**
  * ドメインモデル
  * リードー
  *
  * コマンドーと語感を合わせたらこうなってしまった
- * 後悔はしていない
+ * 後悔はしていない😩
  */
 class Reado {
-    constructor() {
-        const lifters = readers.sorted.map(R => R.prototype.read.bind(new R()));
+    /**
+     * リードーを構築
+     *
+     * @param {ServerStatus} status Reader適用下のサーバー状態
+     */
+    constructor(status) {
+        const lifters = readers.sorted.map(R => R.prototype.read.bind(new R(status)));
         this.squash = z => lifters.reduce((arr, f) => arr.map(f).flat(), [z]);
     }
 

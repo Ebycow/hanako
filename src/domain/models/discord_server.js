@@ -35,14 +35,14 @@ class DiscordServer {
          *
          * @type {Commando}
          */
-        this.commando = new Commando();
+        this.commando = new Commando(status);
 
         /**
          * リードー
          *
          * @type {Reado}
          */
-        this.reado = new Reado();
+        this.reado = new Reado(status);
     }
 
     /**

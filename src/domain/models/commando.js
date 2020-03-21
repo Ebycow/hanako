@@ -2,6 +2,7 @@ const commands = require('./commands');
 
 /** @typedef {import('./commands/_command.js')} Command */
 /** @typedef {import('../entities/command_input')} CommandInput */
+/** @typedef {import('../entities/server_status')} ServerStatus */
 
 /**
  * ドメインモデル
@@ -15,11 +16,16 @@ const commands = require('./commands');
  * 😡「野郎ぶっ殺してやらぁ！！」
  */
 class Commando {
-    constructor() {
+    /**
+     * コマンドーを構築
+     *
+     * @param {ServerStatus} status コマンド実行下のサーバー状態
+     */
+    constructor(status) {
         /** @type {Array<(name:string) => Command>} */
         this.resolvers = [];
         for (const K of Object.values(commands)) {
-            const I = new K();
+            const I = new K(status);
             const F = name => (K.names.includes(name) ? I : null);
             this.resolvers.push(F);
         }
