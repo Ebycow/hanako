@@ -103,4 +103,4 @@ class EbyStream extends Readable {
     }
 }
 
-module.exports = { EbyStream };
+module.exports = EbyStream;
