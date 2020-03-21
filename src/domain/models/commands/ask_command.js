@@ -1,7 +1,9 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const TextResponse = require('../../entities/responses/text_response');
+
+/** @typedef {import('../../entities/command_input')} CommandInput */
+/** @typedef {import('../../entities/responses/_response')} Response */
 
 /**
  * ドメインモデル
@@ -9,34 +11,33 @@ const TextResponse = require('../../entities/responses/text_response');
  */
 class AskCommand {
     /**
-     * @returns {'ask'}
+     * @type {'ask'}
      */
     get type() {
         return 'ask';
     }
 
     /**
-     * @returns {string[]}
+     * @type {string[]}
      */
     static get names() {
-        // TODO FIXME
-        return ['ask', 'satomi', 'shitsu-mon'];
+        return ['ask'];
     }
 
     /**
      * askコマンドを処理
      *
-     * @param {import('../../entities/command_input')} input コマンド引数
-     * @returns {import('../../entities/responses/response')} レスポンス
+     * @param {CommandInput} input コマンド引数
+     * @returns {Response} レスポンス
      */
     process(input) {
         assert(typeof input === 'object');
-        logger.info(`askを受信 ${input}`);
+        logger.info(`askを受理 ${input}`);
 
         if (Math.random() >= 0.5) {
-            return new TextResponse({ content: 'はい' });
+            return input.newChatResponse('はい');
         } else {
-            return new TextResponse({ content: 'いいえ' });
+            return input.newChatResponse('いいえ');
         }
     }
 }
