@@ -8,7 +8,6 @@ const errors = require('../core/errors').promises;
  * @type {object}
  *
  * @property {boolean} isBot
- * @property {boolean} isHanako
  * @property {string} content
  * @property {string} userName
  * @property {'text'|'dm'} channelType
@@ -28,13 +27,12 @@ class MessageValidator {
      */
     async validate(data) {
         assert(typeof data.isBot === 'boolean');
-        assert(typeof data.isHanako === 'boolean');
         assert(typeof data.content === 'string');
         assert(typeof data.userName === 'string');
         assert(data.channelType === 'text' || data.channelType === 'dm');
 
-        if (data.isBot && !data.isHanako) {
-            // 花子以外のBotは常に無視
+        if (data.isBot) {
+            // Botは常に無視
             logger.trace(`${data.userName}はBotなので無視した`);
             return errors.abort();
         }

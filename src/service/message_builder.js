@@ -6,12 +6,13 @@ const Injector = require('../core/injector');
 const IDiscordServerRepo = require('../domain/repos/i_discord_server_repo');
 const DiscordMessage = require('../domain/entities/discord_message');
 
+/** @typedef {import('../domain/models/discord_server')} DiscordServer */
+
 /**
  * @typedef MessageBuilderData
  * @type {object}
  *
  * @property {string} id
- * @property {boolean} isHanako
  * @property {boolean} isHanakoMentioned
  * @property {string} content
  * @property {string} userId
@@ -21,7 +22,6 @@ const DiscordMessage = require('../domain/entities/discord_message');
  * @property {string} serverId
  * @property {string} serverName
  * @property {?string} voiceChannelId
- * @property {number} secret
  */
 
 /**
@@ -44,7 +44,6 @@ class MessageBuilder {
      */
     async build(param) {
         assert(typeof param.id === 'string');
-        assert(typeof param.isHanako === 'boolean');
         assert(typeof param.isHanakoMentioned === 'boolean');
         assert(typeof param.content === 'string');
         assert(typeof param.userId === 'string');
@@ -54,12 +53,12 @@ class MessageBuilder {
         assert(typeof param.serverId === 'string');
         assert(typeof param.serverName === 'string');
         assert(typeof param.voiceChannelId === 'string' || param.voiceChannelId === null);
-        assert(typeof param.secret === 'number' && Number.isInteger(param.secret) && param.secret >= 0);
 
         let data = Object.assign({}, param);
-        data = await processSecretF.call(this, data);
 
         const server = await this.serverRepo.load(data.serverId);
+
+        // コマンドか読み上げか無視かを判断する
         const type = await inferMessageTypeF.call(this, data, server);
 
         const dmessage = new DiscordMessage({
@@ -76,48 +75,11 @@ class MessageBuilder {
 }
 
 /**
- * (private) インターナル命令を処理
- *
- * @this {MessageBuilder}
- * @param {MessageBuilderData} data
- * @returns {Promise<MessageBuilderData>}
- */
-async function processSecretF(data) {
-    if (data.isHanako) {
-        if (data.secret >>> 16 === 0xebeb) {
-            // インターナル命令が埋め込まれていた場合
-            logger.info('インターナル命令を受信', data.secret.toString(16));
-            const opcode = (data.secret & 0xffff) >>> 0;
-            let content = data.content;
-            let tmp;
-            switch (opcode) {
-                case 0x0001:
-                    // 復帰命令
-                    tmp = content.split(' ');
-                    tmp[1] = 'plz';
-                    content = tmp.slice(0, 2).join(' ');
-                    break;
-                default:
-                    // TODO ここでlogger.errorは何かがおかしい
-                    logger.error('未知のインターナル命令', data);
-                    return errors.abort();
-            }
-            data.content = content;
-        } else {
-            // インターナル命令じゃない花子は常に無視
-            logger.trace(`pass-self: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
-            return errors.abort();
-        }
-    }
-    return Promise.resolve(data);
-}
-
-/**
  * (private) コマンドか読み上げか無視かを判断する。無視しないならタイプを返す。
  *
  * @this {MessageBuilder}
  * @param {MessageBuilderData} data
- * @param {import('../domain/models/discord_server')} server
+ * @param {DiscordServer} server
  * @returns {Promise<'command'|'read'>}
  */
 async function inferMessageTypeF(data, server) {

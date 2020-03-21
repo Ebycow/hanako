@@ -35,7 +35,6 @@ class MessageCtrl {
         // バリデーション
         const validatorParam = {
             isBot: message.author.bot,
-            isHanako: message.author.id === this.client.user.id,
             content: message.content,
             userName: message.author.username,
             channelType: message.channel.type,
@@ -45,7 +44,6 @@ class MessageCtrl {
         // メッセージエンティティの作成
         const builderParam = {
             id: message.id,
-            isHanako: message.author.id === this.client.user.id,
             isHanakoMentioned: message.mentions.has(this.client.user),
             content: message.content,
             userId: message.author.id,
@@ -55,7 +53,6 @@ class MessageCtrl {
             serverId: message.guild.id,
             serverName: message.guild.name,
             voiceChannelId: message.member.voice.channel ? message.member.voice.channel.id : null,
-            secret: typeof message.nonce === 'number' ? message.nonce >>> 0 : 0,
         };
         const entity = await this.builder.build(builderParam);
 
