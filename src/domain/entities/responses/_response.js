@@ -9,7 +9,7 @@ class Response {
     /**
      * レスポンスタイプ
      *
-     * @type {'text'}
+     * @type {'chat'|'voice'|'action'|'silent'}
      */
     get type() {
         throw new Error('unreachable');
