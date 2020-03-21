@@ -34,7 +34,7 @@ class JoinCommand {
      */
     process(input) {
         assert(typeof input === 'object');
-        logger.trace(`VC参加コマンドを受理 ${input}`);
+        logger.info(`VC参加コマンドを受理 ${input}`);
 
         if (!input.origin.voiceChannelId) {
             return input.newChatResponse('通話チャンネルに参加してから呼んでね！', 'error');

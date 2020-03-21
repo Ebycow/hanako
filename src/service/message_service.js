@@ -33,6 +33,7 @@ class MessageService {
      */
     async serve(dmessage, server) {
         assert(typeof dmessage === 'object');
+        assert(typeof server === 'object');
         logger.trace(`メッセージを受理 ${dmessage}`);
 
         if (dmessage.type === 'command') {
