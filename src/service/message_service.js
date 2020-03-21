@@ -4,58 +4,108 @@ const assert = require('assert').strict;
 const errors = require('../core/errors').promises;
 const Injector = require('../core/injector');
 const IDiscordServerRepo = require('../domain/repos/i_discord_server_repo');
+const IVoiceroidStreamRepo = require('../domain/repos/i_voiceroid_stream_repo');
 const CommandInput = require('../domain/entities/command_input');
+const VoiceResponse = require('../domain/entities/responses/voice_response');
+const EbyStream = require('../utils/ebystream');
+
+/** @typedef {import('../domain/models/discord_server')} DiscordServer */
+/** @typedef {import('../domain/entities/discord_message')} DiscordMessage */
+/** @typedef {import('../domain/entities/responses/_response')} Response */
 
 /**
  * アプリケーションサービス
- * メッセージ処理
+ * メッセージを処理しレスポンス値を返すサービス
  */
 class MessageService {
     /**
-     * @param {null} serverRepo
+     * @param {null} serverRepo DI
+     * @param {null} vrStreamRepo DI
      */
-    constructor(serverRepo = null) {
+    constructor(serverRepo = null, vrStreamRepo = null) {
         this.serverRepo = serverRepo || Injector.resolve(IDiscordServerRepo);
+        this.vrStreamRepo = vrStreamRepo || Injector.resolve(IVoiceroidStreamRepo);
     }
 
     /**
-     * メッセージエンティティを適切に処理し、レスポンス値を返す。
+     * メッセージエンティティを処理し、レスポンス値を返す。
      *
-     * @param {import('../domain/entities/discord_message')} dmessage 処理するメッセージ
-     * @returns {Promise<Response>}
+     * @param {DiscordMessage} dmessage 処理するメッセージエンティティ
+     * @returns {Promise<Response>} レスポンスエンティティ
      */
     async serve(dmessage) {
         assert(typeof dmessage === 'object');
+        logger.trace(`メッセージを受理 ${dmessage}`);
 
         const server = await this.serverRepo.load(dmessage.serverId);
 
         if (dmessage.type === 'command') {
-            let command, input;
-            try {
-                input = CommandInput.tryParse(dmessage, server.prefix);
-            } catch (e) {
-                if (e instanceof TypeError) {
-                    logger.warn(`パースできないコマンドを受信した ${dmessage}`);
-                    return errors.abort();
-                } else {
-                    return Promise.reject(e);
-                }
-            }
-            [command, input] = server.commando.resolve(input);
-            if (!command) {
-                logger.info(`コマンドが見当たらない ${input}`);
-                return errors.abort();
-            }
-            const response = command.process(input);
-
-            return Promise.resolve(response);
+            // コマンドタイプのメッセージ処理をメソッドに委譲
+            return processCommandMessageF.call(this, dmessage, server);
         } else if (dmessage.type === 'read') {
-            // TODO 読み上げ処理
-            return errors.abort('TODO');
+            // 読み上げタイプのメッセージ処理をメソッドに委譲
+            return processReadMessageF.call(this, dmessage, server);
         } else {
             throw new Error('unreachable');
         }
     }
+}
+
+/**
+ * (private) メッセージをコマンドとして処理し、レスポンス値を返す。
+ *
+ * @this {MessageService}
+ * @param {DiscordMessage} dmessage メッセージエンティティ
+ * @param {DiscordServer} server メッセージが紐ついているサーバー
+ * @returns {Promise<Response>} レスポンスエンティティ
+ */
+async function processCommandMessageF(dmessage, server) {
+    assert(dmessage.type === 'command');
+
+    let command, input;
+    try {
+        input = CommandInput.tryParse(dmessage, server.prefix);
+    } catch (e) {
+        if (e instanceof TypeError) {
+            logger.info(`パースできないコマンドを受信した ${dmessage}`);
+            return errors.abort();
+        } else {
+            return Promise.reject(e);
+        }
+    }
+
+    [command, input] = server.commando.resolve(input);
+    if (!command) {
+        logger.info(`コマンドが見当たらない ${input}`);
+        return errors.abort();
+    }
+
+    const response = command.process(input);
+    return Promise.resolve(response);
+}
+
+/**
+ * (private) メッセージを読み上げ処理し、音声ストリームに変換してレスポンス値を返す。
+ *
+ * @this {MessageService}
+ * @param {DiscordMessage} dmessage メッセージエンティティ
+ * @param {DiscordServer} server メッセージが紐ついているサーバー
+ * @returns {Promise<VoiceResponse>} 音声レスポンスエンティティ
+ */
+async function processReadMessageF(dmessage, server) {
+    assert(dmessage.type === 'read');
+
+    const audios = server.reado.compose(dmessage.content);
+    const promises = audios.map(audio => this.vrStreamRepo.getStream(audio));
+    const streams = await Promise.all(promises);
+    if (streams.length === 0) {
+        logger.info(`変換した結果、音声ストリームが空なので処理を中止する ${dmessage}`);
+        return errors.abort();
+    }
+    const stream = new EbyStream(streams);
+    const response = new VoiceResponse({ id: dmessage.id, stream, serverId: dmessage.serverId });
+
+    return Promise.resolve(response);
 }
 
 module.exports = MessageService;

@@ -20,6 +20,7 @@ const DiscordMessage = require('../domain/entities/discord_message');
  * @property {string} channelName
  * @property {string} serverId
  * @property {string} serverName
+ * @property {?string} voiceChannelId
  * @property {number} secret
  */
 
@@ -52,12 +53,13 @@ class MessageBuilder {
         assert(typeof param.channelName === 'string');
         assert(typeof param.serverId === 'string');
         assert(typeof param.serverName === 'string');
+        assert(typeof param.voiceChannelId === 'string' || param.voiceChannelId === null);
         assert(typeof param.secret === 'number' && Number.isInteger(param.secret) && param.secret >= 0);
 
         let data = Object.assign({}, param);
         data = await processSecretF.call(this, data);
 
-        const server = await this.serverRepo.loadOrCreate(data.serverId);
+        const server = await this.serverRepo.load(data.serverId);
         const type = await inferMessageTypeF.call(this, data, server);
 
         const dmessage = new DiscordMessage({
@@ -65,6 +67,8 @@ class MessageBuilder {
             content: data.content,
             type: type,
             serverId: data.serverId,
+            channelId: data.channelId,
+            voiceChannelId: data.voiceChannelId,
         });
 
         return Promise.resolve(dmessage);

@@ -3,6 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const MessageValidator = require('../service/message_validator');
 const MessageBuilder = require('../service/message_builder');
 const MessageService = require('../service/message_service');
+const ResponseHandler = require('../service/response_handler');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
@@ -20,6 +21,9 @@ class MessageCtrl {
         this.validator = new MessageValidator();
         this.builder = new MessageBuilder();
         this.service = new MessageService();
+        this.responseHandler = new ResponseHandler();
+
+        logger.trace('セットアップ完了');
     }
 
     /**
@@ -50,6 +54,7 @@ class MessageCtrl {
             channelName: message.channel.name,
             serverId: message.guild.id,
             serverName: message.guild.name,
+            voiceChannelId: message.member.voice.channel ? message.member.voice.channel.id : null,
             secret: typeof message.nonce === 'number' ? message.nonce >>> 0 : 0,
         };
         const entity = await this.builder.build(builderParam);
@@ -57,8 +62,8 @@ class MessageCtrl {
         // メッセージに対する花子のレスポンスを取得
         const response = await this.service.serve(entity);
 
-        // TODO
-        logger.info(response);
+        // レスポンスハンドラにレスポンス処理をさせて終了
+        await this.responseHandler.handle(response);
     }
 }
 
