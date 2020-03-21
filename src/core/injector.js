@@ -1,6 +1,7 @@
 const assert = require('assert').strict;
 
 let resolvations = new Map();
+let singletons = new Map();
 
 const Injector = {
     /**
@@ -39,6 +40,37 @@ const Injector = {
         const [C, args] = resolvations.get(inf);
         const resolvedArgs = args.map(x => Injector.resolve(x));
         return new C(...resolvedArgs);
+    },
+
+    /**
+     * @template T
+     * @param {T} type Any type to register with a signleton instance
+     * @param {InstanceType<T>} singleton singleton instance
+     */
+    registerSingleton(type, singleton) {
+        assert(typeof type === 'function');
+        assert(typeof singleton === 'object');
+
+        if (singletons.has(type)) {
+            throw new TypeError('Singleton dependency can only be registered once.');
+        }
+
+        singletons.set(type, singleton);
+    },
+
+    /**
+     * @template T
+     * @param {T} type
+     * @returns {InstanceType<T>}
+     */
+    resolveSingleton(type) {
+        assert(typeof type === 'function');
+
+        if (!singletons.has(type)) {
+            throw new TypeError(`No singleton found for ${type.name}`);
+        }
+
+        return singletons.get(type);
     },
 };
 

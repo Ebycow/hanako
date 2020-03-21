@@ -1,9 +1,9 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
+const discord = require('discord.js');
+const Injector = require('./core/injector');
 const MessageCtrl = require('./app/message_ctrl');
 const MessageSanitizeMiddleWare = require('./app/message_sanitize_middle_ware');
-
-/** @typedef {import('discord.js').Client} discord.Client */
 
 /**
  * 最上位までハンドルされなかった例外をエラーログとして出力
@@ -26,11 +26,11 @@ function handleUncaughtError(err) {
 class Hanako {
     /**
      * @param {string} token Discord Botのトークン
-     * @param {discord.Client} client Discord Botのクライアント
+     * @param {null} client DI
      */
-    constructor(token, client) {
+    constructor(token, client = null) {
         this.token = token;
-        this.client = client;
+        this.client = client || Injector.resolveSingleton(discord.Client);
     }
 
     /**
