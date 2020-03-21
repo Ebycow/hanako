@@ -3,7 +3,6 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const errors = require('../core/errors').promises;
 const Injector = require('../core/injector');
-const IDiscordServerRepo = require('../domain/repos/i_discord_server_repo');
 const IVoiceroidStreamRepo = require('../domain/repos/i_voiceroid_stream_repo');
 const CommandInput = require('../domain/entities/command_input');
 const VoiceResponse = require('../domain/entities/responses/voice_response');
@@ -19,11 +18,9 @@ const EbyStream = require('../utils/ebystream');
  */
 class MessageService {
     /**
-     * @param {null} serverRepo DI
      * @param {null} vrStreamRepo DI
      */
-    constructor(serverRepo = null, vrStreamRepo = null) {
-        this.serverRepo = serverRepo || Injector.resolve(IDiscordServerRepo);
+    constructor(vrStreamRepo = null) {
         this.vrStreamRepo = vrStreamRepo || Injector.resolve(IVoiceroidStreamRepo);
     }
 
@@ -31,13 +28,12 @@ class MessageService {
      * メッセージエンティティを処理し、レスポンス値を返す。
      *
      * @param {DiscordMessage} dmessage 処理するメッセージエンティティ
+     * @param {DiscordServer} server 送信元サーバー
      * @returns {Promise<Response>} レスポンスエンティティ
      */
-    async serve(dmessage) {
+    async serve(dmessage, server) {
         assert(typeof dmessage === 'object');
         logger.trace(`メッセージを受理 ${dmessage}`);
-
-        const server = await this.serverRepo.load(dmessage.serverId);
 
         if (dmessage.type === 'command') {
             // コマンドタイプのメッセージ処理をメソッドに委譲

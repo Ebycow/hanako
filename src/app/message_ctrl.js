@@ -4,6 +4,7 @@ const MessageValidator = require('../service/message_validator');
 const MessageBuilder = require('../service/message_builder');
 const MessageService = require('../service/message_service');
 const ResponseHandler = require('../service/response_handler');
+const ServerLoader = require('../service/server_loader');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
@@ -22,6 +23,7 @@ class MessageCtrl {
         this.builder = new MessageBuilder();
         this.service = new MessageService();
         this.responseHandler = new ResponseHandler();
+        this.serverLoader = new ServerLoader();
 
         logger.trace('セットアップ完了');
     }
@@ -41,6 +43,9 @@ class MessageCtrl {
         };
         await this.validator.validate(validatorParam);
 
+        // サーバーモデルを取得
+        const server = await this.serverLoader.load({ id: message.guild.id });
+
         // メッセージエンティティの作成
         const builderParam = {
             id: message.id,
@@ -54,10 +59,10 @@ class MessageCtrl {
             serverName: message.guild.name,
             voiceChannelId: message.member.voice.channel ? message.member.voice.channel.id : null,
         };
-        const entity = await this.builder.build(builderParam);
+        const entity = await this.builder.build(builderParam, server);
 
         // メッセージに対する花子のレスポンスを取得
-        const response = await this.service.serve(entity);
+        const response = await this.service.serve(entity, server);
 
         // レスポンスハンドラにレスポンス処理をさせて終了
         await this.responseHandler.handle(response);

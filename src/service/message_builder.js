@@ -2,8 +2,6 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const errors = require('../core/errors').promises;
-const Injector = require('../core/injector');
-const IDiscordServerRepo = require('../domain/repos/i_discord_server_repo');
 const DiscordMessage = require('../domain/entities/discord_message');
 
 /** @typedef {import('../domain/models/discord_server')} DiscordServer */
@@ -30,19 +28,13 @@ const DiscordMessage = require('../domain/entities/discord_message');
  */
 class MessageBuilder {
     /**
-     * @param {null} serverRepo
-     */
-    constructor(serverRepo = null) {
-        this.serverRepo = serverRepo || Injector.resolve(IDiscordServerRepo);
-    }
-
-    /**
      * DiscordMessageエンティティの構築
      *
      * @param {MessageBuilderData} param 構築に必要な情報
+     * @param {DiscordServer} server 送信元サーバー
      * @returns {Promise<DiscordMessage>} 構築されたエンティティ
      */
-    async build(param) {
+    async build(param, server) {
         assert(typeof param.id === 'string');
         assert(typeof param.isHanakoMentioned === 'boolean');
         assert(typeof param.content === 'string');
@@ -53,10 +45,9 @@ class MessageBuilder {
         assert(typeof param.serverId === 'string');
         assert(typeof param.serverName === 'string');
         assert(typeof param.voiceChannelId === 'string' || param.voiceChannelId === null);
+        assert(typeof server === 'object');
 
         let data = Object.assign({}, param);
-
-        const server = await this.serverRepo.load(data.serverId);
 
         // コマンドか読み上げか無視かを判断する
         const type = await inferMessageTypeF.call(this, data, server);
