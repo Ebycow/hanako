@@ -9,7 +9,7 @@ class Command {
     /**
      * コマンドタイプ
      *
-     * @type {'ask'|'join'|'leave'}
+     * @type {'ask'|'join'|'leave'|'seibai'}
      */
     get type() {
         throw new Error('unreachable');

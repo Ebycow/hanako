@@ -69,6 +69,9 @@ async function handleActionResponseF(response) {
         case 'leave_voice':
             promise = this.vcActionRepo.postLeaveVoice(response.action);
             break;
+        case 'seibai':
+            promise = this.vcActionRepo.postSeibai(response.action);
+            break;
         default:
             throw new Error('unreachable');
     }

@@ -11,6 +11,7 @@ const VoiceChatModel = require('./voice_chat_model');
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('../../domain/entities/actions/join_voice_action')} JoinVoiceAction */
 /** @typedef {import('../../domain/entities/actions/leave_voice_action')} LeaveVoiceAction */
+/** @typedef {import('../../domain/entities/actions/seibai_action')} SeibaiAction */
 /** @typedef {import('../../domain/entities/responses/voice_response')} VoiceResponse */
 
 /** @type {Map<string, VoiceChatModel>} */
@@ -77,6 +78,25 @@ class DiscordVoiceQueueManager {
 
         // VCから退出
         vc.leave();
+
+        return Promise.resolve();
+    }
+
+    /**
+     *
+     * @param {SeibaiAction} action
+     */
+    async postSeibai(action) {
+        const vc = cache.get(action.serverId);
+        if (!vc) {
+            return errors.unexpected(`seibai-before-join ${action}`);
+        }
+
+        // キューを空にする
+        vc.clearQueue();
+
+        // Dispatcherを〆る
+        await vc.killStream();
 
         return Promise.resolve();
     }

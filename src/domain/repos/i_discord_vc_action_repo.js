@@ -2,6 +2,7 @@ const Interface = require('../../core/interface');
 
 /** @typedef {import('../entities/actions/join_voice_action')} JoinVoiceAction */
 /** @typedef {import('../entities/actions/leave_voice_action')} LeaveVoiceAction */
+/** @typedef {import('../entities/actions/seibai_action')} SeibaiAction */
 
 /**
  * ディスコードVC関連アクションのリポジトリ
@@ -22,6 +23,14 @@ class IDiscordVcActionRepo extends Interface {
      * @returns {Promise<void>}
      */
     async postLeaveVoice(action) {}
+
+    /**
+     * 成敗アクションを投稿
+     *
+     * @param {SeibaiAction} action 成敗アクション
+     * @returns {Promise<void>}
+     */
+    async postSeibai(action) {}
 }
 
 module.exports = IDiscordVcActionRepo;

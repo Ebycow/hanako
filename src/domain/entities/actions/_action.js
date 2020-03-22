@@ -9,7 +9,7 @@ class Action {
     /**
      * アクションタイプ
      *
-     * @type {'join_voice'|'leave_voice'}
+     * @type {'join_voice'|'leave_voice'|'seibai'}
      */
     get type() {
         throw new Error('unreachable');
