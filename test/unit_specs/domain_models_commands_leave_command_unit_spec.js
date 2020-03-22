@@ -19,6 +19,7 @@ describe('LeaveCommand', () => {
         return {
             serverId: 'mock-server-id',
             serverName: 'mock-server-name',
+            voiceStatus: 'ready',
             voiceChannel: 'mock-voice-channel-id',
             readingChannels: ['mock-reading-channel-id'],
             wordDictionary: null,
@@ -101,6 +102,7 @@ describe('LeaveCommand', () => {
                         origin: dmessage,
                     });
                     const blueprint = serverStatusBlueprint();
+                    blueprint.voiceStatus = null;
                     blueprint.voiceChannel = null;
 
                     const sub = new LeaveCommand(new ServerStatus(blueprint));

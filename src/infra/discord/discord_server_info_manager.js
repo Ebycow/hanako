@@ -36,15 +36,17 @@ class DiscordServerInfoManager {
         const blueprint = {
             serverId: G.id,
             serverName: G.name,
+            voiceStatus: null,
             voiceChannel: null,
             readingChannels: [],
             wordDictionary: new WordDictionary({ serverId: G.id, lines: [] }),
         };
 
         const vc = this.voiceManager.getVoiceChatModel(id);
-        if (vc) {
+        if (vc && vc.connection) {
             blueprint.readingChannels = vc.readingChannels.map(c => c.id);
-            blueprint.voiceChannel = vc.connection ? vc.connection.channel.id : null;
+            blueprint.voiceChannel = vc.connection.channel.id;
+            blueprint.voiceStatus = vc.dispatcher === null ? 'ready' : 'speaking';
         }
 
         const server = new DiscordServer(G.id, new ServerStatus(blueprint));
