@@ -27,6 +27,7 @@ class LeaveVoiceAction {
      */
     constructor(data) {
         assert(typeof data.id === 'string');
+        assert(typeof data.serverId === 'string');
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
