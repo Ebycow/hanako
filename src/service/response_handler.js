@@ -6,7 +6,7 @@ const IDiscordChatRepo = require('../domain/repos/i_discord_chat_repo');
 const IDiscordVoiceRepo = require('../domain/repos/i_discord_voice_repo');
 const IDiscordVcActionRepo = require('../domain/repos/i_discord_vc_action_repo');
 
-/** @typedef {import('../domain/entities/responses/_response')} Response */
+/** @typedef {import('../domain/entities/responses').ResponseT} ResponseT */
 /** @typedef {import('../domain/entities/responses/action_response')} ActionResponse */
 
 /**
@@ -28,7 +28,7 @@ class ResponseHandler {
     /**
      * レスポンスエンティティを処理する
      *
-     * @param {Response} response レスポンスエンティティ
+     * @param {ResponseT} response レスポンスエンティティ
      * @returns {Promise<void>}
      */
     async handle(response) {

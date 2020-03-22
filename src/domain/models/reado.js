@@ -2,7 +2,7 @@ const assert = require('assert').strict;
 const readers = require('./readers');
 const Plain = require('../entities/audios/plain');
 
-/** @typedef {import('../entities/audios/_audio')} Audio */
+/** @typedef {import('../entities/audios').AudioT} AudioT */
 /** @typedef {import('../entities/server_status')} ServerStatus */
 
 /**
@@ -27,7 +27,7 @@ class Reado {
      * テキストに各Readerクラスの処理を適用し、音声変換手続きの配列を構築する。
      *
      * @param {string} text 読み上げるテキスト
-     * @returns {Array<Audio>} 変換手続きの配列
+     * @returns {Array<AudioT>} 変換手続きの配列
      */
     compose(text) {
         assert(typeof text === 'string');

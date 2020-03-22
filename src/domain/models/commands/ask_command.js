@@ -3,7 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 
 /** @typedef {import('../../entities/command_input')} CommandInput */
-/** @typedef {import('../../entities/responses/_response')} Response */
+/** @typedef {import('../../entities/responses').ResponseT} ResponseT */
 
 /**
  * ドメインモデル
@@ -28,7 +28,7 @@ class AskCommand {
      * askコマンドを処理
      *
      * @param {CommandInput} input コマンド引数
-     * @returns {Response} レスポンス
+     * @returns {ResponseT} レスポンス
      */
     process(input) {
         assert(typeof input === 'object');

@@ -1,8 +1,8 @@
 const assert = require('assert').strict;
 const SilentResponse = require('./silent_response');
 
-/** @typedef {import('../actions/_action')} Action */
-/** @typedef {import('./_response')} Response */
+/** @typedef {import('../actions').ActionT} ActionT */
+/** @typedef {import('.').ResponseT} ResponseT */
 
 /**
  * レスポンスエンティティ
@@ -22,9 +22,9 @@ class ActionResponse {
      *
      * @param {object} data
      * @param {string} data.id エンティティID
-     * @param {Action} data.action 実行するアクション
-     * @param {Response} [data.onSuccess=SilentResponse] アクション成功時に履行するレスポンス 省略時はSilentResponse
-     * @param {Response} [data.onFailure=SilentResponse] アクション失敗時に履行するレスポンス 省略時はSilentResponse
+     * @param {ActionT} data.action 実行するアクション
+     * @param {ResponseT} [data.onSuccess=SilentResponse] アクション成功時に履行するレスポンス 省略時はSilentResponse
+     * @param {ResponseT} [data.onFailure=SilentResponse] アクション失敗時に履行するレスポンス 省略時はSilentResponse
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -53,7 +53,7 @@ class ActionResponse {
     /**
      * 実行するアクション
      *
-     * @type {Action}
+     * @type {ActionT}
      */
     get action() {
         return this.data.action;
@@ -62,7 +62,7 @@ class ActionResponse {
     /**
      * アクション成功時に履行するレスポンス
      *
-     * @type {Response}
+     * @type {ResponseT}
      */
     get onSuccess() {
         return this.data.onSuccess;
@@ -71,7 +71,7 @@ class ActionResponse {
     /**
      * アクション失敗時に履行するレスポンス
      *
-     * @type {Response}
+     * @type {ResponseT}
      */
     get onFailure() {
         return this.data.onFailure;

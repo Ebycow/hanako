@@ -5,7 +5,7 @@ const JoinVoiceAction = require('../../entities/actions/join_voice_action');
 const ActionResponse = require('../../entities/responses/action_response');
 
 /** @typedef {import('../../entities/command_input')} CommandInput */
-/** @typedef {import('../../entities/responses/_response')} Response */
+/** @typedef {import('../../entities/responses').ResponseT} ResponseT */
 
 /**
  * ドメインモデル
@@ -30,7 +30,7 @@ class JoinCommand {
      * VC参加コマンドを処理
      *
      * @param {CommandInput} input コマンド引数
-     * @returns {Response} レスポンス
+     * @returns {ResponseT} レスポンス
      */
     process(input) {
         assert(typeof input === 'object');

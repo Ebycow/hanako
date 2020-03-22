@@ -12,13 +12,6 @@ class JoinVoiceAction {
     }
 
     /**
-     * @type {'discord'}
-     */
-    get category() {
-        return 'discord';
-    }
-
-    /**
      * JoinVoiceActionエンティティを構築
      *
      * @param {object} data

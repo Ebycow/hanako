@@ -12,13 +12,6 @@ class LeaveVoiceAction {
     }
 
     /**
-     * @type {'discord'}
-     */
-    get category() {
-        return 'discord';
-    }
-
-    /**
      * LeaveVoiceActionエンティティを構築
      *
      * @param {object} data

@@ -1,6 +1,6 @@
 const commands = require('./commands');
 
-/** @typedef {import('./commands/_command.js')} Command */
+/** @typedef {import('./commands').CommandT} CommandT */
 /** @typedef {import('../entities/command_input')} CommandInput */
 /** @typedef {import('../entities/server_status')} ServerStatus */
 
@@ -22,7 +22,7 @@ class Commando {
      * @param {ServerStatus} status コマンド実行下のサーバー状態
      */
     constructor(status) {
-        /** @type {Array<(name:string) => Command>} */
+        /** @type {Array<(name:string) => CommandT>} */
         this.resolvers = [];
         for (const K of Object.values(commands)) {
             const I = new K(status);
@@ -35,7 +35,7 @@ class Commando {
      * 入力からコマンドを解決
      *
      * @param  {CommandInput} input コマンド引数
-     * @returns {[Command, CommandInput]} コマンドインスタンスと消費済みコマンド引数のペア（コマンドが見つからない場合インスタンスはnull）
+     * @returns {[CommandT, CommandInput]} コマンドインスタンスと消費済みコマンド引数のペア（コマンドが見つからない場合インスタンスはnull）
      */
     resolve(input) {
         const go = (c, name, ...rest) => {

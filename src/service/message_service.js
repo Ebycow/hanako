@@ -10,7 +10,7 @@ const EbyStream = require('../utils/ebystream');
 
 /** @typedef {import('../domain/models/discord_server')} DiscordServer */
 /** @typedef {import('../domain/entities/discord_message')} DiscordMessage */
-/** @typedef {import('../domain/entities/responses/_response')} Response */
+/** @typedef {import('../domain/entities/responses').ResponseT} ResponseT */
 
 /**
  * アプリケーションサービス
@@ -29,7 +29,7 @@ class MessageService {
      *
      * @param {DiscordMessage} dmessage 処理するメッセージエンティティ
      * @param {DiscordServer} server 送信元サーバー
-     * @returns {Promise<Response>} レスポンスエンティティ
+     * @returns {Promise<ResponseT>} レスポンスエンティティ
      */
     async serve(dmessage, server) {
         assert(typeof dmessage === 'object');
@@ -54,7 +54,6 @@ class MessageService {
  * @this {MessageService}
  * @param {DiscordMessage} dmessage メッセージエンティティ
  * @param {DiscordServer} server メッセージが紐ついているサーバー
- * @returns {Promise<Response>} レスポンスエンティティ
  */
 async function processCommandMessageF(dmessage, server) {
     assert(dmessage.type === 'command');
@@ -87,7 +86,6 @@ async function processCommandMessageF(dmessage, server) {
  * @this {MessageService}
  * @param {DiscordMessage} dmessage メッセージエンティティ
  * @param {DiscordServer} server メッセージが紐ついているサーバー
- * @returns {Promise<VoiceResponse>} 音声レスポンスエンティティ
  */
 async function processReadMessageF(dmessage, server) {
     assert(dmessage.type === 'read');

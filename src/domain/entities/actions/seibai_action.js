@@ -12,13 +12,6 @@ class SeibaiAction {
     }
 
     /**
-     * @type {'discord'}
-     */
-    get category() {
-        return 'discord';
-    }
-
-    /**
      * SeibaiActionエンティティを構築
      *
      * @param {object} data
