@@ -5,23 +5,24 @@ const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
 const Injector = require('../../core/injector');
 const IDiscordServerRepo = require('../../domain/repos/i_discord_server_repo');
+const IWordDictionaryRepo = require('../../domain/repos/i_word_dictionary_repo');
 const DiscordServer = require('../../domain/models/discord_server');
 const ServerStatus = require('../../domain/entities/server_status');
-const WordDictionary = require('../../domain/entities/word_dictionary');
 const DiscordVoiceQueueManager = require('./discord_voice_queue_manager');
 
-let firstCall = true;
-function init() {
-    if (firstCall) {
-        firstCall = false;
-        logger.trace('モジュールが初期化された');
-    }
-}
+// unused
+logger;
+
+// TODO FIX モデルのコンストラクトはドメインサービス化すべき
 
 class DiscordServerInfoManager {
-    constructor() {
-        init();
-        this.client = Injector.resolveSingleton(discord.Client);
+    /**
+     * @param {null} client DI
+     * @param {null} wordRepo DI
+     */
+    constructor(client = null, wordRepo = null) {
+        this.client = client || Injector.resolveSingleton(discord.Client);
+        this.wordRepo = wordRepo || Injector.resolve(IWordDictionaryRepo);
         this.voiceManager = new DiscordVoiceQueueManager();
     }
 
@@ -33,13 +34,15 @@ class DiscordServerInfoManager {
             errors.unexpected(`no-such-guild ${id}`);
         }
 
+        const wordDictionary = await this.wordRepo.loadWordDictionary(G.id);
+
         const blueprint = {
             serverId: G.id,
             serverName: G.name,
             voiceStatus: null,
             voiceChannel: null,
             readingChannels: [],
-            wordDictionary: new WordDictionary({ serverId: G.id, lines: [] }),
+            wordDictionary,
         };
 
         const vc = this.voiceManager.getVoiceChatModel(id);
