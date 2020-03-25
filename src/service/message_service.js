@@ -90,7 +90,8 @@ async function processCommandMessageF(dmessage, server) {
 async function processReadMessageF(dmessage, server) {
     assert(dmessage.type === 'read');
 
-    const audios = server.reado.compose(dmessage.content);
+    const text = server.formato.normalize(dmessage.content);
+    const audios = server.reado.compose(text);
     const promises = audios.map(audio => this.vrStreamRepo.getStream(audio));
     const streams = await Promise.all(promises);
     if (streams.length === 0) {

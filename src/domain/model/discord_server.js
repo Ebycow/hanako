@@ -1,4 +1,5 @@
 const Commando = require('./commando');
+const Formato = require('./formato');
 const Reado = require('./reado');
 
 /** @typedef {import('../entity/server_status')} ServerStatus */
@@ -9,6 +10,8 @@ const Reado = require('./reado');
  */
 class DiscordServer {
     /**
+     * DiscordServerモデルを構築
+     *
      * @param {string} id サーバーID
      * @param {ServerStatus} status サーバー状態
      */
@@ -21,7 +24,7 @@ class DiscordServer {
         this.id = id;
 
         /**
-         * 読み取り専用のサーバー状態
+         * サーバー状態
          *
          * @type {ServerStatus}
          */
@@ -36,6 +39,13 @@ class DiscordServer {
          * @type {Commando}
          */
         this.commando = new Commando(status);
+
+        /**
+         * ホルマト
+         *
+         * @type {Formato}
+         */
+        this.formato = new Formato(status);
 
         /**
          * リードー
