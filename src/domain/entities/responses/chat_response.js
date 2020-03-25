@@ -19,13 +19,13 @@ class ChatResponse {
      * @param {string} param.id エンティティID
      * @param {string} param.content テキスト内容
      * @param {string} channelId 投稿先チャンネルID
-     * @param {'simple'|'pager'|'error'} [param.code='simple'] 会話コード
+     * @param {'simple'|'pager'|'force'|'error'} [param.code='simple'] 会話コード
      */
     constructor({ id, content, channelId, code = 'simple' }) {
         assert(typeof id === 'string');
         assert(typeof content === 'string' && content.length > 0);
         assert(typeof channelId === 'string');
-        assert(code === 'simple' || code === 'pager' || code === 'error');
+        assert(code === 'simple' || code === 'pager' || code === 'force' || code === 'error');
 
         const data = { id, content, channelId, code };
         Object.defineProperty(this, 'data', {
@@ -57,7 +57,7 @@ class ChatResponse {
     /**
      * 会話コード
      *
-     * @type {'simple'|'pager'|'error'}
+     * @type {'simple'|'pager'|'force'|'error'}
      */
     get code() {
         return this.data.code;
@@ -73,7 +73,7 @@ class ChatResponse {
     }
 
     toString() {
-        return `ChatResponse(content=${this.content}, code=${this.code})`;
+        return `ChatResponse(id=${this.id}, content=${this.content}, code=${this.code}, channelId=${this.channelId})`;
     }
 }
 

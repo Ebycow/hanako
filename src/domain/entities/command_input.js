@@ -97,6 +97,8 @@ class CommandInput {
     }
 
     /**
+     * コマンド引数を１つ消費した新しいエンティティを返す
+     *
      * @returns {CommandInput} 1番目の引数が消費されたCommandInput
      */
     consume() {
@@ -110,12 +112,12 @@ class CommandInput {
      * コマンド送信者に向けた新しい会話レスポンスを生成
      *
      * @param {string} content 内容
-     * @param {'simple'|'pager'|'error'} code 会話コード
+     * @param {'simple'|'pager'|'force'|'error'} code 会話コード
      * @returns {ChatResponse}
      */
     newChatResponse(content, code = 'simple') {
         assert(typeof content === 'string');
-        assert(code === 'simple' || code === 'pager' || code === 'error');
+        assert(code === 'simple' || code === 'pager' || code === 'force' || code === 'error');
 
         return new ChatResponse({
             id: this.id,
@@ -126,7 +128,7 @@ class CommandInput {
     }
 
     toString() {
-        return `CommandInput(argc=${this.argc}, argv=${this.argv})`;
+        return `CommandInput(id=${this.id}, argc=${this.argc}, argv=${this.argv}, origin=${this.origin})`;
     }
 }
 
