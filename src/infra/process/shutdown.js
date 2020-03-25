@@ -1,3 +1,5 @@
+// TODO FIX ファイル名・クラス名等ちゃんとする
+
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const exitHook = require('async-exit-hook');
@@ -36,6 +38,4 @@ class GracefulShutdown {
     }
 }
 
-module.exports = {
-    GracefulShutdown,
-};
+module.exports = GracefulShutdown;

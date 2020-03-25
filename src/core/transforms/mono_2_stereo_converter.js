@@ -1,13 +1,30 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
-const { Transform } = require('stream');
+const Transform = require('stream').Transform;
 
-class Interleaver extends Transform {
-    constructor(options) {
+/**
+ * PCMストリーム
+ * モノラル→ステレオ変換
+ */
+class Mono2StereoConverter extends Transform {
+    /**
+     * Mono2StereoConverterを構築
+     * 常にFlowModeで構築される
+     *
+     * @param {object} [options={}] Transformのコンストラクタに渡すオプション
+     */
+    constructor(options = {}) {
         super(Object.assign({}, options, { objectMode: false }));
         this.fragments = [];
     }
 
+    /**
+     * PCMストリームのステレオ変換
+     *
+     * @param {Buffer} _buffer PCMデータのチャンク
+     * @param {string} _ 未使用
+     * @param {function(Buffer):void} done コールバック
+     */
     _transform(_buffer, _, done) {
         let buffer = _buffer;
         if (this.fragments.length > 0) {
@@ -20,7 +37,7 @@ class Interleaver extends Transform {
         const hasFragment = !!(buffer.byteLength & 1);
         const byteSize = hasFragment ? buffer.byteLength - 1 : buffer.byteLength;
         const size = (byteSize / 2) | 0;
-        logger.trace(`wave: processing ${byteSize} bytes ...`);
+        logger.trace(`mono2stereo: processing ${byteSize} bytes ...`);
 
         const src = new Int16Array(size);
         for (let i = 0; i < size; i++) {
@@ -45,6 +62,4 @@ class Interleaver extends Transform {
     }
 }
 
-module.exports = {
-    Interleaver,
-};
+module.exports = Mono2StereoConverter;

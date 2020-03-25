@@ -1,7 +1,6 @@
 const axios = require('axios').default;
 const SampleRate = require('node-libsamplerate');
-const { Interleaver } = require('../../transforms/interleaver');
-const { StereoByteAdjuster } = require('../../transforms/byteadjuster');
+const transforms = require('../../core/transforms');
 const IVoiceroidStreamRepo = require('../../domain/repos/i_voiceroid_stream_repo');
 
 /** @typedef {import('stream').Readable} Readable */
@@ -22,10 +21,10 @@ class EbyroidStreamApiAdapter {
         let stream = response.data;
         if (numChannels == 1) {
             // 元データがモノラルのとき
-            stream = stream.pipe(new Interleaver());
+            stream = stream.pipe(new transforms.Mono2StereoConverter());
         } else {
             // 元データがステレオのとき
-            stream = stream.pipe(new StereoByteAdjuster());
+            stream = stream.pipe(new transforms.StereoByteAdjuster());
         }
 
         // TODO リサンプル処理をEbyroidに移行
