@@ -6,7 +6,7 @@ const Injector = require('../core/injector');
 const IVoiceroidStreamRepo = require('../domain/repo/i_voiceroid_stream_repo');
 const CommandInput = require('../domain/entity/command_input');
 const VoiceResponse = require('../domain/entity/responses/voice_response');
-const EbyStream = require('../core/ebystream');
+const EbyStream = require('../library/ebystream');
 
 /** @typedef {import('../domain/model/discord_server')} DiscordServer */
 /** @typedef {import('../domain/entity/discord_message')} DiscordMessage */

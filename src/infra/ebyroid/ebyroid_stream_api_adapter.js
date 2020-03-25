@@ -1,6 +1,6 @@
 const axios = require('axios').default;
 const SampleRate = require('node-libsamplerate');
-const transforms = require('../../core/transforms');
+const transforms = require('../../library/transforms');
 const IVoiceroidStreamRepo = require('../../domain/repo/i_voiceroid_stream_repo');
 
 /** @typedef {import('stream').Readable} Readable */
