@@ -1,9 +1,9 @@
 /**
- * 条件未達のエラー
- * 一つ以上の事前条件が存在する関数呼び出し時、呼び出された側で条件の未達が判明し処理を続行できない場合に投げる。
- * このエラーがログに出る ⇔ システム障害 or バグ
+ * 期待はずれのエラー
+ * 楽観的処理フローにおいて、期待する整合性が得られなかった場合に投げる。
+ * 花子では基本的に悲観的ロックを使用しないため、結果整合性を保つために処理を中断することがある。
  */
-class EbyUnexpectedError extends Error {
+class EbyDisappointedError extends Error {
     /**
      * えびであることの証明
      *
@@ -16,10 +16,10 @@ class EbyUnexpectedError extends Error {
     /**
      * エラータイプ
      *
-     * @type {'unexpected'}
+     * @type {'disappointed'}
      */
     get type() {
-        return 'unexpected';
+        return 'disappointed';
     }
 
     /**
@@ -36,4 +36,4 @@ class EbyUnexpectedError extends Error {
     }
 }
 
-module.exports = EbyUnexpectedError;
+module.exports = EbyDisappointedError;
