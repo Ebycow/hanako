@@ -1,12 +1,12 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const SeibaiAction = require('../../entities/actions/seibai_action');
-const ActionResponse = require('../../entities/responses/action_response');
+const SeibaiAction = require('../../entity/actions/seibai_action');
+const ActionResponse = require('../../entity/responses/action_response');
 
-/** @typedef {import('../../entities/command_input')} CommandInput */
-/** @typedef {import('../../entities/responses').ResponseT} ResponseT */
-/** @typedef {import('../../entities/server_status')} ServerStatus */
+/** @typedef {import('../../entity/command_input')} CommandInput */
+/** @typedef {import('../../entity/responses').ResponseT} ResponseT */
+/** @typedef {import('../../entity/server_status')} ServerStatus */
 
 /**
  * ドメインモデル

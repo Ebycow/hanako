@@ -1,8 +1,8 @@
 const Interface = require('../../core/interface');
 
-/** @typedef {import('../entities/actions/join_voice_action')} JoinVoiceAction */
-/** @typedef {import('../entities/actions/leave_voice_action')} LeaveVoiceAction */
-/** @typedef {import('../entities/actions/seibai_action')} SeibaiAction */
+/** @typedef {import('../entity/actions/join_voice_action')} JoinVoiceAction */
+/** @typedef {import('../entity/actions/leave_voice_action')} LeaveVoiceAction */
+/** @typedef {import('../entity/actions/seibai_action')} SeibaiAction */
 
 /**
  * ディスコードVC関連アクションのリポジトリ

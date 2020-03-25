@@ -4,7 +4,7 @@ const assert = require('assert').strict;
 const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
 const Injector = require('../../core/injector');
-const IDiscordChatRepo = require('../../domain/repos/i_discord_chat_repo');
+const IDiscordChatRepo = require('../../domain/repo/i_discord_chat_repo');
 
 // unused
 logger;

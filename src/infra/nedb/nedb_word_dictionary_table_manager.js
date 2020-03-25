@@ -3,15 +3,15 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const uuid = require('uuidv4').uuid;
 const errors = require('../../core/errors').promises;
-const IWordActionRepo = require('../../domain/repos/i_word_action_repo');
-const IWordDictionaryRepo = require('../../domain/repos/i_word_dictionary_repo');
+const IWordActionRepo = require('../../domain/repo/i_word_action_repo');
+const IWordDictionaryRepo = require('../../domain/repo/i_word_dictionary_repo');
 const Datastore = require('nedb');
-const WordDictionary = require('../../domain/entities/word_dictionary');
-const WordDictionaryLine = require('../../domain/entities/word_dictionary_line');
+const WordDictionary = require('../../domain/entity/word_dictionary');
+const WordDictionaryLine = require('../../domain/entity/word_dictionary_line');
 
-/** @typedef {import('../../domain/entities/actions/word_create_action')} WordCreateAction */
-/** @typedef {import('../../domain/entities/actions/word_delete_action')} WordDeleteAction */
-/** @typedef {import('../../domain/entities/actions/word_clear_action')} WordClearAction */
+/** @typedef {import('../../domain/entity/actions/word_create_action')} WordCreateAction */
+/** @typedef {import('../../domain/entity/actions/word_delete_action')} WordDeleteAction */
+/** @typedef {import('../../domain/entity/actions/word_clear_action')} WordClearAction */
 
 /** @typedef {string} ServerID サーバーID */
 /** @typedef {string} From 置換前単語 */

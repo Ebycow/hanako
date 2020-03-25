@@ -1,7 +1,7 @@
 const Interface = require('../../core/interface');
 
 /** @typedef {import('stream').Readable} Readable */
-/** @typedef {import('../entities/audios/voiceroid_audio')} VoiceroidAudio */
+/** @typedef {import('../entity/audios/voiceroid_audio')} VoiceroidAudio */
 
 /**
  * ボイスロイド音声ストリームリポジトリ

@@ -1,9 +1,9 @@
 const assert = require('assert').strict;
 const readers = require('./readers');
-const Plain = require('../entities/audios/plain');
+const Plain = require('../entity/audios/plain');
 
-/** @typedef {import('../entities/audios').AudioT} AudioT */
-/** @typedef {import('../entities/server_status')} ServerStatus */
+/** @typedef {import('../entity/audios').AudioT} AudioT */
+/** @typedef {import('../entity/server_status')} ServerStatus */
 
 /**
  * ドメインモデル

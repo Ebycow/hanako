@@ -3,9 +3,9 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const Pager = require('../pager');
 
-/** @typedef {import('../../entities/command_input')} CommandInput */
-/** @typedef {import('../../entities/responses').ResponseT} ResponseT */
-/** @typedef {import('../../entities/server_status')} ServerStatus */
+/** @typedef {import('../../entity/command_input')} CommandInput */
+/** @typedef {import('../../entity/responses').ResponseT} ResponseT */
+/** @typedef {import('../../entity/server_status')} ServerStatus */
 
 /**
  * ドメインモデル

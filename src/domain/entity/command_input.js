@@ -1,5 +1,5 @@
 const assert = require('assert').strict;
-const ChatResponse = require('../entities/responses/chat_response');
+const ChatResponse = require('./responses/chat_response');
 
 /** @typedef {import('./discord_message')} DiscordMessage */
 

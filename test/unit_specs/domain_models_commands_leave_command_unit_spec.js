@@ -1,8 +1,8 @@
 const should = require('chai').should();
-const LeaveCommand = require('../../src/domain/models/commands/leave_command');
-const DiscordMessage = require('../../src/domain/entities/discord_message');
-const CommandInput = require('../../src/domain/entities/command_input');
-const ServerStatus = require('../../src/domain/entities/server_status');
+const LeaveCommand = require('../../src/domain/model/commands/leave_command');
+const DiscordMessage = require('../../src/domain/entity/discord_message');
+const CommandInput = require('../../src/domain/entity/command_input');
+const ServerStatus = require('../../src/domain/entity/server_status');
 
 /************************************************************************
  * LeaveCommandクラス単体スペック

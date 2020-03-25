@@ -1,7 +1,7 @@
 const should = require('chai').should();
-const JoinCommand = require('../../src/domain/models/commands/join_command');
-const DiscordMessage = require('../../src/domain/entities/discord_message');
-const CommandInput = require('../../src/domain/entities/command_input');
+const JoinCommand = require('../../src/domain/model/commands/join_command');
+const DiscordMessage = require('../../src/domain/entity/discord_message');
+const CommandInput = require('../../src/domain/entity/command_input');
 
 /************************************************************************
  * JoinCommandクラス単体スペック

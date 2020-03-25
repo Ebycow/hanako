@@ -4,10 +4,10 @@ const assert = require('assert').strict;
 const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
 const Injector = require('../../core/injector');
-const IDiscordServerRepo = require('../../domain/repos/i_discord_server_repo');
-const IWordDictionaryRepo = require('../../domain/repos/i_word_dictionary_repo');
-const DiscordServer = require('../../domain/models/discord_server');
-const ServerStatus = require('../../domain/entities/server_status');
+const IDiscordServerRepo = require('../../domain/repo/i_discord_server_repo');
+const IWordDictionaryRepo = require('../../domain/repo/i_word_dictionary_repo');
+const DiscordServer = require('../../domain/model/discord_server');
+const ServerStatus = require('../../domain/entity/server_status');
 const DiscordVoiceQueueManager = require('./discord_voice_queue_manager');
 
 // unused

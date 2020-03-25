@@ -4,15 +4,15 @@ const assert = require('assert').strict;
 const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
 const Injector = require('../../core/injector');
-const IDiscordVoiceRepo = require('../../domain/repos/i_discord_voice_repo');
-const IDiscordVcActionRepo = require('../../domain/repos/i_discord_vc_action_repo');
+const IDiscordVoiceRepo = require('../../domain/repo/i_discord_voice_repo');
+const IDiscordVcActionRepo = require('../../domain/repo/i_discord_vc_action_repo');
 const DiscordVoiceChatModel = require('./discord_voice_chat_model');
 
 /** @typedef {import('stream').Readable} Readable */
-/** @typedef {import('../../domain/entities/actions/join_voice_action')} JoinVoiceAction */
-/** @typedef {import('../../domain/entities/actions/leave_voice_action')} LeaveVoiceAction */
-/** @typedef {import('../../domain/entities/actions/seibai_action')} SeibaiAction */
-/** @typedef {import('../../domain/entities/responses/voice_response')} VoiceResponse */
+/** @typedef {import('../../domain/entity/actions/join_voice_action')} JoinVoiceAction */
+/** @typedef {import('../../domain/entity/actions/leave_voice_action')} LeaveVoiceAction */
+/** @typedef {import('../../domain/entity/actions/seibai_action')} SeibaiAction */
+/** @typedef {import('../../domain/entity/responses/voice_response')} VoiceResponse */
 
 /** @typedef {string} ServerID サーバーID */
 

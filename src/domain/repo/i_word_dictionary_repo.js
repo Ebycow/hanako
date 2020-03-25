@@ -1,6 +1,6 @@
 const Interface = require('../../core/interface');
 
-/** @typedef {import('../entities/word_dictionary')} WordDictionary */
+/** @typedef {import('../entity/word_dictionary')} WordDictionary */
 
 /**
  * 教育辞書のリポジトリ

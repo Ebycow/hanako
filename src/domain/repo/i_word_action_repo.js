@@ -1,8 +1,8 @@
 const Interface = require('../../core/interface');
 
-/** @typedef {import('../entities/actions/word_create_action')} WordCreateAction */
-/** @typedef {import('../entities/actions/word_delete_action')} WordDeleteAction */
-/** @typedef {import('../entities/actions/word_clear_action'))} WordClearAction */
+/** @typedef {import('../entity/actions/word_create_action')} WordCreateAction */
+/** @typedef {import('../entity/actions/word_delete_action')} WordDeleteAction */
+/** @typedef {import('../entity/actions/word_clear_action'))} WordClearAction */
 
 /**
  * 教育単語関連アクションのリポジトリ

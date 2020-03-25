@@ -1,6 +1,6 @@
 const Interface = require('../../core/interface');
 
-/** @typedef {import('../entities/responses/chat_response')} ChatResponse */
+/** @typedef {import('../entity/responses/chat_response')} ChatResponse */
 
 /**
  * ディスコード会話リポジトリ

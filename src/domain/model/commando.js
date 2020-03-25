@@ -1,8 +1,8 @@
 const commands = require('./commands');
 
 /** @typedef {import('./commands').CommandT} CommandT */
-/** @typedef {import('../entities/command_input')} CommandInput */
-/** @typedef {import('../entities/server_status')} ServerStatus */
+/** @typedef {import('../entity/command_input')} CommandInput */
+/** @typedef {import('../entity/server_status')} ServerStatus */
 
 /**
  * ドメインモデル

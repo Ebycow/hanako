@@ -3,14 +3,14 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const errors = require('../core/errors').promises;
 const Injector = require('../core/injector');
-const IVoiceroidStreamRepo = require('../domain/repos/i_voiceroid_stream_repo');
-const CommandInput = require('../domain/entities/command_input');
-const VoiceResponse = require('../domain/entities/responses/voice_response');
+const IVoiceroidStreamRepo = require('../domain/repo/i_voiceroid_stream_repo');
+const CommandInput = require('../domain/entity/command_input');
+const VoiceResponse = require('../domain/entity/responses/voice_response');
 const EbyStream = require('../core/ebystream');
 
-/** @typedef {import('../domain/models/discord_server')} DiscordServer */
-/** @typedef {import('../domain/entities/discord_message')} DiscordMessage */
-/** @typedef {import('../domain/entities/responses').ResponseT} ResponseT */
+/** @typedef {import('../domain/model/discord_server')} DiscordServer */
+/** @typedef {import('../domain/entity/discord_message')} DiscordMessage */
+/** @typedef {import('../domain/entity/responses').ResponseT} ResponseT */
 
 /**
  * アプリケーションサービス

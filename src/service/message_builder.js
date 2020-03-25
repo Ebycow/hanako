@@ -2,9 +2,9 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const errors = require('../core/errors').promises;
-const DiscordMessage = require('../domain/entities/discord_message');
+const DiscordMessage = require('../domain/entity/discord_message');
 
-/** @typedef {import('../domain/models/discord_server')} DiscordServer */
+/** @typedef {import('../domain/model/discord_server')} DiscordServer */
 
 /**
  * @typedef MessageBuilderData

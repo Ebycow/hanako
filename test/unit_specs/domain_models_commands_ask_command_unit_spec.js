@@ -1,7 +1,7 @@
 const should = require('chai').should();
-const AskCommand = require('../../src/domain/models/commands/ask_command');
-const DiscordMessage = require('../../src/domain/entities/discord_message');
-const CommandInput = require('../../src/domain/entities/command_input');
+const AskCommand = require('../../src/domain/model/commands/ask_command');
+const DiscordMessage = require('../../src/domain/entity/discord_message');
+const CommandInput = require('../../src/domain/entity/command_input');
 
 /************************************************************************
  * AskCommandクラス単体スペック

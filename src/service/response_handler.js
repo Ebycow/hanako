@@ -2,13 +2,13 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const Injector = require('../core/injector');
-const IDiscordChatRepo = require('../domain/repos/i_discord_chat_repo');
-const IDiscordVoiceRepo = require('../domain/repos/i_discord_voice_repo');
-const IDiscordVcActionRepo = require('../domain/repos/i_discord_vc_action_repo');
-const IWordActionRepo = require('../domain/repos/i_word_action_repo');
+const IDiscordChatRepo = require('../domain/repo/i_discord_chat_repo');
+const IDiscordVoiceRepo = require('../domain/repo/i_discord_voice_repo');
+const IDiscordVcActionRepo = require('../domain/repo/i_discord_vc_action_repo');
+const IWordActionRepo = require('../domain/repo/i_word_action_repo');
 
-/** @typedef {import('../domain/entities/responses').ResponseT} ResponseT */
-/** @typedef {import('../domain/entities/responses/action_response')} ActionResponse */
+/** @typedef {import('../domain/entity/responses').ResponseT} ResponseT */
+/** @typedef {import('../domain/entity/responses/action_response')} ActionResponse */
 
 /**
  * アプリケーションサービス

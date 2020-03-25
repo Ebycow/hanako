@@ -1,8 +1,8 @@
-const VoiceroidAudio = require('../../entities/audios/voiceroid_audio');
-const Noop = require('../../entities/audios/noop');
+const VoiceroidAudio = require('../../entity/audios/voiceroid_audio');
+const Noop = require('../../entity/audios/noop');
 
-/** @typedef {import('../../entities/audios').InternalAudioT} InternalAudioT */
-/** @typedef {import('../../entities/audios/plain')} Plain */
+/** @typedef {import('../../entity/audios').InternalAudioT} InternalAudioT */
+/** @typedef {import('../../entity/audios/plain')} Plain */
 
 // VOICEROID共通 無音文字の定義
 const silentWordReg = new RegExp('[\\s　,.?!^()`:\'"`;{}\\[\\]_。、，．‥・…！？＿]+', 'g');

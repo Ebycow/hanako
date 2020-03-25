@@ -2,8 +2,8 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 
-/** @typedef {import('../../entities/command_input')} CommandInput */
-/** @typedef {import('../../entities/responses').ResponseT} ResponseT */
+/** @typedef {import('../../entity/command_input')} CommandInput */
+/** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 
 /**
  * ドメインモデル

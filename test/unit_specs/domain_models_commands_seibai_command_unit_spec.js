@@ -1,8 +1,8 @@
 const should = require('chai').should();
-const SeibaiCommand = require('../../src/domain/models/commands/seibai_command');
-const DiscordMessage = require('../../src/domain/entities/discord_message');
-const CommandInput = require('../../src/domain/entities/command_input');
-const ServerStatus = require('../../src/domain/entities/server_status');
+const SeibaiCommand = require('../../src/domain/model/commands/seibai_command');
+const DiscordMessage = require('../../src/domain/entity/discord_message');
+const CommandInput = require('../../src/domain/entity/command_input');
+const ServerStatus = require('../../src/domain/entity/server_status');
 
 /************************************************************************
  * SeibaiCommandクラス単体スペック

@@ -1,7 +1,7 @@
 const Commando = require('./commando');
 const Reado = require('./reado');
 
-/** @typedef {import('../entities/server_status')} ServerStatus */
+/** @typedef {import('../entity/server_status')} ServerStatus */
 
 /**
  * ドメインモデル

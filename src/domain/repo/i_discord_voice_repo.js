@@ -1,6 +1,6 @@
 const Interface = require('../../core/interface');
 
-/** @typedef {import('../entities/responses/voice_response')} VoiceResponse */
+/** @typedef {import('../entity/responses/voice_response')} VoiceResponse */
 
 /**
  * ディスコード音声リポジトリ

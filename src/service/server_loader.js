@@ -2,12 +2,12 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const Injector = require('../core/injector');
-const IDiscordServerRepo = require('../domain/repos/i_discord_server_repo');
+const IDiscordServerRepo = require('../domain/repo/i_discord_server_repo');
 
 // unused
 logger;
 
-/** @typedef {import('../domain/models/discord_server')} DiscordServer */
+/** @typedef {import('../domain/model/discord_server')} DiscordServer */
 
 /**
  * アプリケーションサービス
