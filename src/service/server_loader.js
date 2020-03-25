@@ -4,6 +4,9 @@ const assert = require('assert').strict;
 const Injector = require('../core/injector');
 const IDiscordServerRepo = require('../domain/repos/i_discord_server_repo');
 
+// unused
+logger;
+
 /** @typedef {import('../domain/models/discord_server')} DiscordServer */
 
 /**
@@ -30,7 +33,6 @@ class ServerLoader {
         assert(typeof data.id === 'string');
 
         const server = await this.serverRepo.load(data.id);
-        logger.trace(`DiscordServer[${server.status.serverName}]をロードした`);
         return Promise.resolve(server);
     }
 }

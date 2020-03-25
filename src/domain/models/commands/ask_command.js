@@ -21,7 +21,7 @@ class AskCommand {
      * @type {string[]}
      */
     static get names() {
-        return ['ask'];
+        return ['質問', 'ask'];
     }
 
     /**

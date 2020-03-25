@@ -1,6 +1,5 @@
 const emoji = require('node-emoji');
 
-/** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
 
 const tagRe = /<(a?:.+?:\d+)?(@!?\d+)?(#\d+)?(@!?&\d+)?>/g;
@@ -62,13 +61,6 @@ function replaceUnicodeEmojis(message) {
  * メッセージ内容を標準化する
  */
 class MessageSanitizeMiddleWare {
-    /**
-     * @param {discord.Client} client Discord Botのクライアント
-     */
-    constructor(client) {
-        this.client = client;
-    }
-
     /**
      * ミドルウェア変換
      *

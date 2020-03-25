@@ -2,6 +2,8 @@ const Interface = require('../../core/interface');
 
 /** @typedef {import('../models/discord_server')} DiscordServer */
 
+// TODO FIX モデルのリポジトリはない Statusのリポジトリに移行せよ
+
 /**
  * ディスコードサーバーリポジトリ
  */
