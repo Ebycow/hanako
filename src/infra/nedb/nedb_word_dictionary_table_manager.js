@@ -51,6 +51,8 @@ function init() {
 
     // キャッシュ領域の割当
     cache = new Map();
+
+    logger.trace('モジュールが初期化された');
 }
 
 /**
