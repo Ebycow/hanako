@@ -1,5 +1,4 @@
 const assert = require('assert').strict;
-const uuid = require('uuidv4').uuid;
 
 /**
  * 花子の教育辞書の辞書置換エンティティ
@@ -10,26 +9,20 @@ class WordDictionaryLine {
     /**
      * WordDictionaryLineエンティティを構築する
      *
-     * @param {object} param
-     * @param {?string} param.id エンティティID 省略時は新規UUIDv4
-     * @param {string} param.dictId 紐ついている辞書のID
-     * @param {string} param.from 元々の単語
-     * @param {string} param.to 置換後の単語
+     * @param {object} data
+     * @param {string} data.id エンティティID
+     * @param {string} data.dictId 紐ついている辞書のID
+     * @param {string} data.from 元々の単語
+     * @param {string} data.to 置換後の単語
      */
-    constructor(param) {
-        assert(typeof param.id === 'string' || typeof param.id === 'undefined');
-        assert(typeof param.dictId === 'string');
-        assert(typeof param.from === 'string');
-        assert(typeof param.to === 'string');
+    constructor(data) {
+        assert(typeof data.id === 'string');
+        assert(typeof data.dictId === 'string');
+        assert(typeof data.from === 'string');
+        assert(typeof data.to === 'string');
 
-        const data = {
-            id: param.id || uuid(),
-            dictId: param.dictId,
-            from: param.from,
-            to: param.to,
-        };
         Object.defineProperty(this, 'data', {
-            value: data,
+            value: Object.assign({}, data),
             writable: false,
             enumerable: true,
             configurable: false,
@@ -73,18 +66,16 @@ class WordDictionaryLine {
     }
 
     /**
-     * 辞書置換を行う
+     * (impl) Pager.Lineable
      *
-     * @param {string} text 置換対象テキスト
-     * @returns {string} 置換後テキスト
+     * @type {string}
      */
-    replace(text) {
-        assert(typeof text === 'string');
-        return text.split(this.from).join(this.to);
+    get line() {
+        return `${this.from} ⇨ ${this.to}`;
     }
 
     toString() {
-        return `Line(from=${this.from}, to=${this.to})`;
+        return `WordDictionaryLine(id=${this.id}, dictId=${this.dictId}, from=${this.from}, to=${this.to}, line=${this.line})`;
     }
 }
 

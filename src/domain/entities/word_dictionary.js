@@ -1,18 +1,17 @@
 const assert = require('assert').strict;
-const uuid = require('uuidv4').uuid;
+const utils = require('../../core/utils');
 
-/** @typedef {import('./word_dictionary_line')} Line */
+/** @typedef {import('./word_dictionary_line')} WordDictionaryLine */
 
 /**
  * ソート関数
  *
- * @param {Line} line1
- * @param {Line} line2
+ * @param {WordDictionaryLine} line1
+ * @param {WordDictionaryLine} line2
  */
 function compare(line1, line2) {
-    // バイト数ではなくコードポイントの数を数えるためのワークアラウンド
-    const a = Array.from(line1.from).length;
-    const b = Array.from(line2.from).length;
+    const a = utils.countUnicode(line1.from);
+    const b = utils.countUnicode(line2.from);
     // 降順
     return b - a;
 }
@@ -26,27 +25,22 @@ class WordDictionary {
     /**
      * WordDictionaryエンティティを構築する
      *
-     * @param {object} param
-     * @param {string?} param.id エンティティID 省略時は新規UUIDv4
-     * @param {string} param.serverId 紐ついているサーバーのID
-     * @param {Array<Line>} param.lines 辞書置換の配列（未ソートでOK）
+     * @param {object} data
+     * @param {string} data.id エンティティID
+     * @param {string} data.serverId 紐ついているサーバーのID
+     * @param {Array<WordDictionaryLine>} data.lines 辞書置換の配列（未ソートでOK）
      */
-    constructor(param) {
-        assert(typeof param.id === 'string' || typeof param.id === 'undefined');
-        assert(typeof param.serverId === 'string');
-        assert(typeof param.lines === 'object' && Array.isArray(param.lines));
-        assert(param.lines.every(line => typeof line === 'object'));
+    constructor(data) {
+        assert(typeof data.id === 'string');
+        assert(typeof data.serverId === 'string');
+        assert(typeof data.lines === 'object' && Array.isArray(data.lines));
+        assert(data.lines.every(line => typeof line === 'object'));
 
-        const lines = param.lines.slice();
+        const lines = data.lines.slice();
         lines.sort(compare);
 
-        const data = {
-            id: param.id || uuid(),
-            serverId: param.serverId,
-            lines,
-        };
         Object.defineProperty(this, 'data', {
-            value: data,
+            value: Object.assign({}, data, { lines }),
             writable: false,
             enumerable: true,
             configurable: false,
@@ -73,25 +67,34 @@ class WordDictionary {
 
     /**
      * 辞書置換のリスト
+     * (impl) Pager.Pageable
      *
-     * @type {Array<Line>}
+     * @type {Array<WordDictionaryLine>}
      */
     get lines() {
         return this.data.lines.slice();
     }
 
     /**
-     * 全ての辞書置換を元々の単語の文字数降順で適用
+     * (impl) Pager.Pageable
      *
-     * @param {string} text 置換対象テキスト
-     * @returns {string} 置換後テキスト
+     * @type {number}
      */
-    replaceAll(text) {
-        return this.lines.reduce((acc, line) => line.replace(acc), text);
+    get linesPerPage() {
+        return 10;
+    }
+
+    /**
+     * (impl) Pager.Pageable
+     *
+     * @type {string}
+     */
+    get descriptor() {
+        return 'dictionary';
     }
 
     toString() {
-        return `WordDictionary(lines=${this.lines})`;
+        return `WordDictionary(id=${this.id}, serverId=${this.servreId}, lines=${this.lines}, linesPerPage=${this.linesPerPage}, descriptor=${this.descriptor})`;
     }
 }
 
