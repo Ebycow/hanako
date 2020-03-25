@@ -6,7 +6,7 @@ const errors = require('../../core/errors').promises;
 const Injector = require('../../core/injector');
 const IDiscordVoiceRepo = require('../../domain/repos/i_discord_voice_repo');
 const IDiscordVcActionRepo = require('../../domain/repos/i_discord_vc_action_repo');
-const VoiceChatModel = require('./voice_chat_model');
+const DiscordVoiceChatModel = require('./discord_voice_chat_model');
 
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('../../domain/entities/actions/join_voice_action')} JoinVoiceAction */
@@ -14,32 +14,67 @@ const VoiceChatModel = require('./voice_chat_model');
 /** @typedef {import('../../domain/entities/actions/seibai_action')} SeibaiAction */
 /** @typedef {import('../../domain/entities/responses/voice_response')} VoiceResponse */
 
-/** @type {Map<string, VoiceChatModel>} */
+/** @typedef {string} ServerID サーバーID */
+
+/**
+ * VoiceChatモデルのキャッシュ
+ *
+ * @type {Map<string, DiscordVoiceChatModel>}
+ */
 let cache;
 
+/**
+ * モジュールの初回呼び出しフラグ
+ *
+ * @type {boolean}
+ */
 let firstCall = true;
+
+/**
+ * モジュールの初期化（実際にこの実装がDIされるまで初期化処理を遅延させる）
+ */
 function init() {
-    if (firstCall) {
-        firstCall = false;
-        cache = new Map();
-    }
+    // キャッシュ領域の割当
+    cache = new Map();
+
+    logger.trace('モジュールが初期化された');
 }
 
+/**
+ * ディスコード音声送信キューマネージャ
+ *
+ * @implements {IDiscordVoiceRepo}
+ * @implements {IDiscordVcActionRepo}
+ */
 class DiscordVoiceQueueManager {
-    constructor() {
-        init();
-        this.client = Injector.resolveSingleton(discord.Client);
+    /**
+     * DIコンテナ用コンストラクタ
+     * 初回呼び出し時にはモジュール初期化を行う
+     *
+     * @param {null} client DI
+     */
+    constructor(client = null) {
+        if (firstCall) {
+            firstCall = false;
+            init();
+        }
+        this.client = client || Injector.resolveSingleton(discord.Client);
     }
 
+    // TODO FIXME
     getVoiceChatModel(serverId) {
         return cache.get(serverId);
     }
 
     /**
+     * (impl) IDiscordVcActionRepo
      *
      * @param {JoinVoiceAction} action
+     * @returns {Promise<void>}
      */
     async postJoinVoice(action) {
+        assert(typeof action === 'object');
+
         const voiceChannel = this.client.channels.resolve(action.voiceChannelId);
         if (!voiceChannel || !(voiceChannel instanceof discord.VoiceChannel)) {
             return errors.unexpected(`no-such-voice-channel ${action}`);
@@ -53,7 +88,7 @@ class DiscordVoiceQueueManager {
         const GID = voiceChannel.guild.id;
         let vc = cache.get(GID);
         if (!vc) {
-            vc = new VoiceChatModel();
+            vc = new DiscordVoiceChatModel();
             cache.set(GID, vc);
         }
 
@@ -67,10 +102,14 @@ class DiscordVoiceQueueManager {
     }
 
     /**
+     * (impl) IDiscordVcActionRepo
      *
      * @param {LeaveVoiceAction} action
+     * @returns {Promise<void>}
      */
     async postLeaveVoice(action) {
+        assert(typeof action === 'object');
+
         const vc = cache.get(action.serverId);
         if (!vc) {
             return errors.unexpected(`leave-voice-before-join ${action}`);
@@ -83,10 +122,14 @@ class DiscordVoiceQueueManager {
     }
 
     /**
+     * (impl) IDiscordVcActionRepo
      *
      * @param {SeibaiAction} action
+     * @returns {Promise<void>}
      */
     async postSeibai(action) {
+        assert(typeof action === 'object');
+
         const vc = cache.get(action.serverId);
         if (!vc) {
             return errors.unexpected(`seibai-before-join ${action}`);
@@ -102,8 +145,10 @@ class DiscordVoiceQueueManager {
     }
 
     /**
+     * (impl) IDiscordVoiceRepo
      *
      * @param {VoiceResponse} voice
+     * @param {Promise<void>}
      */
     async postVoice(voice) {
         assert(typeof voice === 'object');
@@ -126,8 +171,10 @@ class DiscordVoiceQueueManager {
     }
 }
 
+// IDiscordVoiceRepoの実装として登録
 IDiscordVoiceRepo.comprise(DiscordVoiceQueueManager);
 
+// IDiscordVcActionRepoの実装として登録
 IDiscordVcActionRepo.comprise(DiscordVoiceQueueManager);
 
 module.exports = DiscordVoiceQueueManager;

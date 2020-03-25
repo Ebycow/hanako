@@ -7,7 +7,10 @@
 /**
  * Discordボイスチャットの境界モデル
  */
-class VoiceChatModel {
+class DiscordVoiceChatModel {
+    /**
+     * DiscordVoiceChatModelを構築
+     */
     constructor() {
         /**
          * 音声ストリーム待ち行列
@@ -147,4 +150,4 @@ class VoiceChatModel {
     }
 }
 
-module.exports = VoiceChatModel;
+module.exports = DiscordVoiceChatModel;
