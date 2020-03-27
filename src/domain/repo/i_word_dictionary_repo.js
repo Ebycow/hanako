@@ -7,10 +7,10 @@ const Interface = require('../../core/interface');
  */
 class IWordDictionaryRepo extends Interface {
     /**
-     * WordDictionaryを取得
+     * WordDictionaryを読み出し
      *
-     * @param {string} serverId サーバーID
-     * @returns {Promise<WordDictionary>} 対象サーバーの教育辞書
+     * @param {string} serverId DiscordサーバーID
+     * @returns {Promise<WordDictionary>} 対象Discordサーバーの教育辞書
      */
     async loadWordDictionary(serverId) {}
 }

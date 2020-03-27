@@ -5,7 +5,7 @@ const Interface = require('../../core/interface');
 /** @typedef {import('../entity/actions/seibai_action')} SeibaiAction */
 
 /**
- * ディスコードVC関連アクションのリポジトリ
+ * Discordボイスチャット関連アクションのリポジトリ
  */
 class IDiscordVcActionRepo extends Interface {
     /**
