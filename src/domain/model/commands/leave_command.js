@@ -6,7 +6,7 @@ const ActionResponse = require('../../entity/responses/action_response');
 
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
-/** @typedef {import('../../entity/server_status')} ServerStatus */
+/** @typedef {import('../../model/hanako')} Hanako */
 
 /**
  * ドメインモデル
@@ -28,10 +28,10 @@ class LeaveCommand {
     }
 
     /**
-     * @param {ServerStatus} status コマンド実行下のサーバー状態
+     * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
-    constructor(status) {
-        this.status = status;
+    constructor(hanako) {
+        this.hanako = hanako;
     }
 
     /**
@@ -44,8 +44,8 @@ class LeaveCommand {
         assert(typeof input === 'object');
         logger.info(`VC退出コマンドを受理 ${input}`);
 
-        if (this.status.voiceChannel === null) {
-            return input.newChatResponse('どこのチャンネルにも参加していないか、エラーが発生しています :sob:', 'error');
+        if (this.hanako.voiceStatus === null) {
+            return input.newChatResponse('このコマンドは私を通話チャンネルに招待してからつかってね！', 'error');
         }
 
         // VC退出アクションを作成
