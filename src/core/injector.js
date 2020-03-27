@@ -3,13 +3,27 @@ const assert = require('assert').strict;
 let resolvations = new Map();
 let singletons = new Map();
 
+/**
+ * @template T
+ * @param {T} type
+ * @returns {InstanceType<T> | null}
+ */
+function resolveSingleton(type) {
+    assert(typeof type === 'function');
+
+    if (!singletons.has(type)) {
+        return null;
+    }
+    return singletons.get(type);
+}
+
 const Injector = {
     /**
      * @param {Function} inf Interface Class
      * @param {Function} klass Concrete Class
-     * @param {...Function} args Injectable arguments for klass constructor
+     * @param {Function[]} [args=[]] Injectable arguments for klass constructor
      */
-    register(inf, klass, ...args) {
+    register(inf, klass, args = []) {
         assert(typeof inf === 'function');
         assert(typeof klass === 'function');
         for (const arg of args) {
@@ -38,7 +52,7 @@ const Injector = {
         }
 
         const [C, args] = resolvations.get(inf);
-        const resolvedArgs = args.map(x => Injector.resolve(x));
+        const resolvedArgs = args.map(x => resolveSingleton(x) || Injector.resolve(x));
         return new C(...resolvedArgs);
     },
 
@@ -56,21 +70,6 @@ const Injector = {
         }
 
         singletons.set(type, singleton);
-    },
-
-    /**
-     * @template T
-     * @param {T} type
-     * @returns {InstanceType<T>}
-     */
-    resolveSingleton(type) {
-        assert(typeof type === 'function');
-
-        if (!singletons.has(type)) {
-            throw new TypeError(`No singleton found for ${type.name}`);
-        }
-
-        return singletons.get(type);
     },
 };
 

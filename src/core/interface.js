@@ -56,9 +56,9 @@ class Interface {
      * 対象がインターフェースを満たすことを保証する
      *
      * @param {Function} klass インターフェースを実装するクラス
-     * @param {...Function} args klassのコンストラクタが引数にとるインターフェース
+     * @param {Function[]} [args=[]] klassのコンストラクタが引数にとるインターフェース
      */
-    static comprise(klass, ...args) {
+    static comprise(klass, args = []) {
         // 初めて登録されるインターフェース（this）について
         if (!interfaces.includes(this)) {
             // インターフェース (this) に対する制約
@@ -105,7 +105,7 @@ class Interface {
         }
 
         // DIコンテナに登録
-        Injector.register(this, klass, ...args);
+        Injector.register(this, klass, args);
     }
 }
 

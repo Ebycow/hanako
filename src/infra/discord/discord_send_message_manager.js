@@ -3,7 +3,6 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
-const Injector = require('../../core/injector');
 const IDiscordChatRepo = require('../../domain/repo/i_discord_chat_repo');
 
 // unused
@@ -19,10 +18,10 @@ class DiscordSendMessageManager {
      * DIコンテナ用コンストラクタ
      * 初回呼び出し時にはモジュール初期化を行う
      *
-     * @param {null} client DI
+     * @param {discord.Client} client DI
      */
-    constructor(client = null) {
-        this.client = client || Injector.resolveSingleton(discord.Client);
+    constructor(client) {
+        this.client = client;
     }
 
     /**
@@ -56,6 +55,6 @@ class DiscordSendMessageManager {
 }
 
 // IDiscordChatRepoの実装として登録
-IDiscordChatRepo.comprise(DiscordSendMessageManager);
+IDiscordChatRepo.comprise(DiscordSendMessageManager, [discord.Client]);
 
 module.exports = DiscordSendMessageManager;

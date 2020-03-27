@@ -26,11 +26,12 @@ function handleUncaughtError(err) {
 class Application {
     /**
      * @param {string} token Discord Botのトークン
-     * @param {null} client DI
      */
-    constructor(token, client = null) {
+    constructor(token) {
         this.token = token;
-        this.client = client || Injector.resolveSingleton(discord.Client);
+        this.client = new discord.Client();
+
+        Injector.registerSingleton(discord.Client, this.client);
     }
 
     /**

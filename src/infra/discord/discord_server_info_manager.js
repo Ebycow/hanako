@@ -4,7 +4,6 @@ const assert = require('assert').strict;
 const uuid = require('uuidv4').uuid;
 const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
-const Injector = require('../../core/injector');
 const IServerStatusRepo = require('../../domain/repo/i_server_status_repo');
 const ServerStatus = require('../../domain/entity/server_status');
 
@@ -15,10 +14,10 @@ class DiscordServerInfoManager {
     /**
      * DIコンテナ用コンストラクタ
      *
-     * @param {null} client DI
+     * @param {discord.Client} client DI
      */
-    constructor(client = null) {
-        this.client = client || Injector.resolveSingleton(discord.Client);
+    constructor(client) {
+        this.client = client;
     }
 
     /**
@@ -48,6 +47,6 @@ class DiscordServerInfoManager {
 }
 
 // IServerStatusRepoの実装として登録
-IServerStatusRepo.comprise(DiscordServerInfoManager);
+IServerStatusRepo.comprise(DiscordServerInfoManager, [discord.Client]);
 
 module.exports = DiscordServerInfoManager;

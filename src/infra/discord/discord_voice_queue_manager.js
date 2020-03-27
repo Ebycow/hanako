@@ -4,7 +4,6 @@ const assert = require('assert').strict;
 const uuid = require('uuidv4').uuid;
 const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
-const Injector = require('../../core/injector');
 const VoiceStatus = require('../../domain/entity/voice_status');
 const IVoiceStatusRepo = require('../../domain/repo/i_voice_status_repo');
 const IDiscordVoiceRepo = require('../../domain/repo/i_discord_voice_repo');
@@ -55,15 +54,14 @@ class DiscordVoiceQueueManager {
      * DIコンテナ用コンストラクタ
      * 初回呼び出し時にはモジュール初期化を行う
      *
-     * @param {null} client DI
+     * @param {discord.Client} client DI
      */
-    constructor(client = null) {
+    constructor(client) {
         if (firstCall) {
             firstCall = false;
             init();
         }
-        // DItoDIをシングルトン対応
-        this.client = client || Injector.resolveSingleton(discord.Client);
+        this.client = client;
     }
 
     /**
@@ -217,12 +215,12 @@ class DiscordVoiceQueueManager {
 }
 
 // IVoiceStatusRepoの実装として登録
-IVoiceStatusRepo.comprise(DiscordVoiceQueueManager);
+IVoiceStatusRepo.comprise(DiscordVoiceQueueManager, [discord.Client]);
 
 // IDiscordVoiceRepoの実装として登録
-IDiscordVoiceRepo.comprise(DiscordVoiceQueueManager);
+IDiscordVoiceRepo.comprise(DiscordVoiceQueueManager, [discord.Client]);
 
 // IDiscordVcActionRepoの実装として登録
-IDiscordVcActionRepo.comprise(DiscordVoiceQueueManager);
+IDiscordVcActionRepo.comprise(DiscordVoiceQueueManager, [discord.Client]);
 
 module.exports = DiscordVoiceQueueManager;
