@@ -1,9 +1,12 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
+const uuid = require('uuidv4').uuid;
 const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
 const Injector = require('../../core/injector');
+const VoiceStatus = require('../../domain/entity/voice_status');
+const IVoiceStatusRepo = require('../../domain/repo/i_voice_status_repo');
 const IDiscordVoiceRepo = require('../../domain/repo/i_discord_voice_repo');
 const IDiscordVcActionRepo = require('../../domain/repo/i_discord_vc_action_repo');
 const DiscordVoiceChatModel = require('./discord_voice_chat_model');
@@ -41,8 +44,9 @@ function init() {
 }
 
 /**
- * ディスコード音声送信キューマネージャ
+ * Discord音声送信キューマネージャ
  *
+ * @implements {IVoiceStatusRepo}
  * @implements {IDiscordVoiceRepo}
  * @implements {IDiscordVcActionRepo}
  */
@@ -58,12 +62,42 @@ class DiscordVoiceQueueManager {
             firstCall = false;
             init();
         }
+        // DItoDIをシングルトン対応
         this.client = client || Injector.resolveSingleton(discord.Client);
     }
 
-    // TODO FIXME
-    getVoiceChatModel(serverId) {
-        return cache.get(serverId);
+    /**
+     * (impl) IVoiceStatusRepo
+     *
+     * @param {string} serverId
+     * @returns {Promise<VoiceStatus>|Promise<null>}
+     */
+    async loadVoiceStatus(serverId) {
+        assert(typeof serverId === 'string');
+
+        // キャッシュデータがない ⇔ VC未初期化(起動から一度も参加してない)
+        if (!cache.has(serverId)) {
+            return Promise.resolve(null);
+        }
+
+        const vc = cache.get(serverId);
+
+        // VC接続がない ⇔ 今は参加していない
+        if (vc.connection === null) {
+            return Promise.resolve(null);
+        }
+
+        // 新規音声ステータスを生成
+        const voiceStatus = new VoiceStatus({
+            id: uuid(),
+            serverId: serverId,
+            state: vc.dispatcher === null ? 'ready' : 'speaking',
+            voiceChannelId: vc.connection.channel.id,
+            readingChannelsId: vc.readingChannels.map(c => c.id),
+        });
+
+        // 音声ステータスを返却
+        return Promise.resolve(voiceStatus);
     }
 
     /**
@@ -75,21 +109,27 @@ class DiscordVoiceQueueManager {
     async postJoinVoice(action) {
         assert(typeof action === 'object');
 
+        // 音声チャネルの実体を取得
         const voiceChannel = this.client.channels.resolve(action.voiceChannelId);
-        if (!voiceChannel || !(voiceChannel instanceof discord.VoiceChannel)) {
+        if (!voiceChannel || voiceChannel.type !== 'voice') {
             return errors.unexpected(`no-such-voice-channel ${action}`);
         }
 
+        // テキストチャネルの実体を取得
         const textChannel = this.client.channels.resolve(action.textChannelId);
-        if (!textChannel || !(textChannel instanceof discord.TextChannel)) {
+        if (!textChannel || textChannel.type !== 'text') {
             return errors.unexpected(`no-such-text-channel ${action}`);
         }
 
-        const GID = voiceChannel.guild.id;
-        let vc = cache.get(GID);
-        if (!vc) {
+        const serverId = voiceChannel.guild.id;
+
+        // VCモデルをキャッシュから取得または新規追加
+        let vc;
+        if (cache.has(serverId)) {
+            vc = cache.get(serverId);
+        } else {
             vc = new DiscordVoiceChatModel();
-            cache.set(GID, vc);
+            cache.set(serverId, vc);
         }
 
         // VCに参加
@@ -110,10 +150,11 @@ class DiscordVoiceQueueManager {
     async postLeaveVoice(action) {
         assert(typeof action === 'object');
 
-        const vc = cache.get(action.serverId);
-        if (!vc) {
+        if (!cache.has(action.serverId)) {
             return errors.unexpected(`leave-voice-before-join ${action}`);
         }
+
+        const vc = cache.get(action.serverId);
 
         // VCから退出
         vc.leave();
@@ -130,10 +171,11 @@ class DiscordVoiceQueueManager {
     async postSeibai(action) {
         assert(typeof action === 'object');
 
-        const vc = cache.get(action.serverId);
-        if (!vc) {
+        if (!cache.has(action.serverId)) {
             return errors.unexpected(`seibai-before-join ${action}`);
         }
+
+        const vc = cache.get(action.serverId);
 
         // キューを空にする
         vc.clearQueue();
@@ -153,14 +195,15 @@ class DiscordVoiceQueueManager {
     async postVoice(voice) {
         assert(typeof voice === 'object');
 
-        const vc = cache.get(voice.serverId);
-        if (!vc) {
+        if (!cache.has(voice.serverId)) {
             voice.stream.destroy();
             return errors.unexpected(`post-before-initialization ${voice}`);
         }
 
+        const vc = cache.get(voice.serverId);
+
+        // VCに参加していない場合
         if (vc.connection === null) {
-            // VCにいない
             voice.stream.destroy();
             logger.warn(`音声ストリームを受け取ったがVCにいなかった ${voice}`);
             return errors.abort();
@@ -168,8 +211,13 @@ class DiscordVoiceQueueManager {
 
         // キューに追加
         vc.push(voice.stream);
+
+        return Promise.resolve();
     }
 }
+
+// IVoiceStatusRepoの実装として登録
+IVoiceStatusRepo.comprise(DiscordVoiceQueueManager);
 
 // IDiscordVoiceRepoの実装として登録
 IDiscordVoiceRepo.comprise(DiscordVoiceQueueManager);
