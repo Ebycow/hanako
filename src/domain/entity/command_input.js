@@ -3,39 +3,13 @@ const ChatResponse = require('./responses/chat_response');
 
 /** @typedef {import('./discord_message')} DiscordMessage */
 
+// TODO FIX originを提供しない
+
 /**
  * エンティティ
  * コマンドの引数
  */
 class CommandInput {
-    /**
-     * コマンド引数のパースを試みる 失敗時はTypeError
-     *
-     * @param {DiscordMessage} dmessage パースするメッセージ
-     * @param {string} [prefix=null] プリフィクス('>')が有効なら渡す nullならチェックしない
-     * @return {CommandInput} パースされたコマンド引数
-     */
-    static tryParse(dmessage, prefix = null) {
-        assert(typeof dmessage === 'object');
-        assert(typeof prefix === 'string' || prefix === null);
-
-        let parts = dmessage.content.split(/[\s　]+/); // eslint-disable-line
-
-        if (parts[0].startsWith('@')) {
-            parts = parts.slice(1);
-        } else if (prefix && parts[0].startsWith(prefix)) {
-            parts[0] = parts[0].slice(prefix.length);
-        } else {
-            throw new TypeError('コマンド指定形式が見つからない');
-        }
-
-        if (!(parts.length > 0) || !parts.every(x => x.length > 0)) {
-            throw new TypeError('コマンドのパースに失敗');
-        }
-
-        return new CommandInput({ id: dmessage.id, argc: parts.length, argv: parts, origin: dmessage });
-    }
-
     /**
      * CommandInputエンティティを構築
      *
@@ -53,7 +27,7 @@ class CommandInput {
         assert(typeof data.origin === 'object');
 
         Object.defineProperty(this, 'data', {
-            value: data,
+            value: Object.assign({}, data),
             writable: false,
             enumerable: true,
             configurable: false,
