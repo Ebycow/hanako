@@ -21,9 +21,9 @@ function handleUncaughtError(err) {
 }
 
 /**
- * 読み上げ花子
+ * 読み上げ花子アプリケーション
  */
-class Hanako {
+class Application {
     /**
      * @param {string} token Discord Botのトークン
      * @param {null} client DI
@@ -62,4 +62,4 @@ class Hanako {
     }
 }
 
-module.exports = Hanako;
+module.exports = Application;

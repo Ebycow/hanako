@@ -16,6 +16,5 @@ const Injector = require('./src/core/injector');
 const Client = require('discord.js').Client;
 Injector.registerSingleton(Client, new Client());
 
-const Hanako = require('./src/hanako');
-const hanako = new Hanako(process.env.TOKEN);
-hanako.start();
+const Application = require('./src/application');
+new Application(process.env.TOKEN).start();
