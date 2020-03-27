@@ -11,6 +11,11 @@ const ServerStatus = require('../../domain/entity/server_status');
 // unused
 logger;
 
+/**
+ * Discordサーバー情報マネージャ
+ *
+ * @implements {IServerStatusRepo}
+ */
 class DiscordServerInfoManager {
     /**
      * DIコンテナ用コンストラクタ
