@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const uuid = require('uuidv4').uuid;
 const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
+const AppSettings = require('../../core/app_settings');
 const IServerStatusRepo = require('../../domain/repo/i_server_status_repo');
 const ServerStatus = require('../../domain/entity/server_status');
 
@@ -15,9 +16,11 @@ class DiscordServerInfoManager {
      * DIコンテナ用コンストラクタ
      *
      * @param {discord.Client} client DI
+     * @param {AppSettings} appSettings DI
      */
-    constructor(client) {
+    constructor(client, appSettings) {
         this.client = client;
+        this.appSettings = appSettings;
     }
 
     /**
@@ -39,6 +42,7 @@ class DiscordServerInfoManager {
             id: uuid(),
             serverId: guild.id,
             serverName: guild.name,
+            prefix: this.appSettings.defaultCommandPrefix,
         });
 
         // サーバーステータスを返却
@@ -47,6 +51,6 @@ class DiscordServerInfoManager {
 }
 
 // IServerStatusRepoの実装として登録
-IServerStatusRepo.comprise(DiscordServerInfoManager, [discord.Client]);
+IServerStatusRepo.comprise(DiscordServerInfoManager, [discord.Client, AppSettings]);
 
 module.exports = DiscordServerInfoManager;

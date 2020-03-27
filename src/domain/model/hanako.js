@@ -38,9 +38,6 @@ class Hanako {
          */
         this.wordDictionary = wordDictionary;
         Object.defineProperty(this, 'wordDictionary', { writable: false });
-
-        // TODO FIX
-        this.prefix = process.env.PREFIX_KEY || '>';
     }
 
     /**
@@ -48,6 +45,13 @@ class Hanako {
      */
     get serverId() {
         return this.serverStatus.serverId;
+    }
+
+    /**
+     * コマンドプリフィクス
+     */
+    get prefix() {
+        return this.serverStatus.prefix;
     }
 
     /**
