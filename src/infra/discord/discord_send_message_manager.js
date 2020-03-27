@@ -34,12 +34,10 @@ class DiscordSendMessageManager {
     async postChat(chat) {
         assert(typeof chat === 'object');
 
+        // テキストチャネルの実体を取得
         const channel = this.client.channels.resolve(chat.channelId);
-        if (!channel) {
-            return errors.unexpected(`no-such-channel ${chat}`);
-        }
-        if (!(channel instanceof discord.TextChannel)) {
-            return errors.unexpected(`not-a-text-channel ${chat}`);
+        if (!channel || channel.type !== 'text') {
+            return errors.unexpected(`no-such-text-channel ${chat}`);
         }
 
         const sent = await channel.send(chat.content);
