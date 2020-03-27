@@ -2,6 +2,8 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const discord = require('discord.js');
 const Injector = require('./core/injector');
+const AppConfig = require('./core/app_config');
+const AppSettings = require('./core/app_settings');
 const MessageCtrl = require('./app/message_ctrl');
 const MessageSanitizeMiddleWare = require('./app/message_sanitize_middle_ware');
 
@@ -25,25 +27,37 @@ function handleUncaughtError(err) {
  */
 class Application {
     /**
-     * @param {string} token Discord Botのトークン
+     * 読み上げ花子アプリケーションを構築
+     *
+     * @param {AppConfig} appConfig アプリケーションのDIコンフィグ
+     * @param {AppSettings} appSettings アプリケーションの設定
      */
-    constructor(token) {
-        this.token = token;
+    constructor(appConfig, appSettings) {
+        this.appConfig = appConfig;
+        this.appSettings = appSettings;
         this.client = new discord.Client();
-
-        Injector.registerSingleton(discord.Client, this.client);
     }
 
     /**
      * アプリケーションのエントリポイント
      */
     start() {
+        // DIコンフィグを適用
+        this.appConfig.configure();
+
+        // シングルトンDIを設定
+        Injector.registerSingleton(AppConfig, this.appConfig);
+        Injector.registerSingleton(AppSettings, this.appSettings);
+        Injector.registerSingleton(discord.Client, this.client);
+
+        // コントローラの登録
         this.bind('message', MessageCtrl, [MessageSanitizeMiddleWare]);
 
         // TODO FIX
         this.client.on('ready', () => logger.info('ready'));
 
-        this.client.login(this.token);
+        // 待受開始
+        this.client.login(this.appSettings.discordBotToken);
     }
 
     /**

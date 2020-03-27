@@ -2,6 +2,7 @@ const assert = require('assert').strict;
 
 let resolvations = new Map();
 let singletons = new Map();
+let dependencies = null;
 
 /**
  * @template T
@@ -19,6 +20,21 @@ function resolveSingleton(type) {
 
 const Injector = {
     /**
+     * @param {object} configs
+     */
+    configure(configs) {
+        assert(typeof configs === 'object' && Array.isArray(configs));
+        assert(configs.every(config => typeof config.interface === 'string'));
+        assert(configs.every(config => typeof config.dependent === 'string'));
+
+        if (dependencies !== null) {
+            throw new TypeError('You may not configure dependencies twice.');
+        }
+
+        dependencies = configs.reduce((map, config) => map.set(config.interface, config.dependent), new Map());
+    },
+
+    /**
      * @param {Function} inf Interface Class
      * @param {Function} klass Concrete Class
      * @param {Function[]} [args=[]] Injectable arguments for klass constructor
@@ -26,17 +42,17 @@ const Injector = {
     register(inf, klass, args = []) {
         assert(typeof inf === 'function');
         assert(typeof klass === 'function');
-        for (const arg of args) {
-            assert(typeof arg === 'function');
-        }
+        assert(args.every(arg => typeof arg === 'function'));
 
         if (resolvations.has(inf)) {
-            // TODO 実装切り替えをコンフィグできるようにする（マスト）
-            //      とりあえず複数実装検出したら死ぬようにしておく
-            throw new Error('not implemented yet');
+            const resolvation = resolvations.get(inf);
+            if (resolvation.some(([K, _]) => K === klass)) {
+                throw new TypeError(`${klass.name} was registered twice for ${inf.name}.`);
+            }
+            resolvation.push([klass, args]);
+        } else {
+            resolvations.set(inf, [[klass, args]]);
         }
-
-        resolvations.set(inf, [klass, args]);
     },
 
     /**
@@ -50,8 +66,18 @@ const Injector = {
         if (!resolvations.has(inf)) {
             throw new TypeError(`No implementation found for ${inf.name}.`);
         }
+        if (!dependencies.has(inf.name)) {
+            throw new TypeError(`${inf.name} is not configured.`);
+        }
 
-        const [C, args] = resolvations.get(inf);
+        const dependantName = dependencies.get(inf.name);
+        const resolvation = resolvations.get(inf);
+        const dependency = resolvation.find(([K, _]) => K.name === dependantName);
+        if (!dependency) {
+            throw new TypeError(`No such implementation ${dependantName} registered for ${inf.name}.`);
+        }
+
+        const [C, args] = dependency;
         const resolvedArgs = args.map(x => resolveSingleton(x) || Injector.resolve(x));
         return new C(...resolvedArgs);
     },

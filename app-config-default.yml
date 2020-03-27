@@ -1,0 +1,39 @@
+---
+# 読み上げ花子の設定（デフォルト）
+settings:
+  
+  # Discord Bot のトークン (必ず app-config.yml でオーバーライドしてください)
+  discord_bot_token: '<YOUR DISCORD BOT TOKEN HERE>'
+
+  # Discord Bot のコマンドプリフィックス
+  default_command_prefix: '>'
+
+  # Ebyroid AudioStream API の URL
+  ebyroid_stream_api_url: 'http://localhost:4090/api/v1/audiostream'
+
+# アプリケーションのDIコンフィグ
+configurations:
+
+  - interface: IServerStatusRepo
+    dependent: DiscordServerInfoManager
+
+  - interface: IVoiceroidStreamRepo
+    dependent: EbyroidStreamApiAdapter
+  
+  - interface: IDiscordChatRepo
+    dependent: DiscordSendMessageManager
+  
+  - interface: IVoiceStatusRepo
+    dependent: DiscordVoiceQueueManager
+  
+  - interface: IDiscordVoiceRepo
+    dependent: DiscordVoiceQueueManager
+  
+  - interface: IDiscordVcActionRepo
+    dependent: DiscordVoiceQueueManager
+  
+  - interface: IWordActionRepo
+    dependent: NedbWordDictionaryTableManager
+
+  - interface: IWordDictionaryRepo
+    dependent: NedbWordDictionaryTableManager

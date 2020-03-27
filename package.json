@@ -24,10 +24,12 @@
     "async-exit-hook": "^2.0.1",
     "axios": "^0.19.2",
     "bufferutil": "^4.0.1",
+    "camel-case": "^4.1.1",
     "discord.js": "^12.0.2",
     "dotenv": "^8.2.0",
     "erlpack": "github:discordapp/erlpack",
     "file-type": "^14.1.2",
+    "glob": "^7.1.6",
     "libsodium-wrappers": "^0.7.6",
     "log4js": "^6.1.2",
     "nedb": "^1.8.0",
@@ -35,9 +37,11 @@
     "node-libsamplerate": "git+https://github.com/nanokina/node-libsamplerate.git#8c33698dae902b790505247db1cc36ec88b43155",
     "pretty-bytes": "^5.3.0",
     "prism-media": "^1.2.0",
+    "snake-case": "^3.0.3",
     "text-table": "^0.2.0",
     "utf-8-validate": "^5.0.2",
-    "uuidv4": "^6.0.2"
+    "uuidv4": "^6.0.2",
+    "yaml": "^1.8.3"
   },
   "devDependencies": {
     "@types/nedb": "^1.8.9",

@@ -4,3 +4,4 @@ node_modules
 db
 log
 files
+app-config.yml
