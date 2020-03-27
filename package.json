@@ -26,7 +26,6 @@
     "bufferutil": "^4.0.1",
     "camel-case": "^4.1.1",
     "discord.js": "^12.0.2",
-    "dotenv": "^8.2.0",
     "erlpack": "github:discordapp/erlpack",
     "file-type": "^14.1.2",
     "glob": "^7.1.6",
