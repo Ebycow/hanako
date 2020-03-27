@@ -18,8 +18,6 @@ const errors = require('../core/errors').promises;
  * メッセージの基本バリデーション
  */
 class MessageValidator {
-    constructor() {}
-
     /**
      * メッセージの基本バリデーション
      *

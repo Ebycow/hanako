@@ -4,7 +4,7 @@ const MessageValidator = require('../service/message_validator');
 const MessageBuilder = require('../service/message_builder');
 const MessageService = require('../service/message_service');
 const ResponseHandler = require('../service/response_handler');
-const ServerLoader = require('../service/server_loader');
+const HanakoLoader = require('../service/hanako_loader');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
@@ -23,7 +23,7 @@ class MessageCtrl {
         this.builder = new MessageBuilder();
         this.service = new MessageService();
         this.responseHandler = new ResponseHandler();
-        this.serverLoader = new ServerLoader();
+        this.hanakoLoader = new HanakoLoader();
 
         logger.trace('セットアップ完了');
     }
@@ -43,8 +43,8 @@ class MessageCtrl {
         };
         await this.validator.validate(validatorParam);
 
-        // サーバーモデルを取得
-        const server = await this.serverLoader.load({ id: message.guild.id });
+        // 読み上げ花子モデルを取得
+        const hanako = await this.hanakoLoader.load(message.guild.id);
 
         // メッセージエンティティの作成
         const builderParam = {
@@ -59,10 +59,10 @@ class MessageCtrl {
             serverName: message.guild.name,
             voiceChannelId: message.member.voice.channel ? message.member.voice.channel.id : null,
         };
-        const entity = await this.builder.build(builderParam, server);
+        const entity = await this.builder.build(hanako, builderParam);
 
         // メッセージに対する花子のレスポンスを取得
-        const response = await this.service.serve(entity, server);
+        const response = await this.service.serve(hanako, entity);
 
         // レスポンスハンドラにレスポンス処理をさせて終了
         await this.responseHandler.handle(response);
