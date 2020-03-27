@@ -1,7 +1,7 @@
 const assert = require('assert').strict;
 const formatters = require('./formatters');
 
-/** @typedef {import('../entity/server_status')} ServerStatus */
+/** @typedef {import('../model/hanako')} Hanako */
 
 /**
  * ドメインモデル
@@ -11,11 +11,11 @@ class Formato {
     /**
      * ホルマトを構築
      *
-     * @param {ServerStatus} status Formatter適用下のサーバー状態
+     * @param {Hanako} hanako Formatter適用下の読み上げ花子モデル
      */
-    constructor(status) {
-        const formats = () => formatters.sorted.map(F => F.prototype.format.bind(new F(status)));
-        this.fold = z => formats().reduce((acc, f) => f(acc), z);
+    constructor(hanako) {
+        const formats = formatters.sorted.map(F => F.prototype.format.bind(new F(hanako)));
+        this.fold = z => formats.reduce((acc, f) => f(acc), z);
     }
 
     /**
