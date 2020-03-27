@@ -1,16 +1,33 @@
 const axios = require('axios').default;
 const SampleRate = require('node-libsamplerate');
 const transforms = require('../../library/transforms');
+const AppSettings = require('../../core/app_settings');
 const IVoiceroidStreamRepo = require('../../domain/repo/i_voiceroid_stream_repo');
 
 /** @typedef {import('stream').Readable} Readable */
+/** @typedef {import('../../domain/entity/audios/voiceroid_audio')} VoiceroidAudio */
 
+/**
+ * EbyroidオーディオストリームAPIアダプタ
+ *
+ * @implements {IVoiceroidStreamRepo}
+ */
 class EbyroidStreamApiAdapter {
-    constructor() {
-        // TODO コンフィグDI
-        this.url = 'http://localhost:4090/api/v1/audiostream';
+    /**
+     * DIコンテナ用コンストラクタ
+     *
+     * @param {AppSettings} appSettings DI
+     */
+    constructor(appSettings) {
+        this.url = appSettings.ebyroidStreamApiUrl;
     }
 
+    /**
+     * (impl) IVoiceroidStreamRepo
+     *
+     * @param {VoiceroidAudio} audio
+     * @returns {Promise<Readable>}
+     */
     async getStream(audio) {
         const response = await axios.get(this.url, { responseType: 'stream', params: { text: audio.content } });
 
@@ -37,10 +54,11 @@ class EbyroidStreamApiAdapter {
             toDepth: 16,
         });
         stream = stream.pipe(resample);
-        return stream;
+        return Promise.resolve(stream);
     }
 }
 
-IVoiceroidStreamRepo.comprise(EbyroidStreamApiAdapter);
+// IVoiceroidStreamRepoの実装として登録
+IVoiceroidStreamRepo.comprise(EbyroidStreamApiAdapter, [AppSettings]);
 
 module.exports = EbyroidStreamApiAdapter;
