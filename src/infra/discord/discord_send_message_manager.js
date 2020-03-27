@@ -8,6 +8,8 @@ const IDiscordChatRepo = require('../../domain/repo/i_discord_chat_repo');
 // unused
 logger;
 
+/** @typedef {import('../../domain/entity/responses/chat_response')} ChatResponse */
+
 /**
  * ディスコートメッセージ送信マネージャ
  *
@@ -41,13 +43,9 @@ class DiscordSendMessageManager {
 
         const sent = await channel.send(chat.content);
 
-        switch (chat.code) {
-            case 'pager':
-                await sent.react('👈');
-                await sent.react('👉');
-                break;
-            default:
-            // pass
+        if (chat.code === 'pager') {
+            await sent.react('👈');
+            await sent.react('👉');
         }
 
         return Promise.resolve();

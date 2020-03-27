@@ -79,11 +79,10 @@ class TerminalReader {
      * @returns {Array<InternalAudioT>} 構築結果 Audioエンティティの配列
      */
     read(value) {
-        switch (value.type) {
-            case 'plain':
-                return [convert(value)];
-            default:
-                return [value];
+        if (value.type === 'plain') {
+            return [convert(value)];
+        } else {
+            return [value];
         }
     }
 }
