@@ -3,6 +3,8 @@ const SeibaiCommand = require('../../src/domain/model/commands/seibai_command');
 const DiscordMessage = require('../../src/domain/entity/discord_message');
 const CommandInput = require('../../src/domain/entity/command_input');
 const ServerStatus = require('../../src/domain/entity/server_status');
+const VoiceStatus = require('../../src/domain/entity/voice_status');
+const Hanako = require('../../src/domain/model/hanako');
 
 /************************************************************************
  * SeibaiCommandクラス単体スペック
@@ -17,18 +19,31 @@ describe('SeibaiCommand', () => {
     // helper
     function serverStatusBlueprint() {
         return {
+            id: 'mock-status-id',
             serverId: 'mock-server-id',
             serverName: 'mock-server-name',
-            voiceStatus: 'ready',
-            voiceChannel: 'mock-voice-channel-id',
-            readingChannels: ['mock-reading-channel-id'],
-            wordDictionary: null,
         };
+    }
+
+    // helper
+    function voiceStatusBlueprint() {
+        return {
+            id: 'mock-status-id',
+            serverId: 'mock-server-id',
+            state: 'ready',
+            voiceChannelId: 'mock-voice-channel-id',
+            readingChannelsId: ['mock-reading-channel-id'],
+        };
+    }
+
+    // helper
+    function basicHanako() {
+        return new Hanako(new ServerStatus(serverStatusBlueprint()), new VoiceStatus(voiceStatusBlueprint()), null);
     }
 
     describe('Commandクラスメタスペック', () => {
         specify('typeは文字列を返す', () => {
-            const sub = new SeibaiCommand(new ServerStatus(serverStatusBlueprint()));
+            const sub = new SeibaiCommand(basicHanako());
             sub.type.should.be.a('string');
         });
 
@@ -38,7 +53,7 @@ describe('SeibaiCommand', () => {
         });
 
         specify('processメソッドを持つ', () => {
-            const sub = new SeibaiCommand(new ServerStatus(serverStatusBlueprint()));
+            const sub = new SeibaiCommand(basicHanako());
             sub.process.should.be.a('function');
         });
     });
@@ -66,13 +81,16 @@ describe('SeibaiCommand', () => {
                     origin: dmessage,
                 });
 
-                const blueprint = serverStatusBlueprint();
-                blueprint.serverId = mockServerId;
-                blueprint.voiceStatus = 'speaking';
-                blueprint.voiceChannel = mockVoiceChannelId;
-                blueprint.readingChannels = [mockTextChannelId];
+                const ssb = serverStatusBlueprint();
+                ssb.serverId = mockServerId;
 
-                const sub = new SeibaiCommand(new ServerStatus(blueprint));
+                const vsb = voiceStatusBlueprint();
+                vsb.serverId = mockServerId;
+                vsb.state = 'speaking';
+                vsb.voiceChannelId = mockVoiceChannelId;
+                vsb.readingChannelsId = [mockTextChannelId];
+
+                const sub = new SeibaiCommand(new Hanako(new ServerStatus(ssb), new VoiceStatus(vsb), null));
                 const res = sub.process(input);
 
                 // 正しいアクションレスポンス
@@ -104,11 +122,10 @@ describe('SeibaiCommand', () => {
                         argv: [],
                         origin: dmessage,
                     });
-                    const blueprint = serverStatusBlueprint();
-                    blueprint.voiceStatus = null;
-                    blueprint.voiceChannel = null;
 
-                    const sub = new SeibaiCommand(new ServerStatus(blueprint));
+                    const ssb = serverStatusBlueprint();
+
+                    const sub = new SeibaiCommand(new Hanako(new ServerStatus(ssb), null, null));
                     const res = sub.process(input);
 
                     // エラー会話レスポンス
@@ -133,10 +150,13 @@ describe('SeibaiCommand', () => {
                         argv: [],
                         origin: dmessage,
                     });
-                    const blueprint = serverStatusBlueprint();
-                    blueprint.voiceStatus = 'ready';
 
-                    const sub = new SeibaiCommand(new ServerStatus(blueprint));
+                    const ssb = serverStatusBlueprint();
+
+                    const vsb = voiceStatusBlueprint();
+                    vsb.state = 'ready';
+
+                    const sub = new SeibaiCommand(new Hanako(new ServerStatus(ssb), new VoiceStatus(vsb), null));
                     const res = sub.process(input);
 
                     // エラー会話レスポンス

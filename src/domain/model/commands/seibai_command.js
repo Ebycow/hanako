@@ -6,7 +6,7 @@ const ActionResponse = require('../../entity/responses/action_response');
 
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
-/** @typedef {import('../../entity/server_status')} ServerStatus */
+/** @typedef {import('../../model/hanako')} Hanako */
 
 /**
  * ドメインモデル
@@ -28,10 +28,10 @@ class SeibaiCommand {
     }
 
     /**
-     * @param {ServerStatus} status コマンド実行下のサーバー状態
+     * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
-    constructor(status) {
-        this.status = status;
+    constructor(hanako) {
+        this.hanako = hanako;
     }
 
     /**
@@ -44,7 +44,11 @@ class SeibaiCommand {
         assert(typeof input === 'object');
         logger.info(`成敗コマンドを受理 ${input}`);
 
-        if (this.status.voiceStatus !== 'speaking') {
+        if (this.hanako.voiceStatus === null) {
+            return input.newChatResponse('このコマンドは私を通話チャンネルに招待してからつかってね！', 'error');
+        }
+
+        if (this.hanako.voiceStatus.state !== 'speaking') {
             return input.newChatResponse('安心せい、みねうちにゃ… :knife:', 'error');
         }
 
