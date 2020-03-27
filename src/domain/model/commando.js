@@ -2,7 +2,7 @@ const commands = require('./commands');
 
 /** @typedef {import('./commands').CommandT} CommandT */
 /** @typedef {import('../entity/command_input')} CommandInput */
-/** @typedef {import('../entity/server_status')} ServerStatus */
+/** @typedef {import('../model/hanako')} Hanako */
 
 /**
  * ドメインモデル
@@ -19,16 +19,11 @@ class Commando {
     /**
      * コマンドーを構築
      *
-     * @param {ServerStatus} status コマンド実行下のサーバー状態
+     * @param {Hanako} hanako コマンド実行下の読み上げ花子モデル
      */
-    constructor(status) {
-        /** @type {Array<(name:string) => CommandT>} */
-        this.resolvers = [];
-        for (const K of Object.values(commands)) {
-            const I = new K(status);
-            const F = name => (K.names.includes(name) ? I : null);
-            this.resolvers.push(F);
-        }
+    constructor(hanako) {
+        const classes = Array.from(Object.values(commands));
+        this.resolvers = classes.map(K => name => (K.names.includes(name) ? new K(hanako) : null));
     }
 
     /**
@@ -38,12 +33,11 @@ class Commando {
      * @returns {[CommandT, CommandInput]} コマンドインスタンスと消費済みコマンド引数のペア（コマンドが見つからない場合インスタンスはnull）
      */
     resolve(input) {
+        const max = 10;
         const go = (c, name, ...rest) => {
-            for (const F of this.resolvers) {
-                const I = F(name);
-                if (I) return [I, c];
-            }
-            if (rest.length > 0) {
+            const maybeInstance = this.resolvers.reduce((maybeInstance, f) => maybeInstance || f(name), null);
+            if (maybeInstance) return [maybeInstance, c];
+            if (rest.length > 0 && c <= max) {
                 return go(c + 1, `${name}-${rest[0]}`, ...rest.slice(1));
             } else {
                 return [null, 0];
