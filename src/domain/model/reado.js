@@ -3,7 +3,7 @@ const readers = require('./readers');
 const Plain = require('../entity/audios/plain');
 
 /** @typedef {import('../entity/audios').AudioT} AudioT */
-/** @typedef {import('../entity/server_status')} ServerStatus */
+/** @typedef {import('../model/hanako')} Hanako */
 
 /**
  * ドメインモデル
@@ -16,10 +16,10 @@ class Reado {
     /**
      * リードーを構築
      *
-     * @param {ServerStatus} status Reader適用下のサーバー状態
+     * @param {Hanako} hanako Reader適用下の読み上げ花子モデル
      */
-    constructor(status) {
-        const lifters = readers.sorted.map(R => R.prototype.read.bind(new R(status)));
+    constructor(hanako) {
+        const lifters = readers.sorted.map(R => R.prototype.read.bind(new R(hanako)));
         this.squash = z => lifters.reduce((arr, f) => arr.map(f).flat(), [z]);
     }
 
