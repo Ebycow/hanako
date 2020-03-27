@@ -6,7 +6,7 @@ const ActionResponse = require('../../entity/responses/action_response');
 
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
-/** @typedef {import('../../entity/server_status')} ServerStatus */
+/** @typedef {import('../../model/hanako')} Hanako */
 
 /**
  * ドメインモデル
@@ -28,10 +28,10 @@ class WordClearCommand {
     }
 
     /**
-     * @param {ServerStatus} status コマンド実行下のサーバー状態
+     * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
-    constructor(status) {
-        this.status = status;
+    constructor(hanako) {
+        this.hanako = hanako;
     }
 
     /**
@@ -44,7 +44,7 @@ class WordClearCommand {
         assert(typeof input === 'object');
         logger.info(`教育単語初期化コマンドを受理 ${input}`);
 
-        if (this.status.wordDictionary.lines.length === 0) {
+        if (this.hanako.wordDictionary.lines.length === 0) {
             return input.newChatResponse(
                 '辞書にはまだなにも登録されていません。\n教育コマンドを使って単語と読み方を登録できます！ 例:`@hanako 教育 雷 いかずち`',
                 'error'

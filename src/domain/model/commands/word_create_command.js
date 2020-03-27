@@ -6,7 +6,7 @@ const ActionResponse = require('../../entity/responses/action_response');
 
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
-/** @typedef {import('../../entity/server_status')} ServerStatus */
+/** @typedef {import('../../model/hanako')} Hanako */
 
 /**
  * ドメインモデル
@@ -28,10 +28,10 @@ class WordCreateCommand {
     }
 
     /**
-     * @param {ServerStatus} status コマンド実行下のサーバー状態
+     * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
-    constructor(status) {
-        this.status = status;
+    constructor(hanako) {
+        this.hanako = hanako;
     }
 
     /**
@@ -63,13 +63,13 @@ class WordCreateCommand {
         }
 
         // 重複チェック
-        const dup = this.status.wordDictionary.lines.find(line => line.from === from);
+        const dup = this.hanako.wordDictionary.lines.find(line => line.from === from);
         if (dup) {
             return input.newChatResponse(`すでに教育済みの単語です！ 『${dup.from} ⇨ ${dup.to}』`, 'error');
         }
 
         // 上限数チェック
-        if (this.status.wordDictionary.lines.length >= 200) {
+        if (this.hanako.wordDictionary.lines.length >= 200) {
             return input.newChatResponse(
                 'すでに上限数(200)の単語が登録されています。何か削除してから再度試してください。',
                 'error'

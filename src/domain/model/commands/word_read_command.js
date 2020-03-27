@@ -5,7 +5,7 @@ const Pager = require('../pager');
 
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
-/** @typedef {import('../../entity/server_status')} ServerStatus */
+/** @typedef {import('../../model/hanako')} Hanako */
 
 /**
  * ドメインモデル
@@ -27,10 +27,10 @@ class WordReadCommand {
     }
 
     /**
-     * @param {ServerStatus} status コマンド実行下のサーバー状態
+     * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
-    constructor(status) {
-        this.status = status;
+    constructor(hanako) {
+        this.hanako = hanako;
     }
 
     /**
@@ -43,7 +43,7 @@ class WordReadCommand {
         assert(typeof input === 'object');
         logger.info(`教育単語一覧コマンドを受理 ${input}`);
 
-        if (this.status.wordDictionary.lines.length === 0) {
+        if (this.hanako.wordDictionary.lines.length === 0) {
             return input.newChatResponse(
                 '辞書にはまだなにも登録されていません。\n教育コマンドを使って単語と読み方を登録できます！ 例:`@hanako 教育 雷 いかずち`',
                 'error'
@@ -51,7 +51,7 @@ class WordReadCommand {
         }
 
         // ページ会話レスポンス
-        const pager = new Pager(this.status.wordDictionary);
+        const pager = new Pager(this.hanako.wordDictionary);
         return input.newChatResponse(pager.show(), 'pager');
     }
 }

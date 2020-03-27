@@ -6,7 +6,7 @@ const ActionResponse = require('../../entity/responses/action_response');
 
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
-/** @typedef {import('../../entity/server_status')} ServerStatus */
+/** @typedef {import('../../model/hanako')} Hanako */
 
 /**
  * ドメインモデル
@@ -28,10 +28,10 @@ class WordDeleteCommand {
     }
 
     /**
-     * @param {ServerStatus} status コマンド実行下のサーバー状態
+     * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
-    constructor(status) {
-        this.status = status;
+    constructor(hanako) {
+        this.hanako = hanako;
     }
 
     /**
@@ -49,7 +49,7 @@ class WordDeleteCommand {
             return input.newChatResponse('コマンドの形式が間違っています :sob: 例:`@hanako 忘却 御伽原`', 'error');
         }
 
-        const word = this.status.wordDictionary.lines.find(line => line.from === input.argv[0]);
+        const word = this.hanako.wordDictionary.lines.find(line => line.from === input.argv[0]);
 
         // 単語が見つからない
         if (!word) {
