@@ -83,7 +83,7 @@ class AppConfig {
         }
 
         const loadedClasses = dependentFiles.map(file => require(file));
-        logger.info(`依存クラスをロードした${loadedClasses.map((K, i) => `\n\t${i + 1}. ${K.name}`).join('')}`);
+        logger.trace(`依存クラスをロードした${loadedClasses.map((K, i) => `\n\t${i + 1}. ${K.name}`).join('')}`);
     }
 }
 
