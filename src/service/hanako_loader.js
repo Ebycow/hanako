@@ -1,5 +1,6 @@
 const assert = require('assert').strict;
 const Injector = require('../core/injector');
+const ISettingsRepo = require('../domain/repo/i_settings_repo');
 const IServerStatusRepo = require('../domain/repo/i_server_status_repo');
 const IVoiceStatusRepo = require('../domain/repo/i_voice_status_repo');
 const IWordDictionaryRepo = require('../domain/repo/i_word_dictionary_repo');
@@ -11,11 +12,13 @@ const Hanako = require('../domain/model/hanako');
  */
 class HanakoLoader {
     /**
+     * @param {null} settingsRepo DI
      * @param {null} serverStatusRepo DI
      * @param {null} voiceStatusRepo DI
      * @param {null} wordDictRepo DI
      */
-    constructor(serverStatusRepo = null, voiceStatusRepo = null, wordDictRepo = null) {
+    constructor(settingsRepo = null, serverStatusRepo = null, voiceStatusRepo = null, wordDictRepo = null) {
+        this.settingsRepo = settingsRepo || Injector.resolve(ISettingsRepo);
         this.serverStatusRepo = serverStatusRepo || Injector.resolve(IServerStatusRepo);
         this.voiceStatusRepo = voiceStatusRepo || Injector.resolve(IVoiceStatusRepo);
         this.wordDictRepo = wordDictRepo || Injector.resolve(IWordDictionaryRepo);
@@ -31,12 +34,13 @@ class HanakoLoader {
         assert(typeof serverId === 'string');
 
         // 各種リポジトリから花子モデルの構成要素をロード
+        const settings = await this.settingsRepo.loadSettings(serverId);
         const serverStatus = await this.serverStatusRepo.loadServerStatus(serverId);
         const voiceStatus = await this.voiceStatusRepo.loadVoiceStatus(serverId);
         const wordDictionary = await this.wordDictRepo.loadWordDictionary(serverId);
 
         // 花子モデルを生成して返却
-        const hanako = new Hanako(serverStatus, voiceStatus, wordDictionary);
+        const hanako = new Hanako(settings, serverStatus, voiceStatus, wordDictionary);
         return Promise.resolve(hanako);
     }
 }

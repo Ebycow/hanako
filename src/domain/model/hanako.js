@@ -1,5 +1,6 @@
 const assert = require('assert').strict;
 
+/** @typedef {import('../entity/settings')} Settings */
 /** @typedef {import('../entity/server_status')} ServerStatus */
 /** @typedef {import('../entity/voice_status')} VoiceStatus */
 /** @typedef {import('../entity/word_dictionary') WordDictionary} */
@@ -12,14 +13,22 @@ class Hanako {
     /**
      * 読み上げ花子のモデルを構築
      *
+     * @param {Settings} settings 読み上げ花子の設定
      * @param {ServerStatus} serverStatus サーバーステータス
      * @param {VoiceStatus | null} voiceStatus 音声ステータス またはnull
      * @param {WordDictionary} wordDictionary 教育単語辞書
      */
-    constructor(serverStatus, voiceStatus, wordDictionary) {
+    constructor(settings, serverStatus, voiceStatus, wordDictionary) {
+        assert(typeof settings === 'object');
         assert(typeof serverStatus === 'object');
         assert(typeof voiceStatus === 'object');
         assert(typeof wordDictionary === 'object');
+
+        /**
+         * 読み上げ花子の設定
+         */
+        this.settings = settings;
+        Object.defineProperty(this, 'settings', { writable: false });
 
         /**
          * 所属Discordサーバーのステータス
