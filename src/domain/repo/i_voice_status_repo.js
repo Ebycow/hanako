@@ -14,6 +14,13 @@ class IVoiceStatusRepo extends Interface {
      * @returns {Promise<VoiceStatus>|Promise<null>} 対象Discordサーバーの音声ステータス またはnull
      */
     async loadVoiceStatus(serverId) {}
+
+    /**
+     * すべての有効なVoiceStatusを読み出し
+     *
+     * @returns {Promise<Array<VoiceStatus>>} すべての有効なVoiceStatusの配列
+     */
+    async loadAllVoiceStatus() {}
 }
 
 module.exports = IVoiceStatusRepo;

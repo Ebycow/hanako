@@ -43,6 +43,22 @@ function init() {
 }
 
 /**
+ * ボイスチャットモデルから音声ステータスを生成
+ *
+ * @param {DiscordVoiceChatModel} vcModel
+ * @return {VoiceStatus}
+ */
+function toVoiceStatus(vcModel) {
+    return new VoiceStatus({
+        id: uuid(),
+        serverId: vcModel.serverId,
+        state: vcModel.dispatcher === null ? 'ready' : 'speaking',
+        voiceChannelId: vcModel.connection.channel.id,
+        readingChannelsId: vcModel.readingChannels.map(c => c.id),
+    });
+}
+
+/**
  * Discord音声送信キューマネージャ
  *
  * @implements {IVoiceStatusRepo}
@@ -86,16 +102,22 @@ class DiscordVoiceQueueManager {
         }
 
         // 新規音声ステータスを生成
-        const voiceStatus = new VoiceStatus({
-            id: uuid(),
-            serverId: serverId,
-            state: vc.dispatcher === null ? 'ready' : 'speaking',
-            voiceChannelId: vc.connection.channel.id,
-            readingChannelsId: vc.readingChannels.map(c => c.id),
-        });
+        const voiceStatus = toVoiceStatus(vc);
 
         // 音声ステータスを返却
         return Promise.resolve(voiceStatus);
+    }
+
+    /**
+     * (impl) IVoiceStatusRepo
+     *
+     * @returns {Promise<Array<VoiceStatus>>}
+     */
+    async loadAllVoiceStatus() {
+        let vcModels = Array.from(cache.values());
+        // 接続していないものを除外
+        vcModels = vcModels.filter(vc => vc.connection !== null);
+        return Promise.resolve(vcModels.map(toVoiceStatus));
     }
 
     /**
@@ -126,7 +148,7 @@ class DiscordVoiceQueueManager {
         if (cache.has(serverId)) {
             vc = cache.get(serverId);
         } else {
-            vc = new DiscordVoiceChatModel();
+            vc = new DiscordVoiceChatModel(serverId);
             cache.set(serverId, vc);
         }
 
