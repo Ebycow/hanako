@@ -24,7 +24,7 @@ class WordClearCommand {
      * @type {string[]}
      */
     static get names() {
-        return ['白紙', 'alldelete', 'wbook-alldel'];
+        return ['白日', 'alldelete', 'wbook-alldel'];
     }
 
     /**
@@ -53,7 +53,7 @@ class WordClearCommand {
 
         if (input.argc !== 1 || input.argv[0] !== '--force') {
             return input.newChatResponse(
-                '**ほんとうにけすのですか？ こうかいしませんね？**\nすべての単語を削除する場合はコマンドに `--force` を付けてください。例:`@hanako 白紙 --force`',
+                '**ほんとうにけすのですか？ こうかいしませんね？**\nすべての単語を削除する場合はコマンドに `--force` を付けてください。例:`@hanako 白日 --force`',
                 'force'
             );
         }
