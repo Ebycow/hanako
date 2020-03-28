@@ -41,6 +41,7 @@ class PagerReactionCtrl {
     }
 
     /**
+     * ページングリアクションを処理する
      *
      * @param {discord.MessageReaction} reaction 付与または削除されたリアクション
      * @param {discord.User} user リアクションを付与または削除したユーザー
