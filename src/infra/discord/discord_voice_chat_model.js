@@ -1,3 +1,5 @@
+const assert = require('assert').strict;
+
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('discord.js').VoiceChannel} discord.VoiceChannel */
 /** @typedef {import('discord.js').TextChannel} discord.TextChannel*/
@@ -10,8 +12,19 @@
 class DiscordVoiceChatModel {
     /**
      * DiscordVoiceChatModelを構築
+     *
+     * @param {string} serverId DiscordサーバーID
      */
-    constructor() {
+    constructor(serverId) {
+        assert(typeof serverId === 'string');
+
+        /**
+         * 所属するDiscordサーバーのID
+         *
+         * @type {string}
+         */
+        this.serverId = serverId;
+
         /**
          * 音声ストリーム待ち行列
          *
