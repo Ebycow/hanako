@@ -5,6 +5,7 @@ const Injector = require('./core/injector');
 const AppConfig = require('./core/app_config');
 const AppSettings = require('./core/app_settings');
 const MessageCtrl = require('./app/message_ctrl');
+const ReadyCtrl = require('./app/ready_ctrl');
 const MessageSanitizeMiddleWare = require('./app/message_sanitize_middle_ware');
 
 /**
@@ -51,10 +52,8 @@ class Application {
         Injector.registerSingleton(discord.Client, this.client);
 
         // コントローラの登録
+        this.bind('ready', ReadyCtrl);
         this.bind('message', MessageCtrl, [MessageSanitizeMiddleWare]);
-
-        // TODO FIX
-        this.client.on('ready', () => logger.info('ready'));
 
         // 待受開始
         this.client.login(this.appSettings.discordBotToken);
