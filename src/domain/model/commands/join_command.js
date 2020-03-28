@@ -36,17 +36,17 @@ class JoinCommand {
         assert(typeof input === 'object');
         logger.info(`VC参加コマンドを受理 ${input}`);
 
-        if (!input.origin.voiceChannelId) {
+        if (!input.voiceChannelId) {
             return input.newChatResponse('通話チャンネルに参加してから呼んでね！', 'error');
         }
 
         // VC参加アクションを作成
         const action = new JoinVoiceAction({
             id: input.id,
-            voiceChannelId: input.origin.voiceChannelId,
-            textChannelId: input.origin.channelId,
+            voiceChannelId: input.voiceChannelId,
+            textChannelId: input.channelId,
         });
-        const onSuccess = input.newChatResponse(`<#${input.origin.channelId}>に参加したよ、よろしくね`);
+        const onSuccess = input.newChatResponse(`<#${input.channelId}>に参加したよ、よろしくね`);
         return new ActionResponse({ id: input.id, action, onSuccess });
     }
 }

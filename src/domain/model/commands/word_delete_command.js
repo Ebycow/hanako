@@ -59,7 +59,7 @@ class WordDeleteCommand {
         // 教育単語削除アクションを作成
         const action = new WordDeleteAction({
             id: input.id,
-            serverId: input.origin.serverId,
+            serverId: input.serverId,
             wordId: word.id,
         });
         const onSuccess = input.newChatResponse(`1 2の…ポカン！『${word.from}』を忘れました！ :bulb:`);

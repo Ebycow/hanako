@@ -61,7 +61,7 @@ class WordClearCommand {
         // 教育単語初期化アクションを作成
         const action = new WordClearAction({
             id: input.id,
-            serverId: input.origin.serverId,
+            serverId: input.serverId,
         });
         const onSuccess = input.newChatResponse(
             'まっさらに生まれ変わって 人生一から始めようが\nへばりついて離れない 地続きの今を歩いているんだ :bulb:'

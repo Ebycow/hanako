@@ -3,8 +3,6 @@ const ChatResponse = require('./responses/chat_response');
 
 /** @typedef {import('./discord_message')} DiscordMessage */
 
-// TODO FIX originを提供しない
-
 /**
  * エンティティ
  * コマンドの引数
@@ -62,12 +60,30 @@ class CommandInput {
     }
 
     /**
-     * 元になったDiscordMessage
+     * 送信元DiscordサーバーID
      *
-     * @type {DiscordMessage}
+     * @type {string}
      */
-    get origin() {
-        return this.data.origin;
+    get serverId() {
+        return this.data.origin.serverId;
+    }
+
+    /**
+     * 送信元テキストチャンネルID
+     *
+     * @type {string}
+     */
+    get channelId() {
+        return this.data.origin.channelId;
+    }
+
+    /**
+     * 送信者が参加中の音声チャンネルID またはnull
+     *
+     * @type {?string}
+     */
+    get voiceChannelId() {
+        return this.data.origin.voiceChannelId;
     }
 
     /**
@@ -79,7 +95,12 @@ class CommandInput {
         if (this.argc === 0) {
             return this;
         }
-        return new CommandInput({ id: this.id, argc: this.argc - 1, argv: this.argv.slice(1), origin: this.origin });
+        return new CommandInput({
+            id: this.id,
+            argc: this.argc - 1,
+            argv: this.argv.slice(1),
+            origin: this.data.origin,
+        });
     }
 
     /**
@@ -96,13 +117,13 @@ class CommandInput {
         return new ChatResponse({
             id: this.id,
             content,
-            channelId: this.origin.channelId,
+            channelId: this.channelId,
             code,
         });
     }
 
     toString() {
-        return `CommandInput(id=${this.id}, argc=${this.argc}, argv=${this.argv}, origin=${this.origin})`;
+        return `CommandInput(id=${this.id}, argc=${this.argc}, argv=${this.argv}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId})`;
     }
 }
 

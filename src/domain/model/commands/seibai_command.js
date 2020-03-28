@@ -55,7 +55,7 @@ class SeibaiCommand {
         // 成敗アクションを作成
         const action = new SeibaiAction({
             id: input.id,
-            serverId: input.origin.serverId,
+            serverId: input.serverId,
         });
         const onSuccess = input.newChatResponse('戯け者 余の顔を見忘れたか :knife:');
         return new ActionResponse({ id: input.id, action, onSuccess });

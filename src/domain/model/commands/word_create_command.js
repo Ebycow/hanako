@@ -79,7 +79,7 @@ class WordCreateCommand {
         // 教育単語追加アクションを作成
         const action = new WordCreateAction({
             id: input.id,
-            serverId: input.origin.serverId,
+            serverId: input.serverId,
             from,
             to,
         });

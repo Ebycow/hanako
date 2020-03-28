@@ -51,7 +51,7 @@ class LeaveCommand {
         // VC退出アクションを作成
         const action = new LeaveVoiceAction({
             id: input.id,
-            serverId: input.origin.serverId,
+            serverId: input.serverId,
         });
         return new ActionResponse({ id: input.id, action });
     }
