@@ -4,7 +4,6 @@ const RecoveryService = require('../service/recovery_service');
 const RecoverySupervisor = require('../service/recovery_supervisor');
 
 /** @typedef {import('discord.js').Client} discord.Client */
-/** @typedef {import('discord.js').Message} discord.Message */
 
 /**
  * Readyコントローラ
