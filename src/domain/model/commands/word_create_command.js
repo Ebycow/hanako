@@ -83,7 +83,7 @@ class WordCreateCommand {
             from,
             to,
         });
-        const onSuccess = input.newChatResponse(`覚えまちた！ 『${from} ⇨ ${to}』 :bulb:`);
+        const onSuccess = input.newChatResponse(`覚えました！ 『${from} ⇨ ${to}』 :bulb:`);
         return new ActionResponse({ id: input.id, action, onSuccess });
     }
 }
