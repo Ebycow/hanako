@@ -1,7 +1,7 @@
 const assert = require('assert').strict;
 const utils = require('../../../core/utils');
 
-/** @typedef {import('../../entity/server_status')} ServerStatus */
+/** @typedef {import('../../model/hanako')} Hanako */
 
 /**
  * ドメインモデル
@@ -16,10 +16,10 @@ class WordDictionaryFormatter {
     }
 
     /**
-     * @param {ServerStatus} status フォーマッター実行下のサーバー状態
+     * @param {Hanako} hanako フォーマッター実行下の読み上げ花子モデル
      */
-    constructor(status) {
-        this.status = status;
+    constructor(hanako) {
+        this.hanako = hanako;
     }
 
     /**
@@ -37,12 +37,12 @@ class WordDictionaryFormatter {
         }
 
         // 教育単語辞書に登録がないなら処理しない
-        if (this.status.wordDictionary.lines.length === 0) {
+        if (this.hanako.wordDictionary.lines.length === 0) {
             return text;
         }
 
         // 辞書置換を実行
-        const lines = this.status.wordDictionary.lines;
+        const lines = this.hanako.wordDictionary.lines;
         const result = lines.reduce((str, line) => str.split(line.from).join(line.to), text);
         return result;
     }
