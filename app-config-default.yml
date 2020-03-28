@@ -43,3 +43,9 @@ configurations:
 
   - interface: IShutdownDelegator
     dependent: ProcessGracefulShutdownManager
+
+  - interface: ISettingsActionRepo
+    dependent: NedbSettingsTableManager
+  
+  - interface: ISettingsRepo
+    dependent: NedbSettingsTableManager
