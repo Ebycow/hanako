@@ -43,6 +43,7 @@ describe('AskCommand', () => {
                     serverId: 'dummy-server-id',
                     channelId: mockTextChannelId,
                     voiceChannelId: null,
+                    mentionedUsers: new Map(),
                 });
                 const input = new CommandInput({
                     id: mockEntityId,

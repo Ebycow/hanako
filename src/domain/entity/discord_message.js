@@ -15,6 +15,7 @@ class DiscordMessage {
      * @param {string} data.serverId 送信元DiscordサーバーID
      * @param {string} data.channelId 送信元チャンネルID
      * @param {?string} data.voiceChannelId 送信者が参加中の音声チャンネルID またはnull
+     * @param {Map<string, string>} data.mentionedUsers メンションされているユーザーの表示名とユーザーIDの辞書配列
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -23,6 +24,7 @@ class DiscordMessage {
         assert(typeof data.serverId === 'string');
         assert(typeof data.channelId === 'string');
         assert(typeof data.voiceChannelId === 'string' || data.voiceChannelId === null);
+        assert(typeof data.mentionedUsers === 'object');
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -86,8 +88,18 @@ class DiscordMessage {
         return this.data.voiceChannelId;
     }
 
+    /**
+     * メンションされているユーザーの表示名とユーザーIDの辞書配列
+     *
+     * @type {Map<string, string>}
+     */
+    get mentionedUsers() {
+        return new Map(this.data.mentionedUsers);
+    }
+
     toString() {
-        return `DiscordMessage(id=${this.id}, type=${this.type}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId} content=${this.content})`;
+        const mentionedUsersJson = JSON.stringify(Object.fromEntries(this.mentionedUsers.entries()));
+        return `DiscordMessage(id=${this.id}, type=${this.type}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId}, mentionedUsers=${mentionedUsersJson} content=${this.content})`;
     }
 }
 

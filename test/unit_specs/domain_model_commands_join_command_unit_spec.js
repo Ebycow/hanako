@@ -45,6 +45,7 @@ describe('JoinCommand', () => {
                     serverId: mockServerId,
                     channelId: mockTextChannelId,
                     voiceChannelId: mockVoiceChannelId,
+                    mentionedUsers: new Map(),
                 });
                 const input = new CommandInput({
                     id: mockEntityId,
@@ -80,6 +81,7 @@ describe('JoinCommand', () => {
                         serverId: 'mockserver',
                         channelId: 'mockchannel',
                         voiceChannelId: null,
+                        mentionedUsers: new Map(),
                     });
                     const input = new CommandInput({
                         id: 'mock',

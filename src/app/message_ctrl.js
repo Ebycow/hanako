@@ -49,7 +49,6 @@ class MessageCtrl {
         // メッセージエンティティの作成
         const builderParam = {
             id: message.id,
-            isHanakoMentioned: message.mentions.has(this.client.user),
             content: message.content,
             userId: message.author.id,
             userName: message.author.username,
@@ -58,6 +57,7 @@ class MessageCtrl {
             serverId: message.guild.id,
             serverName: message.guild.name,
             voiceChannelId: message.member.voice.channel ? message.member.voice.channel.id : null,
+            mentionedUsers: message.mentions.members.reduce((map, m) => map.set(m.displayName, m.id), new Map()),
         };
         const entity = await this.builder.build(hanako, builderParam);
 

@@ -11,7 +11,6 @@ const DiscordMessage = require('../domain/entity/discord_message');
  * @type {object}
  *
  * @property {string} id
- * @property {boolean} isHanakoMentioned
  * @property {string} content
  * @property {string} userId
  * @property {string} userName
@@ -20,6 +19,7 @@ const DiscordMessage = require('../domain/entity/discord_message');
  * @property {string} serverId
  * @property {string} serverName
  * @property {?string} voiceChannelId
+ * @property {Map<string, string>} mentionedUsers
  */
 
 /**
@@ -37,7 +37,6 @@ class MessageBuilder {
     async build(hanako, param) {
         assert(typeof hanako === 'object');
         assert(typeof param.id === 'string');
-        assert(typeof param.isHanakoMentioned === 'boolean');
         assert(typeof param.content === 'string');
         assert(typeof param.userId === 'string');
         assert(typeof param.userName === 'string');
@@ -46,6 +45,7 @@ class MessageBuilder {
         assert(typeof param.serverId === 'string');
         assert(typeof param.serverName === 'string');
         assert(typeof param.voiceChannelId === 'string' || param.voiceChannelId === null);
+        assert(typeof param.mentionedUsers === 'object');
 
         const data = Object.assign({}, param);
 
@@ -59,6 +59,7 @@ class MessageBuilder {
             serverId: data.serverId,
             channelId: data.channelId,
             voiceChannelId: data.voiceChannelId,
+            mentionedUsers: data.mentionedUsers,
         });
 
         return Promise.resolve(dmessage);
@@ -74,8 +75,11 @@ class MessageBuilder {
  * @returns {Promise<'command'|'read'>}
  */
 async function inferMessageTypeF(hanako, data) {
+    // 花子がメンションされているかどうかの真偽値
+    const isHanakoMentioned = Array.from(data.mentionedUsers.values()).some(id => id === hanako.userId);
+
     // 花子がメンションされているか、コマンドプリフィクスを持つなら暫定的にコマンド
-    if (data.isHanakoMentioned || hanako.hasCommandPrefix(data.content)) {
+    if (isHanakoMentioned || hanako.hasCommandPrefix(data.content)) {
         logger.trace(`command: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
         return Promise.resolve('command');
     }

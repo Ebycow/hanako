@@ -1,5 +1,5 @@
 const should = require('chai').should();
-const SeibaiCommand = require('../../src/domain/model/commands/seibai_command');
+const LeaveCommand = require('../../src/domain/model/commands/leave_command');
 const DiscordMessage = require('../../src/domain/entity/discord_message');
 const CommandInput = require('../../src/domain/entity/command_input');
 const ServerStatus = require('../../src/domain/entity/server_status');
@@ -7,15 +7,15 @@ const VoiceStatus = require('../../src/domain/entity/voice_status');
 const Hanako = require('../../src/domain/model/hanako');
 
 /************************************************************************
- * SeibaiCommandクラス単体スペック
+ * LeaveCommandクラス単体スペック
  *
  * メソッド：#process
- * 期待動作：成敗アクションレスポンスの返却
- * 事前条件：花子VC参加済み ∧ 花子音声配信中
+ * 期待動作：VC退出アクションレスポンスの返却
+ * 前提条件：花子VC参加済み
  * 備考：なし
  ***********************************************************************/
 
-describe('SeibaiCommand', () => {
+describe('LeaveCommand', () => {
     // helper
     function serverStatusBlueprint() {
         return {
@@ -45,24 +45,24 @@ describe('SeibaiCommand', () => {
 
     describe('Commandクラスメタスペック', () => {
         specify('typeは文字列を返す', () => {
-            const sub = new SeibaiCommand(basicHanako());
+            const sub = new LeaveCommand(basicHanako());
             sub.type.should.be.a('string');
         });
 
         specify('namesは静的に文字列の配列を返す', () => {
-            SeibaiCommand.names.should.be.an('array').that.is.not.empty;
-            SeibaiCommand.names.forEach(name => name.should.be.a('string'));
+            LeaveCommand.names.should.be.an('array').that.is.not.empty;
+            LeaveCommand.names.forEach(name => name.should.be.a('string'));
         });
 
         specify('processメソッドを持つ', () => {
-            const sub = new SeibaiCommand(basicHanako());
+            const sub = new LeaveCommand(basicHanako());
             sub.process.should.be.a('function');
         });
     });
 
     describe('#process', () => {
         context('正常系', () => {
-            specify('正しい成敗アクションレスポンスを返す', () => {
+            specify('正しいVC退出アクションレスポンスを返す', () => {
                 const mockEntityId = 'mock-001';
                 const mockServerId = 'mock-server-001';
                 const mockVoiceChannelId = 'mock-voice-001';
@@ -75,6 +75,7 @@ describe('SeibaiCommand', () => {
                     serverId: mockServerId,
                     channelId: mockTextChannelId,
                     voiceChannelId: mockVoiceChannelId,
+                    mentionedUsers: new Map(),
                 });
                 const input = new CommandInput({
                     id: mockEntityId,
@@ -88,21 +89,18 @@ describe('SeibaiCommand', () => {
 
                 const vsb = voiceStatusBlueprint();
                 vsb.serverId = mockServerId;
-                vsb.state = 'speaking';
                 vsb.voiceChannelId = mockVoiceChannelId;
                 vsb.readingChannelsId = [mockTextChannelId];
 
-                const sub = new SeibaiCommand(new Hanako(new ServerStatus(ssb), new VoiceStatus(vsb), null));
+                const sub = new LeaveCommand(new Hanako(new ServerStatus(ssb), new VoiceStatus(vsb), null));
                 const res = sub.process(input);
 
                 // 正しいアクションレスポンス
                 res.type.should.equal('action');
                 res.id.should.equal(mockEntityId);
-                res.action.type.should.equal('seibai');
+                res.action.type.should.equal('leave_voice');
                 res.action.serverId.should.equal(mockServerId);
-                res.onSuccess.type.should.equal('chat');
-                res.onSuccess.code.should.equal('simple');
-                res.onSuccess.channelId.should.equal(mockTextChannelId);
+                res.onSuccess.type.should.equal('silent');
                 res.onFailure.type.should.equal('silent');
             });
         });
@@ -117,6 +115,7 @@ describe('SeibaiCommand', () => {
                         serverId: 'mockserver',
                         channelId: 'mockchannel',
                         voiceChannelId: 'mockchannel2',
+                        mentionedUsers: new Map(),
                     });
                     const input = new CommandInput({
                         id: 'mock',
@@ -127,38 +126,7 @@ describe('SeibaiCommand', () => {
 
                     const ssb = serverStatusBlueprint();
 
-                    const sub = new SeibaiCommand(new Hanako(new ServerStatus(ssb), null, null));
-                    const res = sub.process(input);
-
-                    // エラー会話レスポンス
-                    res.type.should.equal('chat');
-                    res.code.should.equal('error');
-                });
-            });
-
-            context('花子はVCに参加しているが、音声配信中ではない', () => {
-                specify('エラー会話レスポンスを返す', () => {
-                    const dmessage = new DiscordMessage({
-                        id: 'mock',
-                        content: 'dummy',
-                        type: 'command',
-                        serverId: 'mockserver',
-                        channelId: 'mockchannel',
-                        voiceChannelId: 'mockchannel2',
-                    });
-                    const input = new CommandInput({
-                        id: 'mock',
-                        argc: 0,
-                        argv: [],
-                        origin: dmessage,
-                    });
-
-                    const ssb = serverStatusBlueprint();
-
-                    const vsb = voiceStatusBlueprint();
-                    vsb.state = 'ready';
-
-                    const sub = new SeibaiCommand(new Hanako(new ServerStatus(ssb), new VoiceStatus(vsb), null));
+                    const sub = new LeaveCommand(new Hanako(new ServerStatus(ssb), null, null));
                     const res = sub.process(input);
 
                     // エラー会話レスポンス
