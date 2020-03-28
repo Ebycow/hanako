@@ -4,8 +4,7 @@ const assert = require('assert').strict;
 const Injector = require('../core/injector');
 const IDiscordChatRepo = require('../domain/repo/i_discord_chat_repo');
 const IDiscordVoiceRepo = require('../domain/repo/i_discord_voice_repo');
-const IDiscordVcActionRepo = require('../domain/repo/i_discord_vc_action_repo');
-const IWordActionRepo = require('../domain/repo/i_word_action_repo');
+const ActionHandler = require('../domain/service/action_handler');
 
 /** @typedef {import('../domain/entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../domain/entity/responses/action_response')} ActionResponse */
@@ -18,14 +17,12 @@ class ResponseHandler {
     /**
      * @param {null} chatRepo DI
      * @param {null} voiceRepo DI
-     * @param {null} vcActionRepo DI
-     * @param {null} wordActionRepo DI
+     * @param {null} actionHandler Domain Service
      */
-    constructor(chatRepo = null, voiceRepo = null, vcActionRepo = null, wordActionRepo = null) {
+    constructor(chatRepo = null, voiceRepo = null, actionHandler = null) {
         this.chatRepo = chatRepo || Injector.resolve(IDiscordChatRepo);
         this.voiceRepo = voiceRepo || Injector.resolve(IDiscordVoiceRepo);
-        this.vcActionRepo = vcActionRepo || Injector.resolve(IDiscordVcActionRepo);
-        this.wordActionRepo = wordActionRepo || Injector.resolve(IWordActionRepo);
+        this.actionHandler = actionHandler || new ActionHandler();
     }
 
     /**
@@ -64,26 +61,10 @@ class ResponseHandler {
  * @returns {Promise<void>}
  */
 async function handleActionResponseF(response) {
-    let promise;
+    // ActionHandlerにアクションを処理させてPromise<void>を取得
+    const promise = this.actionHandler.handle(response.action);
 
-    // アクションタイプによって対応するリポジトリに振り分け
-    const type = response.action.type;
-    if (type === 'join_voice') {
-        promise = this.vcActionRepo.postJoinVoice(response.action);
-    } else if (type === 'leave_voice') {
-        promise = this.vcActionRepo.postLeaveVoice(response.action);
-    } else if (type === 'seibai') {
-        promise = this.vcActionRepo.postSeibai(response.action);
-    } else if (type === 'word_create') {
-        promise = this.wordActionRepo.postWordCreate(response.action);
-    } else if (type === 'word_delete') {
-        promise = this.wordActionRepo.postWordDelete(response.action);
-    } else if (type === 'word_clear') {
-        promise = this.wordActionRepo.postWordClear(response.action);
-    } else {
-        throw new Error('unreachable');
-    }
-
+    // Promiseの結果によって後続処理を振り分ける
     let success = true;
     try {
         await promise;
