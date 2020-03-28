@@ -6,6 +6,7 @@ module.exports = {
     join: require('./join_command'),
     leave: require('./leave_command'),
     seibai: require('./seibai_command'),
+    limit: require('./limit_command'),
     word_create: require('./word_create_command'),
     word_read: require('./word_read_command'),
     word_delete: require('./word_delete_command'),
@@ -22,6 +23,7 @@ module.exports = {
 /** @typedef {import('./join_command')} Join */
 /** @typedef {import('./leave_command')} Leave */
 /** @typedef {import('./seibai_command')} Seibai */
+/** @typedef {import('./limit_command')} Limit */
 /** @typedef {import('./word_create_command')} WordCreate */
 /** @typedef {import('./word_read_command')} WordRead */
 /** @typedef {import('./word_delete_command')} WordDelete */
@@ -31,5 +33,5 @@ module.exports = {
  * コマンドモデル直和型
  *
  * @typedef CommandT
- * @type {Ask|Join|Leave|Seibai|WordCreate|WordRead|WordDelete}
+ * @type {Ask|Join|Leave|Seibai|Limit|WordCreate|WordRead|WordDelete}
  */
