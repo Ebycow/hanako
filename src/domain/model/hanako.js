@@ -48,6 +48,13 @@ class Hanako {
     }
 
     /**
+     * 花子BotのユーザーID
+     */
+    get userId() {
+        return this.serverStatus.userId;
+    }
+
+    /**
      * コマンドプリフィクス
      */
     get prefix() {

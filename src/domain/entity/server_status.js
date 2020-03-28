@@ -12,12 +12,14 @@ class ServerStatus {
      * @param {string} data.id エンティティID
      * @param {string} data.serverId DiscordサーバーID
      * @param {string} data.serverName Discordサーバー名
+     * @param {string} data.userId 花子BotのユーザーID
      * @param {string} data.prefix コマンドのプリフィックス
      */
     constructor(data) {
         assert(typeof data.id === 'string');
         assert(typeof data.serverId === 'string');
         assert(typeof data.serverName === 'string');
+        assert(typeof data.userId === 'string');
         assert(typeof data.prefix === 'string');
 
         Object.defineProperty(this, 'data', {
@@ -56,6 +58,15 @@ class ServerStatus {
     }
 
     /**
+     * 花子BotのユーザーID
+     *
+     * @type {string}
+     */
+    get userId() {
+        return this.data.userId;
+    }
+
+    /**
      * コマンドのプリフィックス
      *
      * @type {string}
@@ -65,7 +76,7 @@ class ServerStatus {
     }
 
     toString() {
-        return `ServerStatus(id=${this.id}, serverId=${this.serverId}, serverName=${this.serverName}, prefix=${this.prefix})`;
+        return `ServerStatus(id=${this.id}, serverId=${this.serverId}, serverName=${this.serverName}, userId=${this.userId}, prefix=${this.prefix})`;
     }
 }
 

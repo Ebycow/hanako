@@ -47,6 +47,7 @@ class DiscordServerInfoManager {
             id: uuid(),
             serverId: guild.id,
             serverName: guild.name,
+            userId: this.client.user.id,
             prefix: this.appSettings.defaultCommandPrefix,
         });
 
