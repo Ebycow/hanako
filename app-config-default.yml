@@ -37,3 +37,9 @@ configurations:
 
   - interface: IWordDictionaryRepo
     dependent: NedbWordDictionaryTableManager
+
+  - interface: IRecoveryInfoRepo
+    dependent: NedbRecoveryInfoTableManager
+
+  - interface: IShutdownDelegator
+    dependent: ProcessGracefulShutdownManager
