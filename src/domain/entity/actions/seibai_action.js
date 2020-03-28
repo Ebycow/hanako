@@ -16,7 +16,7 @@ class SeibaiAction {
      *
      * @param {object} data
      * @param {string} data.id エンティティID
-     * @param {string} data.serverId 成敗するサーバーのID
+     * @param {string} data.serverId 成敗するDiscordサーバーのID
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -40,7 +40,7 @@ class SeibaiAction {
     }
 
     /**
-     * 成敗するサーバーのID
+     * 成敗するDiscordサーバーのID
      *
      * @type {string}
      */
@@ -49,7 +49,7 @@ class SeibaiAction {
     }
 
     toString() {
-        return `SeibaiAction()`;
+        return `SeibaiAction(id=${this.id}, serverId=${this.serverId})`;
     }
 }
 

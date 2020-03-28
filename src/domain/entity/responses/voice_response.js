@@ -17,19 +17,18 @@ class VoiceResponse {
     /**
      * VoiceResponseエンティティを構築する
      *
-     * @param {object} param
-     * @param {string} param.id エンティティID
-     * @param {Readable} param.stream 音声ストリーム
-     * @param {string} param.serverId 送信先サーバーID
+     * @param {object} data
+     * @param {string} data.id エンティティID
+     * @param {Readable} data.stream 音声ストリーム
+     * @param {string} data.serverId 送信先DiscordサーバーID
      */
-    constructor({ id, stream, serverId }) {
-        assert(typeof id === 'string');
-        assert(typeof stream === 'object');
-        assert(typeof serverId === 'string');
+    constructor(data) {
+        assert(typeof data.id === 'string');
+        assert(typeof data.stream === 'object');
+        assert(typeof data.serverId === 'string');
 
-        const data = { id, stream, serverId };
         Object.defineProperty(this, 'data', {
-            value: data,
+            value: Object.assign({}, data),
             writable: false,
             enumerable: true,
             configurable: false,
@@ -55,7 +54,7 @@ class VoiceResponse {
     }
 
     /**
-     * 送信先サーバーID
+     * 送信先DiscordサーバーID
      *
      * @type {string}
      */
@@ -64,7 +63,7 @@ class VoiceResponse {
     }
 
     toString() {
-        return 'VoiceResponse(stream)';
+        return `VoiceResponse(id=${this.id}, serverId=${this.serverId}, stream=${this.stream})`;
     }
 }
 

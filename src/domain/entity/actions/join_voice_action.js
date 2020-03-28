@@ -60,7 +60,7 @@ class JoinVoiceAction {
     }
 
     toString() {
-        return `JoinVoiceAction()`;
+        return `JoinVoiceAction(id=${this.id}, voiceChannelId=${this.voiceChannelId}, textChannelId=${this.textChannelId})`;
     }
 }
 

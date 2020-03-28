@@ -16,7 +16,7 @@ class WordDeleteAction {
      *
      * @param {object} data
      * @param {string} data.id エンティティID
-     * @param {string} data.serverId 対象サーバーのID
+     * @param {string} data.serverId 対象DiscordサーバーのID
      * @param {string} data.wordId 削除する単語のID
      */
     constructor(data) {
@@ -42,7 +42,7 @@ class WordDeleteAction {
     }
 
     /**
-     * 対象サーバーのID
+     * 対象DiscordサーバーのID
      *
      * @type {string}
      */

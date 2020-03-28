@@ -12,7 +12,7 @@ class DiscordMessage {
      * @param {string} data.id エンティティID
      * @param {string} data.content メッセージ内容
      * @param {'command'|'read'} data.type メッセージタイプ
-     * @param {string} data.serverId 送信元サーバーID
+     * @param {string} data.serverId 送信元DiscordサーバーID
      * @param {string} data.channelId 送信元チャンネルID
      * @param {?string} data.voiceChannelId 送信者が参加中の音声チャンネルID またはnull
      */
@@ -25,7 +25,7 @@ class DiscordMessage {
         assert(typeof data.voiceChannelId === 'string' || data.voiceChannelId === null);
 
         Object.defineProperty(this, 'data', {
-            value: data,
+            value: Object.assign({}, data),
             writable: false,
             enumerable: true,
             configurable: false,
@@ -60,7 +60,7 @@ class DiscordMessage {
     }
 
     /**
-     * 送信元サーバーID
+     * 送信元DiscordサーバーID
      *
      * @type {string}
      */
@@ -87,7 +87,7 @@ class DiscordMessage {
     }
 
     toString() {
-        return `DiscordMessage(type=${this.type}, content=${this.content})`;
+        return `DiscordMessage(id=${this.id}, type=${this.type}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId} content=${this.content})`;
     }
 }
 

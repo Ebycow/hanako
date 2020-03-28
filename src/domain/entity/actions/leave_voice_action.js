@@ -16,7 +16,7 @@ class LeaveVoiceAction {
      *
      * @param {object} data
      * @param {string} data.id エンティティID
-     * @param {string} data.serverId VC退出するサーバーのID
+     * @param {string} data.serverId VC退出するDiscordサーバーのID
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -40,7 +40,7 @@ class LeaveVoiceAction {
     }
 
     /**
-     * VC退出するサーバーのID
+     * VC退出するDiscordサーバーのID
      *
      * @type {string}
      */
@@ -49,7 +49,7 @@ class LeaveVoiceAction {
     }
 
     toString() {
-        return `LeaveVoiceAction()`;
+        return `LeaveVoiceAction(id=${this.id}, serverId=${this.serverId})`;
     }
 }
 

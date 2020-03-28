@@ -2,7 +2,7 @@ const assert = require('assert').strict;
 
 /**
  * オーディオエンティティ
- * ボイスロイド
+ * ボイスロイド音声読み上げ
  */
 class VoiceroidAudio {
     /**
@@ -20,21 +20,31 @@ class VoiceroidAudio {
      * @param {string} data.content 読み上げ内容
      * @param {string} [data.speaker='kiritan'] 話者（現在きりたん固定）
      */
-    constructor({ content, speaker = 'kiritan' }) {
-        assert(typeof content === 'string');
-        assert(speaker === 'kiritan');
+    constructor(data) {
+        assert(typeof data.content === 'string');
+        assert(typeof data.speaker === 'undefined' || data.speaker === 'kiritan');
 
-        if (content.length === 0) {
+        if (data.content.length === 0) {
             throw new TypeError('0文字の読み上げは不正');
         }
 
-        const data = { content, speaker };
+        const speaker = data.speaker || 'kiritan';
+
         Object.defineProperty(this, 'data', {
-            value: data,
+            value: Object.assign({}, data, { speaker }),
             writable: false,
             enumerable: true,
             configurable: false,
         });
+    }
+
+    /**
+     * エンティティID
+     *
+     * @type {string}
+     */
+    get id() {
+        return Buffer.from(this.data.content + this.data.speaker).toString('base64');
     }
 
     /**
@@ -57,7 +67,7 @@ class VoiceroidAudio {
     }
 
     toString() {
-        return `VoiceroidAudio(content=${this.content}, speaker=${this.speaker})`;
+        return `VoiceroidAudio(id=${this.id}, content=${this.content}, speaker=${this.speaker})`;
     }
 }
 

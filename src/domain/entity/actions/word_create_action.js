@@ -16,7 +16,7 @@ class WordCreateAction {
      *
      * @param {object} data
      * @param {string} data.id エンティティID
-     * @param {string} data.serverId 対象サーバーのID
+     * @param {string} data.serverId 対象DiscordサーバーのID
      * @param {string} data.from 置換前単語
      * @param {string} data.to 置換後単語
      */
@@ -44,7 +44,7 @@ class WordCreateAction {
     }
 
     /**
-     * 対象サーバーのID
+     * 対象DiscordサーバーのID
      *
      * @type {string}
      */

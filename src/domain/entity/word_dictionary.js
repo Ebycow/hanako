@@ -27,7 +27,7 @@ class WordDictionary {
      *
      * @param {object} data
      * @param {string} data.id エンティティID
-     * @param {string} data.serverId 紐ついているサーバーのID
+     * @param {string} data.serverId 紐ついているDiscordサーバーのID
      * @param {Array<WordDictionaryLine>} data.lines 辞書置換の配列（未ソートでOK）
      */
     constructor(data) {
@@ -57,7 +57,7 @@ class WordDictionary {
     }
 
     /**
-     * 紐ついているサーバーのID
+     * 紐ついているDiscordサーバーのID
      *
      * @type {string}
      */

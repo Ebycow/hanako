@@ -1,5 +1,4 @@
 const assert = require('assert').strict;
-const uuid = require('uuidv4').uuid;
 
 /**
  * Plainエンティティ
@@ -23,14 +22,13 @@ class Plain {
      * Plainエンティティを構築する
      *
      * @param {object} data
-     * @param {string} content 読み上げ対象テキスト
+     * @param {string} data.content 読み上げ対象テキスト
      */
-    constructor({ content }) {
-        assert(typeof content === 'string');
+    constructor(data) {
+        assert(typeof data.content === 'string');
 
-        const data = { content, id: uuid() };
         Object.defineProperty(this, 'data', {
-            value: data,
+            value: Object.assign({}, data),
             writable: false,
             enumerable: true,
             configurable: false,
@@ -43,7 +41,7 @@ class Plain {
      * @type {string}
      */
     get id() {
-        return this.data.id;
+        return Buffer.from(this.data.content).toString('base64');
     }
 
     /**
@@ -56,7 +54,7 @@ class Plain {
     }
 
     toString() {
-        return `Plain(content=${this.content})`;
+        return `Plain(id=${this.id}, content=${this.content})`;
     }
 }
 

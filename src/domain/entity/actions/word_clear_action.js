@@ -16,7 +16,7 @@ class WordClearAction {
      *
      * @param {object} data
      * @param {string} data.id エンティティID
-     * @param {string} data.serverId 初期化対象サーバーのID
+     * @param {string} data.serverId 初期化対象DiscordサーバーのID
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -40,7 +40,7 @@ class WordClearAction {
     }
 
     /**
-     * 初期化対象サーバーのID
+     * 初期化対象DiscordサーバーのID
      *
      * @type {string}
      */
