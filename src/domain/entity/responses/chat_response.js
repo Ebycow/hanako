@@ -15,21 +15,20 @@ class ChatResponse {
     /**
      * ChatResponseエンティティを構築する
      *
-     * @param {object} param
-     * @param {string} param.id エンティティID
-     * @param {string} param.content テキスト内容
-     * @param {string} channelId 投稿先チャンネルID
-     * @param {'simple'|'pager'|'force'|'error'} [param.code='simple'] 会話コード
+     * @param {object} data
+     * @param {string} data.id エンティティID
+     * @param {string} data.content テキスト内容
+     * @param {string} data.channelId 投稿先チャンネルID
+     * @param {'simple'|'pager'|'force'|'error'} data.code 会話コード
      */
-    constructor({ id, content, channelId, code = 'simple' }) {
-        assert(typeof id === 'string');
-        assert(typeof content === 'string' && content.length > 0);
-        assert(typeof channelId === 'string');
-        assert(code === 'simple' || code === 'pager' || code === 'force' || code === 'error');
+    constructor(data) {
+        assert(typeof data.id === 'string');
+        assert(typeof data.content === 'string' && data.content.length > 0);
+        assert(typeof data.channelId === 'string');
+        assert(data.code === 'simple' || data.code === 'pager' || data.code === 'force' || data.code === 'error');
 
-        const data = { id, content, channelId, code };
         Object.defineProperty(this, 'data', {
-            value: data,
+            value: Object.assign({}, data),
             writable: false,
             enumerable: true,
             configurable: false,
