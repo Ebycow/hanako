@@ -28,6 +28,12 @@ class MessageReader {
         assert(typeof dmessage === 'object');
         assert(dmessage.type === 'read');
 
+        // Silence中のユーザーは読み上げない
+        if (hanako.silenceDictionary.lines.some(line => line.userId === dmessage.userId)) {
+            logger.trace(`読み上げ停止中のユーザーなので読み上げを中止する ${dmessage}`);
+            return errors.abort();
+        }
+
         // 各Formatterによる読み上げ文字列の正規化を実行
         const formato = new Formato(hanako);
         const text = formato.normalize(dmessage.content);
