@@ -32,12 +32,13 @@ class MessageCtrl {
      * on('message')イベント
      *
      * @param {discord.Message} message 受信したDiscordのメッセージ
+     * @param {string} content 標準化済みメッセージ内容
      */
-    async onMessage(message) {
+    async onMessage(message, content) {
         // バリデーション
         const validatorParam = {
             isBot: message.author.bot,
-            content: message.content,
+            content,
             userName: message.author.username,
             channelType: message.channel.type,
         };
@@ -49,7 +50,7 @@ class MessageCtrl {
         // メッセージエンティティの作成
         const builderParam = {
             id: message.id,
-            content: message.content,
+            content,
             userId: message.author.id,
             userName: message.author.username,
             channelId: message.channel.id,

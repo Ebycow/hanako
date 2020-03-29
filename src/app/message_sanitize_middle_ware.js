@@ -9,16 +9,17 @@ const emojiRe = /:(.+):/;
  * ディスコードの内部タグ表現を標準表示形式に置換
  *
  * @param {discord.Message} message
- * @returns {discord.Message}
+ * @param {string} text
+ * @returns {string}
  */
-function replaceDiscordTags(message) {
+function replaceDiscordTags(message, text) {
     const maybe = m => (m ? m : {});
     const resolveRoleName = x => maybe(message.mentions.roles.find(r => x === r.id)).name;
     const resolveChannelName = x => maybe(message.mentions.channels.find(c => x === c.id)).name;
     const resolveUserName = x =>
         message.mentions.members ? maybe(message.mentions.members.find(m => x === m.id)).displayName : undefined;
 
-    let content = message.content;
+    let content = text;
     content = content.replace(tagRe, (_, emojiTag, userTag, channelTag, roleTag) => {
         if (typeof emojiTag !== 'undefined') {
             const emojiName = emojiTag.match(emojiRe)[1];
@@ -41,19 +42,17 @@ function replaceDiscordTags(message) {
         throw new Error('unreachable');
     });
 
-    message.content = content;
-    return message;
+    return content;
 }
 
 /**
  * Unicodeコードポイントで表現される絵文字を":英名:"に変換
  *
- * @param {discord.Message} message
- * @returns {discord.Message}
+ * @param {string} text
+ * @returns {string}
  */
-function replaceUnicodeEmojis(message) {
-    message.content = emoji.replace(message.content, emoji => `:${emoji.key}:`);
-    return message;
+function replaceUnicodeEmojis(text) {
+    return emoji.replace(text, emoji => `:${emoji.key}:`);
 }
 
 /**
@@ -65,12 +64,12 @@ class MessageSanitizeMiddleWare {
      * ミドルウェア変換
      *
      * @param {discord.Message} message 受信したメッセージ
-     * @returns {Promise<discord.Message>} 標準化済みメッセージ
+     * @returns {Promise<[discord.Message, string]>} 標準化済みテキストを添えてコントローラに渡す
      */
     async transform(message) {
-        let newMessage = replaceDiscordTags(message);
-        newMessage = replaceUnicodeEmojis(newMessage);
-        return Promise.resolve(newMessage);
+        let content = replaceDiscordTags(message, message.content);
+        content = replaceUnicodeEmojis(content);
+        return Promise.resolve([message, content]);
     }
 }
 
