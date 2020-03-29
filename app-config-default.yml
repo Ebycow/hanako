@@ -38,6 +38,12 @@ configurations:
   - interface: IWordDictionaryRepo
     dependent: NedbWordDictionaryTableManager
 
+  - interface: ISilenceActionRepo
+    dependent: NedbSilenceDictionaryTableManager
+
+  - interface: ISilenceDictionaryRepo
+    dependent: NedbSilenceDictionaryTableManager
+
   - interface: IRecoveryInfoRepo
     dependent: NedbRecoveryInfoTableManager
 
