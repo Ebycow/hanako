@@ -54,6 +54,7 @@ describe('LeaveCommand', () => {
             new Settings(settingsBlueprint()),
             new ServerStatus(serverStatusBlueprint()),
             new VoiceStatus(voiceStatusBlueprint()),
+            null,
             null
         );
     }
@@ -89,6 +90,7 @@ describe('LeaveCommand', () => {
                     type: 'command',
                     serverId: mockServerId,
                     channelId: mockTextChannelId,
+                    userId: 'dummy-user-id',
                     voiceChannelId: mockVoiceChannelId,
                     mentionedUsers: new Map(),
                 });
@@ -110,7 +112,7 @@ describe('LeaveCommand', () => {
                 vsb.readingChannelsId = [mockTextChannelId];
 
                 const sub = new LeaveCommand(
-                    new Hanako(new Settings(sb), new ServerStatus(ssb), new VoiceStatus(vsb), null)
+                    new Hanako(new Settings(sb), new ServerStatus(ssb), new VoiceStatus(vsb), null, null)
                 );
                 const res = sub.process(input);
 
@@ -133,6 +135,7 @@ describe('LeaveCommand', () => {
                         type: 'command',
                         serverId: 'mockserver',
                         channelId: 'mockchannel',
+                        userId: 'mockuser',
                         voiceChannelId: 'mockchannel2',
                         mentionedUsers: new Map(),
                     });
@@ -147,7 +150,7 @@ describe('LeaveCommand', () => {
 
                     const ssb = serverStatusBlueprint();
 
-                    const sub = new LeaveCommand(new Hanako(new Settings(sb), new ServerStatus(ssb), null, null));
+                    const sub = new LeaveCommand(new Hanako(new Settings(sb), new ServerStatus(ssb), null, null, null));
                     const res = sub.process(input);
 
                     // エラー会話レスポンス

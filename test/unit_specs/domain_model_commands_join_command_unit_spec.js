@@ -44,6 +44,7 @@ describe('JoinCommand', () => {
                     type: 'command',
                     serverId: mockServerId,
                     channelId: mockTextChannelId,
+                    userId: 'dummy-user-id',
                     voiceChannelId: mockVoiceChannelId,
                     mentionedUsers: new Map(),
                 });
@@ -80,6 +81,7 @@ describe('JoinCommand', () => {
                         type: 'command',
                         serverId: 'mockserver',
                         channelId: 'mockchannel',
+                        userId: 'mockuser',
                         voiceChannelId: null,
                         mentionedUsers: new Map(),
                     });

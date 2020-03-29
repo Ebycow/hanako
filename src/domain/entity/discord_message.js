@@ -14,6 +14,7 @@ class DiscordMessage {
      * @param {'command'|'read'} data.type メッセージタイプ
      * @param {string} data.serverId 送信元DiscordサーバーID
      * @param {string} data.channelId 送信元チャンネルID
+     * @param {string} data.userId 送信者のユーザーID
      * @param {?string} data.voiceChannelId 送信者が参加中の音声チャンネルID またはnull
      * @param {Map<string, string>} data.mentionedUsers メンションされているユーザーの表示名とユーザーIDの辞書配列
      */
@@ -23,6 +24,7 @@ class DiscordMessage {
         assert(data.type === 'command' || data.type === 'read');
         assert(typeof data.serverId === 'string');
         assert(typeof data.channelId === 'string');
+        assert(typeof data.userId === 'string');
         assert(typeof data.voiceChannelId === 'string' || data.voiceChannelId === null);
         assert(typeof data.mentionedUsers === 'object');
 
@@ -80,6 +82,15 @@ class DiscordMessage {
     }
 
     /**
+     * 送信者のユーザーID
+     *
+     * @type {string}
+     */
+    get userId() {
+        return this.data.userId;
+    }
+
+    /**
      * 送信者が参加中の音声チャンネルID またはnull
      *
      * @type {?string}
@@ -99,7 +110,7 @@ class DiscordMessage {
 
     toString() {
         const mentionedUsersJson = JSON.stringify(Object.fromEntries(this.mentionedUsers.entries()));
-        return `DiscordMessage(id=${this.id}, type=${this.type}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId}, mentionedUsers=${mentionedUsersJson} content=${this.content})`;
+        return `DiscordMessage(id=${this.id}, type=${this.type}, serverId=${this.serverId}, channelId=${this.channelId}, userId=${this.userId}, voiceChannelId=${this.voiceChannelId}, mentionedUsers=${mentionedUsersJson} content=${this.content})`;
     }
 }
 

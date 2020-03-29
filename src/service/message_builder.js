@@ -58,6 +58,7 @@ class MessageBuilder {
             type: type,
             serverId: data.serverId,
             channelId: data.channelId,
+            userId: data.userId,
             voiceChannelId: data.voiceChannelId,
             mentionedUsers: data.mentionedUsers,
         });

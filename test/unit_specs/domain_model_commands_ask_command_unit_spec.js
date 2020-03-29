@@ -42,6 +42,7 @@ describe('AskCommand', () => {
                     type: 'command',
                     serverId: 'dummy-server-id',
                     channelId: mockTextChannelId,
+                    userId: 'dummy-user-id',
                     voiceChannelId: null,
                     mentionedUsers: new Map(),
                 });
