@@ -2,6 +2,7 @@ const assert = require('assert').strict;
 const Injector = require('../../core/injector');
 const IDiscordVcActionRepo = require('../repo/i_discord_vc_action_repo');
 const IWordActionRepo = require('../repo/i_word_action_repo');
+const ISilenceActionRepo = require('../repo/i_silence_action_repo');
 const ISettingsActionRepo = require('../repo/i_settings_action_repo');
 
 /** @typedef {import('../entity/actions').ActionT} ActionT */
@@ -14,11 +15,13 @@ class ActionHandler {
     /**
      * @param {null} vcActionRepo DI
      * @param {null} wordActionRepo DI
+     * @param {null} silenceActionRepo DI
      * @param {null} settingsActionRepo DI
      */
-    constructor(vcActionRepo = null, wordActionRepo = null, settingsActionRepo = null) {
+    constructor(vcActionRepo = null, wordActionRepo = null, silenceActionRepo = null, settingsActionRepo = null) {
         this.vcActionRepo = vcActionRepo || Injector.resolve(IDiscordVcActionRepo);
         this.wordActionRepo = wordActionRepo || Injector.resolve(IWordActionRepo);
+        this.silenceActionRepo = silenceActionRepo || Injector.resolve(ISilenceActionRepo);
         this.settingsActionRepo = settingsActionRepo || Injector.resolve(ISettingsActionRepo);
     }
 
@@ -45,6 +48,12 @@ class ActionHandler {
             return this.wordActionRepo.postWordDelete(action);
         } else if (type === 'word_clear') {
             return this.wordActionRepo.postWordClear(action);
+        } else if (type === 'silence_create') {
+            return this.silenceActionRepo.postSilenceCreate(action);
+        } else if (type === 'silence_delete') {
+            return this.silenceActionRepo.postSilenceDelete(action);
+        } else if (type === 'silence_clear') {
+            return this.silenceActionRepo.postSilenceClear(action);
         } else if (type === 'max_count_update') {
             return this.settingsActionRepo.postMaxCountUpdate(action);
         } else {
