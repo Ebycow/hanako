@@ -21,8 +21,8 @@ class PagerBuilder {
         assert(typeof hanako === 'object');
         assert(typeof pagerText === 'string');
 
-        // ページ管理可能なものを纏める
-        const pageables = [hanako.wordDictionary];
+        // ページ管理可能なデータを取得
+        const pageables = hanako.pageables;
 
         // Pageableディスクリプタを取得
         const args = pagerText.split(/\s/);
