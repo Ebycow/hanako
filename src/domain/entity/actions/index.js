@@ -12,11 +12,14 @@ module.exports = {};
 /** @typedef {import('./word_create_action')} WordCreate */
 /** @typedef {import('./word_delete_action')} WordDelete */
 /** @typedef {import('./word_clear_action')} WordClear */
+/** @typedef {import('./silence_create_action')} SilenceCreate */
+/** @typedef {import('./silence_delete_action')} SilenceDelete */
+/** @typedef {import('./silence_clear_action')} SilenceClear */
 /** @typedef {import('./max_count_update_action')} MaxCountUpdateAction */
 
 /**
  * アクションエンティティ直和型
  *
  * @typedef ActionT
- * @type {JoinVoice|LeaveVoice|SeibaiAction|WordCreate|WordDelete|WordClear|MaxCountUpdateAction}
+ * @type {JoinVoice|LeaveVoice|SeibaiAction|WordCreate|WordDelete|WordClear|SilenceCreate|SilenceDelete|SilenceClear|MaxCountUpdateAction}
  */
