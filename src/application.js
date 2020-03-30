@@ -7,8 +7,10 @@ const AppSettings = require('./core/app_settings');
 const MessageCtrl = require('./app/message_ctrl');
 const ReadyCtrl = require('./app/ready_ctrl');
 const PagerReactionCtrl = require('./app/pager_reaction_ctrl');
+const AutoLeaveCtrl = require('./app/auto_leave_ctrl');
 const MessageSanitizeMiddleWare = require('./app/message_sanitize_middle_ware');
 const PagerReactionFilterMiddleWare = require('./app/pager_reaction_filter_middle_ware');
+const VoiceChatActionMiddleWare = require('./app/voice_chat_action_middle_ware');
 
 /**
  * 最上位までハンドルされなかった例外をエラーログとして出力
@@ -58,6 +60,7 @@ class Application {
         this.bind('message', MessageCtrl, [MessageSanitizeMiddleWare]);
         this.bind('messageReactionAdd', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
         this.bind('messageReactionRemove', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
+        this.bind('voiceStateUpdate', AutoLeaveCtrl, [VoiceChatActionMiddleWare]);
 
         // 待受開始
         this.client.login(this.appSettings.discordBotToken);
