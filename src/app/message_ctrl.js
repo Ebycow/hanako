@@ -10,8 +10,9 @@ const HanakoLoader = require('../service/hanako_loader');
 /** @typedef {import('discord.js').Message} discord.Message */
 
 /**
- * メッセージコントローラ
- * Discordのmessageイベントに対応する
+ * Messageコントローラ
+ * - Discordから受信したメッセージを包括的に対応する
+ * - messageイベントを受け取る
  */
 class MessageCtrl {
     /**
@@ -29,7 +30,7 @@ class MessageCtrl {
     }
 
     /**
-     * on('message')イベント
+     * Discordから受信したメッセージを包括的に処理
      *
      * @param {discord.Message} message 受信したDiscordのメッセージ
      * @param {string} content 標準化済みメッセージ内容

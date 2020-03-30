@@ -7,7 +7,8 @@ const RecoverySupervisor = require('../service/recovery_supervisor');
 
 /**
  * Readyコントローラ
- * Discordのreadyイベントに対応する
+ * - 読み上げ花子のスタートアップ処理を行う
+ * - readyイベントを受け取る
  */
 class ReadyCtrl {
     /**
@@ -22,7 +23,7 @@ class ReadyCtrl {
     }
 
     /**
-     * on('ready')イベント
+     * 読み上げ花子のスタートアップ処理
      */
     async onReady() {
         logger.info(`Logged in as ${this.client.user.tag}!`);

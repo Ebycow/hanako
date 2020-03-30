@@ -73,7 +73,7 @@ class Application {
      */
     bind(event, C, middlewares = []) {
         const chain = middlewares.map(M => M.prototype.transform.bind(new M(this.client)));
-        const method = 'on' + event.slice(0, 1).toUpperCase() + event.slice(1);
+        const method = 'on' + C.name.slice(0, -4);
         chain.push(C.prototype[method].bind(new C(this.client)));
         const callp = zP => chain.reduce((p, f) => p.then(r => (Array.isArray(r) ? f(...r) : f(r))), zP);
         this.client.on(event, (...args) => callp(Promise.resolve(args)).catch(handleUncaughtError));

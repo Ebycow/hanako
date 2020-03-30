@@ -27,20 +27,6 @@ class PagerReactionCtrl {
     }
 
     /**
-     * on('messageReactionAdd')イベント
-     */
-    async onMessageReactionAdd(...args) {
-        return this.onPagerReaction(...args);
-    }
-
-    /**
-     * on('messageReactionRemove')イベント
-     */
-    async onMessageReactionRemove(...args) {
-        return this.onPagerReaction(...args);
-    }
-
-    /**
      * ページングリアクションを処理する
      *
      * @param {discord.MessageReaction} reaction 付与または削除されたリアクション
