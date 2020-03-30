@@ -4,7 +4,6 @@ const Injector = require('../core/injector');
 const RecoveryInfo = require('../domain/entity/recovery_info');
 const LeaveVoiceAction = require('../domain/entity/actions/leave_voice_action');
 const IVoiceStatusRepo = require('../domain/repo/i_voice_status_repo');
-const IDiscordVcActionRepo = require('../domain/repo/i_discord_vc_action_repo');
 const IRecoveryInfoRepo = require('../domain/repo/i_recovery_info_repo');
 const IShutdownDelegator = require('../domain/service/i_shutdown_delegator');
 const ActionHandler = require('../domain/service/action_handler');
@@ -46,20 +45,12 @@ function toRecoveryInfo(voiceStatus) {
 class RecoverySupervisor {
     /**
      * @param {null} voiceStatusRepo DI
-     * @param {null} vcActionRepo DI
      * @param {null} recoveryInfoRepo DI
      * @param {null} shutdownDelegator DI Domain Service
      * @param {null} actionHandler Domain Service
      */
-    constructor(
-        voiceStatusRepo = null,
-        vcActionRepo = null,
-        recoveryInfoRepo = null,
-        shutdownDelegator = null,
-        actionHandler = null
-    ) {
+    constructor(voiceStatusRepo = null, recoveryInfoRepo = null, shutdownDelegator = null, actionHandler = null) {
         this.voiceStatusRepo = voiceStatusRepo || Injector.resolve(IVoiceStatusRepo);
-        this.vcActionRepo = vcActionRepo || Injector.resolve(IDiscordVcActionRepo);
         this.recoveryInfoRepo = recoveryInfoRepo || Injector.resolve(IRecoveryInfoRepo);
         this.shutdownDelegator = shutdownDelegator || Injector.resolve(IShutdownDelegator);
         this.actionHandler = actionHandler || new ActionHandler();
