@@ -31,9 +31,11 @@ class AppConfig {
         const overrider = (array, ovc) => {
             const index = array.findIndex(c => c.interface === ovc.interface);
             if (index > -1) {
-                array.splice(index, 1, ovc);
+                return [array.slice(0, index), [ovc], array.slice(index + 1)].flat();
+            } else {
+                logger.warn(`ベースファイル "${basePath}" に存在しない依存性を追加しました: ${ovc.interface}`);
+                return [...array, ovc];
             }
-            return array;
         };
         const data = override.reduce(overrider, base);
         return new AppConfig(data);
