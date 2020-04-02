@@ -11,6 +11,12 @@ settings:
   # Ebyroid AudioStream API の URL
   ebyroid_stream_api_url: 'http://localhost:4090/api/v1/audiostream'
 
+  # SE音源を取得するときの最大ファイルサイズ（Bytes）
+  foley_max_download_byte_size: 2000000
+
+  # SE音源を取得するときの最大再生時間（秒）
+  foley_max_audio_seconds: 60
+
 # アプリケーションのDIコンフィグ
 configurations:
 
@@ -55,3 +61,15 @@ configurations:
   
   - interface: ISettingsRepo
     dependent: NedbSettingsTableManager
+
+  - interface: IFoleyActionRepo
+    dependent: NedbFoleyDictionaryTableManager
+
+  - interface: IFoleyDictionaryRepo
+    dependent: NedbFoleyDictionaryTableManager
+
+  - interface: IFoleyStreamRepo
+    dependent: NedbFoleyDictionaryTableManager
+
+  - interface: IObjectStorageRepo
+    dependent: FopenObjectStorage
