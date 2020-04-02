@@ -55,6 +55,7 @@ describe('SeibaiCommand', () => {
             new ServerStatus(serverStatusBlueprint()),
             new VoiceStatus(voiceStatusBlueprint()),
             null,
+            null,
             null
         );
     }
@@ -113,7 +114,7 @@ describe('SeibaiCommand', () => {
                 vsb.readingChannelsId = [mockTextChannelId];
 
                 const sub = new SeibaiCommand(
-                    new Hanako(new Settings(sb), new ServerStatus(ssb), new VoiceStatus(vsb), null, null)
+                    new Hanako(new Settings(sb), new ServerStatus(ssb), new VoiceStatus(vsb), null, null, null)
                 );
                 const res = sub.process(input);
 
@@ -154,7 +155,7 @@ describe('SeibaiCommand', () => {
                     const ssb = serverStatusBlueprint();
 
                     const sub = new SeibaiCommand(
-                        new Hanako(new Settings(sb), new ServerStatus(ssb), null, null, null)
+                        new Hanako(new Settings(sb), new ServerStatus(ssb), null, null, null, null)
                     );
                     const res = sub.process(input);
 
@@ -191,7 +192,7 @@ describe('SeibaiCommand', () => {
                     vsb.state = 'ready';
 
                     const sub = new SeibaiCommand(
-                        new Hanako(new Settings(sb), new ServerStatus(ssb), new VoiceStatus(vsb), null, null)
+                        new Hanako(new Settings(sb), new ServerStatus(ssb), new VoiceStatus(vsb), null, null, null)
                     );
                     const res = sub.process(input);
 
