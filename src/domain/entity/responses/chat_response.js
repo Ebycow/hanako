@@ -71,6 +71,25 @@ class ChatResponse {
         return this.data.channelId;
     }
 
+    /**
+     * エラー情報を結合する
+     * - 自身の会話コードがerror以外の時は何もしない
+     *
+     * @param {any} error エラーオブジェクト
+     * @returns {ChatResponse} エラー情報結合済みインスタンス
+     */
+    withError(error) {
+        if (error.eby && this.code === 'error') {
+            return new ChatResponse({
+                id: this.id,
+                content: this.content + '\n' + error.message,
+                channelId: this.channelId,
+                code: 'error',
+            });
+        }
+        return this;
+    }
+
     toString() {
         return `ChatResponse(id=${this.id}, content=${this.content}, code=${this.code}, channelId=${this.channelId})`;
     }
