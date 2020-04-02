@@ -48,12 +48,16 @@ class AppSettings {
      * @param {string} data.defaultCommandPrefix
      * @param {string} data.discordBotToken
      * @param {string} data.ebyroidStreamApiUrl
+     * @param {number} data.foleyMaxDownloadByteSize
+     * @param {number} data.foleyMaxAudioSeconds
      */
     constructor(data) {
         assert(typeof data === 'object');
         assert(typeof data.defaultCommandPrefix === 'string');
         assert(typeof data.discordBotToken === 'string');
         assert(typeof data.ebyroidStreamApiUrl === 'string');
+        assert(typeof data.foleyMaxDownloadByteSize === 'number');
+        assert(typeof data.foleyMaxAudioSeconds === 'number');
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -88,6 +92,24 @@ class AppSettings {
      */
     get ebyroidStreamApiUrl() {
         return this.data.ebyroidStreamApiUrl;
+    }
+
+    /**
+     * SE音源ファイルダウンロード時の最大バイト長
+     *
+     * @type {number}
+     */
+    get foleyMaxDownloadByteSize() {
+        return this.data.foleyMaxDownloadByteSize;
+    }
+
+    /**
+     * SE音源ファイルの最大長さ時間 単位秒
+     *
+     * @type {number}
+     */
+    get foleyMaxAudioSeconds() {
+        return this.data.foleyMaxAudioSeconds;
     }
 }
 
