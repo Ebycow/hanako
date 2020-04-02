@@ -10,12 +10,13 @@ module.exports = {};
 /** @typedef {import('./noop')} Noop */
 /** @typedef {import('./plain')} Plain */
 /** @typedef {import('./voiceroid_audio')} Voiceroid */
+/** @typedef {import('./foley_audio')} Foley */
 
 /**
  * オーディオエンティティ直和型
  *
  * @typedef AudioT
- * @type {Voiceroid}
+ * @type {Voiceroid|Foley}
  */
 
 /**
