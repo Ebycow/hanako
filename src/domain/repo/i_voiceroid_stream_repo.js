@@ -13,7 +13,7 @@ class IVoiceroidStreamRepo extends Interface {
      * @param {VoiceroidAudio} audio ボイスロイドオーディオエンティティ
      * @returns {Promise<Readable>} 16-bit 48kHz StereoのPCMオーディオストリーム
      */
-    async getStream(audio) {}
+    async getVoiceroidStream(audio) {}
 }
 
 module.exports = IVoiceroidStreamRepo;

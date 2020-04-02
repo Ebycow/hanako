@@ -28,7 +28,7 @@ class EbyroidStreamApiAdapter {
      * @param {VoiceroidAudio} audio
      * @returns {Promise<Readable>}
      */
-    async getStream(audio) {
+    async getVoiceroidStream(audio) {
         const response = await axios.get(this.url, { responseType: 'stream', params: { text: audio.content } });
 
         const sampleRate = parseInt(response.headers['ebyroid-pcm-sample-rate'], 10);
