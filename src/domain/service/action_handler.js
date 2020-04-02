@@ -4,6 +4,7 @@ const IDiscordVcActionRepo = require('../repo/i_discord_vc_action_repo');
 const IWordActionRepo = require('../repo/i_word_action_repo');
 const ISilenceActionRepo = require('../repo/i_silence_action_repo');
 const ISettingsActionRepo = require('../repo/i_settings_action_repo');
+const IFoleyActionRepo = require('../repo/i_foley_action_repo');
 
 /** @typedef {import('../entity/actions').ActionT} ActionT */
 
@@ -16,12 +17,20 @@ class ActionHandler {
      * @param {null} vcActionRepo DI
      * @param {null} wordActionRepo DI
      * @param {null} silenceActionRepo DI
+     * @param {null} foleyActionRepo DI
      * @param {null} settingsActionRepo DI
      */
-    constructor(vcActionRepo = null, wordActionRepo = null, silenceActionRepo = null, settingsActionRepo = null) {
+    constructor(
+        vcActionRepo = null,
+        wordActionRepo = null,
+        silenceActionRepo = null,
+        foleyActionRepo = null,
+        settingsActionRepo = null
+    ) {
         this.vcActionRepo = vcActionRepo || Injector.resolve(IDiscordVcActionRepo);
         this.wordActionRepo = wordActionRepo || Injector.resolve(IWordActionRepo);
         this.silenceActionRepo = silenceActionRepo || Injector.resolve(ISilenceActionRepo);
+        this.foleyActionRepo = foleyActionRepo || Injector.resolve(IFoleyActionRepo);
         this.settingsActionRepo = settingsActionRepo || Injector.resolve(ISettingsActionRepo);
     }
 
@@ -54,6 +63,10 @@ class ActionHandler {
             return this.silenceActionRepo.postSilenceDelete(action);
         } else if (type === 'silence_clear') {
             return this.silenceActionRepo.postSilenceClear(action);
+        } else if (type === 'foley_create') {
+            return this.foleyActionRepo.postFoleyCreate(action);
+        } else if (type === 'foley_delete') {
+            return this.foleyActionRepo.postFoleyDelete(action);
         } else if (type === 'max_count_update') {
             return this.settingsActionRepo.postMaxCountUpdate(action);
         } else {
