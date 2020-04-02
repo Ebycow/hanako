@@ -66,13 +66,18 @@ async function handleActionResponseF(response) {
 
     // Promiseの結果によって後続処理を振り分ける
     let success = true;
+    let onFailure = response.onFailure;
     try {
         await promise;
     } catch (e) {
         success = false;
-        if (response.onFailure.type !== 'silent') {
-            logger.warn(`エラーが発生したが onFailure が指定されているので握りつぶして継続する ${e}`);
+        if (e.eby && onFailure.type === 'chat') {
+            // ChatResponseが後続onFailureにあって、発生したのがえびエラーのときはエラー内容を会話に反映する
+            onFailure = onFailure.withError(e);
         } else {
+            // それ以外は予期せぬエラー
+            // TODO FUTURE 当面はこれでいくけど、複雑なコマンドが出てきたらまた変わる
+            //             具体的にはonFailureにChatResponse/SilentResponse以外を充てるようなコマンド
             return Promise.reject(e);
         }
     }
@@ -82,7 +87,7 @@ async function handleActionResponseF(response) {
         return this.handle(response.onSuccess);
     } else {
         // onFailureを再帰的に処理する
-        return this.handle(response.onFailure);
+        return this.handle(onFailure);
     }
 }
 
