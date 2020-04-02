@@ -1,13 +1,11 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const Injector = require('../core/injector');
-const IVoiceroidStreamRepo = require('../domain/repo/i_voiceroid_stream_repo');
 const VoiceResponse = require('../domain/entity/responses/voice_response');
 const CommandParser = require('../domain/service/command_parser');
 const CommandInvoker = require('../domain/service/command_invoker');
 const MessageReader = require('../domain/service/message_reader');
-const EbyStream = require('../library/ebystream');
+const StreamFetcher = require('../domain/service/stream_fetcher');
 
 /** @typedef {import('../domain/model/hanako')} Hanako */
 /** @typedef {import('../domain/entity/discord_message')} DiscordMessage */
@@ -19,16 +17,16 @@ const EbyStream = require('../library/ebystream');
  */
 class MessageService {
     /**
-     * @param {null} vrStreamRepo DI
      * @param {null} commandParser DomainService
      * @param {null} commandInvoker DomainService
      * @param {null} messageReader DomainService
+     * @param {null} streamFetcher DomainService
      */
-    constructor(vrStreamRepo = null, commandParser = null, commandInvoker = null, messageReader = null) {
-        this.vrStreamRepo = vrStreamRepo || Injector.resolve(IVoiceroidStreamRepo);
+    constructor(commandParser = null, commandInvoker = null, messageReader = null, streamFetcher = null) {
         this.commandParser = commandParser || new CommandParser();
         this.commandInvoker = commandInvoker || new CommandInvoker();
         this.messageReader = messageReader || new MessageReader();
+        this.streamFetcher = streamFetcher || new StreamFetcher();
     }
 
     /**
@@ -51,10 +49,7 @@ class MessageService {
         } else if (dmessage.type === 'read') {
             // 読み上げタイプのメッセージを処理
             const audios = await this.messageReader.read(hanako, dmessage);
-            // TODO 以下の処理はいずれドメインサービスになるべき
-            const promises = audios.map(audio => this.vrStreamRepo.getStream(audio));
-            const streams = await Promise.all(promises);
-            const stream = new EbyStream(streams);
+            const stream = await this.streamFetcher.fetch(audios);
             const response = new VoiceResponse({ id: dmessage.id, stream, serverId: dmessage.serverId });
             return Promise.resolve(response);
         } else {
