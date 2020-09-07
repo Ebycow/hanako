@@ -15,7 +15,7 @@ class Bouyomi {
         });
     }
 
-    yomiage(word="", command=1, speed=-1, tone=-1, volume=-1, voice=1) {
+    momiage(word="", command=1, speed=-1, tone=-1, volume=-1, voice=1) {
 
         const iCommand = new Buffer(2);
         const iSpeed = new Buffer(2);
