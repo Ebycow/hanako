@@ -66,7 +66,7 @@ Discord Developer Portalよりアプリケーションを作成し、ボット�
 
 ## 3.hanakoのインストール
 ```
-git pull https://github.com/Ebycow/hanako.git
+git clone https://github.com/Ebycow/hanako.git
 cd hanako
 npm i
 ```
