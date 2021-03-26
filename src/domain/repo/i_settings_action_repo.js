@@ -1,6 +1,6 @@
 const Interface = require('../../core/interface');
 
-/** @typedef {import('../entity/actions/max_count_update_action')} MaxCountUpdateAction */
+/** @typedef {import('../entity/actions/speaker_update_action')} MaxCountUpdateAction */
 
 /**
  * 読み上げ花子設定関連アクションのリポジトリ
@@ -13,6 +13,14 @@ class ISettingsActionRepo extends Interface {
      * @returns {Promise<void>}
      */
     async postMaxCountUpdate(action) {}
+
+    /**
+     * サーバー読み上げキャラクター更新アクションを投稿
+     *
+     * @param {SpeakerUpdateAction} action サーバー読み上げキャラクター更新アクション
+     * @returns {Promise<void>}
+     */
+    async postSpeakerUpdate(action) {}
 }
 
 module.exports = ISettingsActionRepo;

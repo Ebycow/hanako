@@ -17,7 +17,7 @@ module.exports = {};
 /** @typedef {import('./silence_clear_action')} SilenceClear */
 /** @typedef {import('./foley_create_action')} FoleyCreate */
 /** @typedef {import('./foley_delete_action')} FoleyDelete */
-/** @typedef {import('./max_count_update_action')} MaxCountUpdateAction */
+/** @typedef {import('./speaker_update_action')} MaxCountUpdateAction */
 
 /**
  * アクションエンティティ直和型

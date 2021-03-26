@@ -8,7 +8,7 @@ const ISettingsActionRepo = require('../../domain/repo/i_settings_action_repo');
 const Settings = require('../../domain/entity/settings');
 const Datastore = require('nedb');
 
-/** @typedef {import('../../domain/entity/actions/max_count_update_action')} MaxCountUpdateAction */
+/** @typedef {import('../../domain/entity/actions/speaker_update_action')} MaxCountUpdateAction */
 
 /** @typedef {string} ServerID サーバーID */
 
@@ -146,7 +146,7 @@ function toSettings(record) {
         id: record.id,
         serverId: record.serverId,
         maxCount: record.maxCount,
-        speaker: record.speaker
+        speaker: record.speaker,
     });
 }
 
@@ -195,6 +195,24 @@ class NedbSettingsTableManager {
 
         // 新しくmaxCountを設定
         record.maxCount = action.maxCount;
+
+        // 永続化
+        await persistSharedData(action.serverId);
+    }
+
+    /**
+     * (impl) ISettingsActionRepo
+     *
+     * @param {MaxCountUpdateAction} action
+     * @returns {Promise<void>}
+     */
+    async postSpeakerUpdate(action) {
+        assert(typeof action === 'object');
+
+        const record = await loadSharedData(action.serverId);
+
+        // 新しくspeakerを設定
+        record.speaker = action.speaker;
 
         // 永続化
         await persistSharedData(action.serverId);

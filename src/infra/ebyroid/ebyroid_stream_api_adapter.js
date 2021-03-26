@@ -30,10 +30,10 @@ class EbyroidStreamApiAdapter {
      */
     async getVoiceroidStream(audio) {
         const params = {
-            text: audio.content
-        }
-        if(audio.speaker !== 'default') {
-            params.name = audio.speaker
+            text: audio.content,
+        };
+        if (audio.speaker !== 'default') {
+            params.name = audio.speaker;
         }
         const response = await axios.get(this.url, { responseType: 'stream', params: params });
 

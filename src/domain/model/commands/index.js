@@ -7,6 +7,7 @@ module.exports = {
     leave: require('./leave_command'),
     seibai: require('./seibai_command'),
     limit: require('./limit_command'),
+    speaker: require('./speaker_command'),
     word_create: require('./word_create_command'),
     word_read: require('./word_read_command'),
     word_delete: require('./word_delete_command'),
@@ -31,6 +32,7 @@ module.exports = {
 /** @typedef {import('./leave_command')} Leave */
 /** @typedef {import('./seibai_command')} Seibai */
 /** @typedef {import('./limit_command')} Limit */
+/** @typedef {import('./speaker_command')} Speaker */
 /** @typedef {import('./word_create_command')} WordCreate */
 /** @typedef {import('./word_read_command')} WordRead */
 /** @typedef {import('./word_delete_command')} WordDelete */
@@ -47,5 +49,5 @@ module.exports = {
  * コマンドモデル直和型
  *
  * @typedef CommandT
- * @type {Ask|Join|Leave|Seibai|Limit|WordCreate|WordRead|WordDelete|SilenceCreate|SilenceRead|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|FoleyRead}
+ * @type {Ask|Join|Leave|Seibai|Limit|Speaker|WordCreate|WordRead|WordDelete|SilenceCreate|SilenceRead|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|FoleyRead}
  */
