@@ -23,6 +23,7 @@ describe('SeibaiCommand', () => {
             id: 'mock-settings-id',
             serverId: 'mock-server-id',
             maxCount: 0,
+            speaker: 'default',
         };
     }
 
