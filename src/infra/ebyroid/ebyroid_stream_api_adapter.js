@@ -29,7 +29,13 @@ class EbyroidStreamApiAdapter {
      * @returns {Promise<Readable>}
      */
     async getVoiceroidStream(audio) {
-        const response = await axios.get(this.url, { responseType: 'stream', params: { text: audio.content } });
+        const params = {
+            text: audio.content
+        }
+        if(audio.speaker !== 'default') {
+            params.name = audio.speaker
+        }
+        const response = await axios.get(this.url, { responseType: 'stream', params: params });
 
         const sampleRate = parseInt(response.headers['ebyroid-pcm-sample-rate'], 10);
         const bitDepth = parseInt(response.headers['ebyroid-pcm-bit-depth'], 10);

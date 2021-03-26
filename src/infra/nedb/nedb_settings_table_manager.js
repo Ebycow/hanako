@@ -18,6 +18,7 @@ const Datastore = require('nedb');
  * @property {string} id エンティティID
  * @property {string} serverId DiscordサーバーID
  * @property {number} maxCount 最大読み上げ文字数
+ * @property {string} speaker 読み上げキャラクター
  */
 
 /**
@@ -81,7 +82,7 @@ async function loadSharedData(serverId) {
                 // Note: マイグレーションはここで行う
                 resolve(dict);
             } else {
-                const initialRecord = { id: uuid(), serverId, maxCount: 0 };
+                const initialRecord = { id: uuid(), serverId, maxCount: 0, speaker: 'default' };
                 dbInstance.insert({ id: serverId, dict: initialRecord }, err => {
                     if (err) reject(err);
                     else resolve(initialRecord);
@@ -145,6 +146,7 @@ function toSettings(record) {
         id: record.id,
         serverId: record.serverId,
         maxCount: record.maxCount,
+        speaker: record.speaker
     });
 }
 
