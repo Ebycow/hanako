@@ -1,6 +1,6 @@
 node_modules
-.env
 .vscode
 db
 log
 files
+app-config.yml

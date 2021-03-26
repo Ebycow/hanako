@@ -1,10 +1,10 @@
 {
   "env": {
-    "node": true
+    "node": true,
+    "mocha": true
   },
   "extends": [
     "eslint:recommended",
-    "plugin:jsdoc/recommended",
     "plugin:node/recommended",
     "plugin:prettier/recommended"
   ],
@@ -17,13 +17,10 @@
       {
         "vars": "all",
         "args": "none",
+        "varsIgnorePattern": "should",
         "ignoreRestSiblings": false
       }
     ],
-    "jsdoc/require-jsdoc": "off",
-    "jsdoc/require-param-description": "off",
-    "jsdoc/require-returns-description": "off",
-    "jsdoc/require-property-description": "off",
     "node/exports-style": [
       "error",
       "module.exports"
