@@ -8,7 +8,8 @@ const ISettingsActionRepo = require('../../domain/repo/i_settings_action_repo');
 const Settings = require('../../domain/entity/settings');
 const Datastore = require('nedb');
 
-/** @typedef {import('../../domain/entity/actions/speaker_update_action')} MaxCountUpdateAction */
+/** @typedef {import('../../domain/entity/actions/max_count_update_action')} MaxCountUpdateAction */
+/** @typedef {import('../../domain/entity/actions/speaker_update_action')} SpeakerUpdateAction */
 
 /** @typedef {string} ServerID サーバーID */
 

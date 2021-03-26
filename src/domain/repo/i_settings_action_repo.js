@@ -1,6 +1,7 @@
 const Interface = require('../../core/interface');
 
-/** @typedef {import('../entity/actions/speaker_update_action')} MaxCountUpdateAction */
+/** @typedef {import('../entity/actions/max_count_update_action')} MaxCountUpdateAction */
+/** @typedef {import('../entity/actions/speaker_update_action')} SpeakerUpdateAction */
 
 /**
  * 読み上げ花子設定関連アクションのリポジトリ
