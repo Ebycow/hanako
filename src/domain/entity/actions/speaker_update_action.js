@@ -1,7 +1,7 @@
 const assert = require('assert').strict;
 
 /**
- * 最大読み上げ文字数更新アクションのエンティティ
+ * キャラクター名更新アクションのエンティティ
  */
 class SpeakerUpdateAction {
     /**
@@ -12,7 +12,7 @@ class SpeakerUpdateAction {
     }
 
     /**
-     * MaxCountUpdateActionエンティティを構築
+     * キャラクター名更新エンティティを構築
      *
      * @param {object} data
      * @param {string} data.id エンティティID
@@ -51,9 +51,9 @@ class SpeakerUpdateAction {
     }
 
     /**
-     * 新しい最大読み上げ文字数
+     * 新しく設定するキャラクター名
      *
-     * @type {number}
+     * @type {string}
      */
     get speaker() {
         return this.data.speaker;
