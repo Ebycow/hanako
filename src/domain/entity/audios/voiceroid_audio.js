@@ -18,17 +18,17 @@ class VoiceroidAudio {
      *
      * @param {object} data
      * @param {string} data.content 読み上げ内容
-     * @param {string} [data.speaker='kiritan'] 話者（現在きりたん固定）
+     * @param {string} data.speaker 読み上げキャラクター指定
      */
     constructor(data) {
         assert(typeof data.content === 'string');
-        assert(typeof data.speaker === 'undefined' || data.speaker === 'kiritan');
+        assert(typeof data.speaker === 'string');
 
         if (data.content.length === 0) {
             throw new TypeError('0文字の読み上げは不正');
         }
 
-        const speaker = data.speaker || 'kiritan';
+        const speaker = data.speaker;
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data, { speaker }),

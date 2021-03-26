@@ -1,6 +1,7 @@
 const VoiceroidAudio = require('../../entity/audios/voiceroid_audio');
 const Noop = require('../../entity/audios/noop');
 
+/** @typedef {import('../../model/hanako')} Hanako */
 /** @typedef {import('../../entity/audios').InternalAudioT} InternalAudioT */
 /** @typedef {import('../../entity/audios/plain')} Plain */
 
@@ -36,10 +37,11 @@ const brokenWordMap = (() => {
 /**
  * 未変換テキストをVOICEROID読み上げ手続きに変換
  *
+ * @param {Hanako} hanako 読み上げ実行下の読み上げ花子モデル
  * @param {Plain} plain 未変換テキストエンティティ
  * @returns {VoiceroidAudio|Noop}
  */
-function convert(plain) {
+function convert(hanako, plain) {
     let content = plain.content;
     if (content.length > 0) {
         for (const [k, v] of brokenWordMap) {
@@ -50,9 +52,9 @@ function convert(plain) {
             return new Noop();
         } else if (toRead.length / content.length < 0.51) {
             // 無音文字が占める割合が50%以上ならすべて削除する
-            return new VoiceroidAudio({ content: toRead });
+            return new VoiceroidAudio({ content: toRead, speaker: hanako.settings.speaker });
         } else {
-            return new VoiceroidAudio({ content });
+            return new VoiceroidAudio({ content, speaker: hanako.settings.speaker });
         }
     } else {
         return new Noop();
@@ -73,6 +75,13 @@ class TerminalReader {
     }
 
     /**
+     * @param {Hanako} hanako 読み上げ実行下の読み上げ花子モデル
+     */
+    constructor(hanako) {
+        this.hanako = hanako;
+    }
+
+    /**
      * 読み上げ（音声変換手続きの構築）処理
      *
      * @param {InternalAudioT} value 入力エンティティ
@@ -80,7 +89,7 @@ class TerminalReader {
      */
     read(value) {
         if (value.type === 'plain') {
-            return [convert(value)];
+            return [convert(this.hanako, value)];
         } else {
             return [value];
         }
