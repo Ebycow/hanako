@@ -24,5 +24,5 @@ module.exports = {};
  * アクションエンティティ直和型
  *
  * @typedef ActionT
- * @type {JoinVoice|LeaveVoice|SeibaiAction|WordCreate|WordDelete|WordClear|SilenceCreate|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|MaxCountUpdateAction}
+ * @type {JoinVoice|LeaveVoice|SeibaiAction|WordCreate|WordDelete|WordClear|SilenceCreate|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|MaxCountUpdateAction|SpeakerUpdateAction}
  */
