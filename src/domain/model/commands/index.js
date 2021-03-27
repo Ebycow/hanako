@@ -19,6 +19,7 @@ module.exports = {
     foley_create: require('./foley_create_command'),
     foley_delete: require('./foley_delete_command'),
     foley_read: require('./foley_read_command'),
+    help: require('./help_command'),
 };
 
 /*******************************************************
