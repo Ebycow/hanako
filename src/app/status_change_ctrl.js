@@ -42,7 +42,7 @@ class StatusChangeCtrl {
         };
         await this.validator.validate(validatorParam);
         this.readCount++;
-        this.client.user.setActivity(`${prefix}help | ${this.readCount}回読んだ！`);
+        await this.client.user.setActivity(`${prefix}help | ${this.readCount}回読んだ！`);
     }
 }
 
