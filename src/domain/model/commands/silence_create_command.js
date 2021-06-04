@@ -71,12 +71,12 @@ class SilenceCreateCommand {
         }
 
         // 上限数チェック
-        if (this.hanako.wordDictionary.lines.length >= 30) {
-            return input.newChatResponse(
-                'すでに上限数(30)のユーザーが登録されています。何名か解除してから再度試してください。',
-                'error'
-            );
-        }
+        // if (this.hanako.wordDictionary.lines.length >= 30) {
+        //     return input.newChatResponse(
+        //         'すでに上限数(30)のユーザーが登録されています。何名か解除してから再度試してください。',
+        //         'error'
+        //     );
+        // }
 
         // 沈黙ユーザー追加アクションを作成
         const action = new SilenceCreateAction({
