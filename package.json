@@ -30,7 +30,7 @@
     "file-type": "^14.1.2",
     "glob": "^7.1.6",
     "libsodium-wrappers": "^0.7.6",
-    "log4js": "^6.1.2",
+    "log4js": "^6.4.0",
     "nedb": "^1.8.0",
     "node-emoji": "^1.10.0",
     "node-libsamplerate": "git+https://github.com/nanokina/node-libsamplerate.git#8c33698dae902b790505247db1cc36ec88b43155",
