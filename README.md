@@ -1,5 +1,10 @@
 # Hanako
 汎用Discordチャット読み上げ(TTS)Bot
+強力なSE機能、任意の音声サーバに対応、複数サーバで高速に動作😼
+
+# Did you in trouble?
+問題が起きた場合は[Issueに投稿](https://github.com/Ebycow/hanako/issues/new)し、相互に共有してください。他の利用者の助けになります！  
+ねこは寂しがり屋でお話が大好きです、開発メンバーのTwitterやDiscordのDMでこっそり質問しないで！😿
 
 # Usage
 ## はなことの対話
@@ -103,3 +108,5 @@ node index
 ![img20200222233956](https://user-images.githubusercontent.com/18446038/75094313-4a370d80-55cd-11ea-9af1-71cec1bf1d20.png)
 
 彼女は凜々しい白猫でしたが、ある日降り積もるソメイヨシノを枕に眠りについたのち桃色に染まりました
+
+She was a polished white cat, but one day she put on asleep on a pillow with a pile of pink plant petals. Then was painted peach color.
