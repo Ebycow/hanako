@@ -6,6 +6,7 @@ const {
     createAudioResource,
     NoSubscriberBehavior,
     StreamType,
+    AudioPlayerStatus,
 } = require('@discordjs/voice');
 
 /** @typedef {import('stream').Readable} Readable */
@@ -172,8 +173,9 @@ class DiscordVoiceChatModel {
 
                     this.dispatcher = true;
 
-                    //TODO: statechange処理
-                    // this.dispatcher.once('finish', () => this.play());
+                    this.audioPlayer.once(AudioPlayerStatus.Idle, () => {
+                        this.play();
+                    });
                 } else {
                     this.dispatcher = null;
                 }
