@@ -5,6 +5,8 @@ const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
 const IDiscordChatRepo = require('../../domain/repo/i_discord_chat_repo');
 
+const { ChannelType } = require('discord.js');
+
 // unused
 logger;
 
@@ -37,7 +39,7 @@ class DiscordSendMessageManager {
 
         // テキストチャネルの実体を取得
         const channel = this.client.channels.resolve(chat.channelId);
-        if (!channel || channel.type !== 'text') {
+        if (!channel || channel.type !== ChannelType.GuildText) {
             return errors.unexpected(`no-such-text-channel ${chat}`);
         }
 

@@ -3,6 +3,8 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const errors = require('../core/errors').promises;
 
+const { ChannelType } = require('discord.js');
+
 /**
  * @typedef MessageValidatorData
  * @type {object}
@@ -10,7 +12,7 @@ const errors = require('../core/errors').promises;
  * @property {boolean} isBot
  * @property {string} content
  * @property {string} userName
- * @property {'text'|'dm'} channelType
+ * @property {ChannelType.GuildText|ChannelType.DM} channelType
  */
 
 /**
@@ -27,7 +29,7 @@ class MessageValidator {
         assert(typeof data.isBot === 'boolean');
         assert(typeof data.content === 'string');
         assert(typeof data.userName === 'string');
-        assert(data.channelType === 'text' || data.channelType === 'dm');
+        assert(data.channelType === ChannelType.GuildText || data.channelType === ChannelType.DM);
 
         if (data.isBot) {
             // Botは常に無視

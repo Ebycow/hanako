@@ -1,5 +1,13 @@
 const assert = require('assert').strict;
 
+const {
+    joinVoiceChannel,
+    createAudioPlayer,
+    createAudioResource,
+    NoSubscriberBehavior,
+    StreamType,
+} = require('@discordjs/voice');
+
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('discord.js').VoiceChannel} discord.VoiceChannel */
 /** @typedef {import('discord.js').TextChannel} discord.TextChannel*/
@@ -110,7 +118,13 @@ class DiscordVoiceChatModel {
             this.clearQueue();
             await this.killStream();
         }
-        this.connection = await voiceChannel.join();
+        // this.connection = await voiceChannel.join();
+        this.connection = joinVoiceChannel({
+            channelId: voiceChannel.id,
+            guildId: voiceChannel.guildId,
+            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+            selfMute: false,
+        });
     }
 
     /**
@@ -146,13 +160,21 @@ class DiscordVoiceChatModel {
         if (stream && this.connection) {
             setImmediate(() => {
                 if (this.connection) {
-                    this.dispatcher = this.connection.play(stream, {
-                        type: 'converted',
-                        bitrate: 'auto',
-                        volume: false,
-                        highWaterMark: 64,
+                    const player = createAudioPlayer();
+                    this.connection.subscribe(player);
+                    const resource = createAudioResource(stream, {
+                        inputType: StreamType.Raw,
                     });
-                    this.dispatcher.once('finish', () => this.play());
+                    player.play(resource, {
+                        noSubscriber: NoSubscriberBehavior.Pause,
+                    });
+                    // this.dispatcher = this.connection.play(stream, {
+                    //     type: 'converted',
+                    //     bitrate: 'auto',
+                    //     volume: false,
+                    //     highWaterMark: 64,
+                    // });
+                    // this.dispatcher.once('finish', () => this.play());
                 } else {
                     this.dispatcher = null;
                 }

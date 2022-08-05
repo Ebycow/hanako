@@ -10,6 +10,8 @@ const IDiscordVoiceRepo = require('../../domain/repo/i_discord_voice_repo');
 const IDiscordVcActionRepo = require('../../domain/repo/i_discord_vc_action_repo');
 const DiscordVoiceChatModel = require('./discord_voice_chat_model');
 
+const { ChannelType } = require('discord.js');
+
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('../../domain/entity/actions/join_voice_action')} JoinVoiceAction */
 /** @typedef {import('../../domain/entity/actions/leave_voice_action')} LeaveVoiceAction */
@@ -49,11 +51,12 @@ function init() {
  * @return {VoiceStatus}
  */
 function toVoiceStatus(vcModel) {
+    console.log(vcModel.connection);
     return new VoiceStatus({
         id: uuid(),
         serverId: vcModel.serverId,
         state: vcModel.dispatcher === null ? 'ready' : 'speaking',
-        voiceChannelId: vcModel.connection.channel.id,
+        voiceChannelId: vcModel.connection.joinConfig.channelId,
         readingChannelsId: vcModel.readingChannels.map(c => c.id),
     });
 }
@@ -131,13 +134,14 @@ class DiscordVoiceQueueManager {
 
         // 音声チャネルの実体を取得
         const voiceChannel = this.client.channels.resolve(action.voiceChannelId);
-        if (!voiceChannel || voiceChannel.type !== 'voice') {
+
+        if (!voiceChannel || voiceChannel.type !== ChannelType.GuildVoice) {
             return errors.unexpected(`no-such-voice-channel ${action}`);
         }
 
         // テキストチャネルの実体を取得
         const textChannel = this.client.channels.resolve(action.textChannelId);
-        if (!textChannel || textChannel.type !== 'text') {
+        if (!textChannel || textChannel.type !== ChannelType.GuildText) {
             return errors.unexpected(`no-such-text-channel ${action}`);
         }
 
