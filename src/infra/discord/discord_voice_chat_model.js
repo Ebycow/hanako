@@ -60,6 +60,8 @@ class DiscordVoiceChatModel {
          * @type {discord.TextChannel[]}
          */
         this.readingChannels = [];
+
+        this.audioPlayer = null;
     }
 
     /**
@@ -94,12 +96,9 @@ class DiscordVoiceChatModel {
     killStream() {
         return new Promise(resolve => {
             if (this.dispatcher !== null) {
-                const disp = this.dispatcher;
-                disp.emit('finish');
-                setImmediate(() => {
-                    disp.destroy();
-                    resolve();
-                });
+                this.audioPlayer.stop();
+                this.dispatcher = null;
+                resolve();
             } else {
                 resolve();
             }
@@ -125,6 +124,9 @@ class DiscordVoiceChatModel {
             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
             selfMute: false,
         });
+
+        this.audioPlayer = createAudioPlayer();
+        this.connection.subscribe(this.audioPlayer);
     }
 
     /**
@@ -160,20 +162,17 @@ class DiscordVoiceChatModel {
         if (stream && this.connection) {
             setImmediate(() => {
                 if (this.connection) {
-                    const player = createAudioPlayer();
-                    this.connection.subscribe(player);
                     const resource = createAudioResource(stream, {
                         inputType: StreamType.Raw,
                     });
-                    player.play(resource, {
-                        noSubscriber: NoSubscriberBehavior.Pause,
+
+                    this.audioPlayer.play(resource, {
+                        noSubscriber: NoSubscriberBehavior.Stop,
                     });
-                    // this.dispatcher = this.connection.play(stream, {
-                    //     type: 'converted',
-                    //     bitrate: 'auto',
-                    //     volume: false,
-                    //     highWaterMark: 64,
-                    // });
+
+                    this.dispatcher = true;
+
+                    //TODO: statechange処理
                     // this.dispatcher.once('finish', () => this.play());
                 } else {
                     this.dispatcher = null;

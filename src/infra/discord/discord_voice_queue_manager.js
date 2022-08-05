@@ -51,7 +51,6 @@ function init() {
  * @return {VoiceStatus}
  */
 function toVoiceStatus(vcModel) {
-    console.log(vcModel.connection);
     return new VoiceStatus({
         id: uuid(),
         serverId: vcModel.serverId,
