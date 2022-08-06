@@ -47,6 +47,8 @@ class AppSettings {
      * @param {object} data
      * @param {string} data.defaultCommandPrefix
      * @param {string} data.discordBotToken
+     * @param {string} data.discordClientId
+     * @param {string} data.discordGuildId
      * @param {string} data.ebyroidStreamApiUrl
      * @param {number} data.foleyMaxDownloadByteSize
      * @param {number} data.foleyMaxAudioSeconds
@@ -55,6 +57,8 @@ class AppSettings {
         assert(typeof data === 'object');
         assert(typeof data.defaultCommandPrefix === 'string');
         assert(typeof data.discordBotToken === 'string');
+        assert(typeof data.discordClientId === 'string');
+        assert(typeof data.discordGuildId === 'string');
         assert(typeof data.ebyroidStreamApiUrl === 'string');
         assert(typeof data.foleyMaxDownloadByteSize === 'number');
         assert(typeof data.foleyMaxAudioSeconds === 'number');
@@ -83,6 +87,24 @@ class AppSettings {
      */
     get discordBotToken() {
         return this.data.discordBotToken;
+    }
+
+    /**
+     * Discord BotのClientId
+     *
+     * @type {string}
+     */
+    get discordClientId() {
+        return this.data.discordClientId;
+    }
+
+    /**
+     * スラッシュコマンドを適用するGuildId
+     *
+     * @type {string}
+     */
+    get discordGuildId() {
+        return this.data.discordGuildId;
     }
 
     /**

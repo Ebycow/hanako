@@ -5,6 +5,12 @@ settings:
   # Discord Bot のトークン (必ず app-config.yml でオーバーライドしてください)
   discord_bot_token: '<YOUR DISCORD BOT TOKEN HERE>'
 
+  # Discord Bot のCLIENT_ID (必ず app-config.yml でオーバーライドしてください)
+  discord_client_id: '<YOUR DISCORD CLIENT_ID HERE>'
+
+  # スラッシュコマンドを適用するGUILD_ID (必ず app-config.yml でオーバーライドしてください)
+  discord_guild_id: '<YOUR DISCORD GUILD_ID HERE>'
+
   # Discord Bot のコマンドプリフィックス
   default_command_prefix: '>'
 

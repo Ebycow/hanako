@@ -5,6 +5,7 @@ const { GatewayIntentBits } = require('discord.js');
 const Injector = require('./core/injector');
 const AppConfig = require('./core/app_config');
 const AppSettings = require('./core/app_settings');
+const CommandCtrl = require('./app/command_ctrl');
 const MessageCtrl = require('./app/message_ctrl');
 const ReadyCtrl = require('./app/ready_ctrl');
 const PagerReactionCtrl = require('./app/pager_reaction_ctrl');
@@ -68,6 +69,7 @@ class Application {
 
         // コントローラの登録
         this.bind('ready', ReadyCtrl);
+        this.bind('interactionCreate', CommandCtrl, []);
         this.bind('messageCreate', MessageCtrl, [MessageSanitizeMiddleWare]);
         this.bind('messageCreate', StatusChangeCtrl, [MessageSanitizeMiddleWare]);
         this.bind('messageReactionAdd', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);

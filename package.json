@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@discordjs/opus": "^0.8.0",
+    "@discordjs/rest": "^1.0.1",
     "@discordjs/voice": "^0.11.0",
     "async-exit-hook": "^2.0.1",
     "axios": "^0.19.2",
