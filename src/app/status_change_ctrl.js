@@ -2,6 +2,7 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const MessageValidator = require('../service/message_validator');
 const HanakoLoader = require('../service/hanako_loader');
+const { ActivityType } = require('discord.js');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
@@ -42,7 +43,10 @@ class StatusChangeCtrl {
         };
         await this.validator.validate(validatorParam);
         this.readCount++;
-        await this.client.user.setActivity(`${prefix}help | ${this.readCount}回読んだ！`);
+        console.log(this.readCount);
+        await this.client.user.setActivity(`${prefix}help | ${this.readCount}回読んだ！`, {
+            type: ActivityType.Streaming,
+        });
     }
 }
 
