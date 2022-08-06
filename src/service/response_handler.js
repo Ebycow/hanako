@@ -29,6 +29,7 @@ class ResponseHandler {
      * レスポンスエンティティを処理する
      *
      * @param {ResponseT} response レスポンスエンティティ
+     * @param {Discord.Interaction} interaction レスポンスタイプ
      * @returns {Promise<void>}
      */
     async handle(response) {

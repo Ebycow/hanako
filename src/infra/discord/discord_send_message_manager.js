@@ -32,6 +32,7 @@ class DiscordSendMessageManager {
      * (impl) IDiscordChatRepo
      *
      * @param {ChatResponse} chat
+     * @param interaction
      * @returns {Promise<void>}
      */
     async postChat(chat) {

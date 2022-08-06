@@ -21,7 +21,7 @@ class DiscordMessage {
     constructor(data) {
         assert(typeof data.id === 'string');
         assert(typeof data.content === 'string');
-        assert(data.type === 'command' || data.type === 'read');
+        assert(data.type === 'command' || data.type === 'interaction' || data.type === 'read');
         assert(typeof data.serverId === 'string');
         assert(typeof data.channelId === 'string');
         assert(typeof data.userId === 'string');
