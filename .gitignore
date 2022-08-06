@@ -4,3 +4,4 @@ db
 log
 files
 app-config.yml
+*.bat
