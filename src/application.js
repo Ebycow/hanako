@@ -46,6 +46,8 @@ class Application {
                 GatewayIntentBits.Guilds,
                 GatewayIntentBits.GuildMessages,
                 GatewayIntentBits.MessageContent,
+                GatewayIntentBits.GuildMessageReactions,
+                GatewayIntentBits.DirectMessageReactions,
                 GatewayIntentBits.GuildVoiceStates,
             ],
         });
