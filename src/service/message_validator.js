@@ -29,7 +29,11 @@ class MessageValidator {
         assert(typeof data.isBot === 'boolean');
         assert(typeof data.content === 'string');
         assert(typeof data.userName === 'string');
-        assert(data.channelType === ChannelType.GuildText || data.channelType === ChannelType.DM);
+        assert(
+            data.channelType === ChannelType.GuildText ||
+                data.channelType === ChannelType.DM ||
+                data.channelType === ChannelType.GuildVoice
+        );
 
         if (data.isBot) {
             // Botは常に無視
@@ -41,7 +45,7 @@ class MessageValidator {
             logger.trace(`${data.userName}の空のメッセージを無視した`);
             return errors.abort();
         }
-        if (data.channelType === 'dm') {
+        if (data.channelType === ChannelType.DM) {
             // DMは無視
             logger.trace(`${data.userName}からのDMを無視した "${data.content}"`);
             return errors.abort();

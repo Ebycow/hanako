@@ -39,7 +39,7 @@ class DiscordSendMessageManager {
 
         // テキストチャネルの実体を取得
         const channel = this.client.channels.resolve(chat.channelId);
-        if (!channel || channel.type !== ChannelType.GuildText) {
+        if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildVoice)) {
             return errors.unexpected(`no-such-text-channel ${chat}`);
         }
 

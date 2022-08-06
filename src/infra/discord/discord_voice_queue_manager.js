@@ -140,7 +140,10 @@ class DiscordVoiceQueueManager {
 
         // テキストチャネルの実体を取得
         const textChannel = this.client.channels.resolve(action.textChannelId);
-        if (!textChannel || textChannel.type !== ChannelType.GuildText) {
+        if (
+            !textChannel ||
+            (textChannel.type !== ChannelType.GuildText && textChannel.type !== ChannelType.GuildVoice)
+        ) {
             return errors.unexpected(`no-such-text-channel ${action}`);
         }
 
