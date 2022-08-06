@@ -1,6 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
-const { Client, GatewayIntentBits } = require('discord.js');
+const discord = require('discord.js');
+const { GatewayIntentBits } = require('discord.js');
 const Injector = require('./core/injector');
 const AppConfig = require('./core/app_config');
 const AppSettings = require('./core/app_settings');
@@ -41,7 +42,7 @@ class Application {
     constructor(appConfig, appSettings) {
         this.appConfig = appConfig;
         this.appSettings = appSettings;
-        this.client = new Client({
+        this.client = new discord.Client({
             intents: [
                 GatewayIntentBits.Guilds,
                 GatewayIntentBits.GuildMessages,
@@ -63,7 +64,7 @@ class Application {
         // シングルトンDIを設定
         Injector.registerSingleton(AppConfig, this.appConfig);
         Injector.registerSingleton(AppSettings, this.appSettings);
-        Injector.registerSingleton(Client, this.client);
+        Injector.registerSingleton(discord.Client, this.client);
 
         // コントローラの登録
         this.bind('ready', ReadyCtrl);

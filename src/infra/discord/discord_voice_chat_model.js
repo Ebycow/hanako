@@ -14,6 +14,9 @@ const {
 /** @typedef {import('discord.js').TextChannel} discord.TextChannel*/
 /** @typedef {import('discord.js').VoiceConnection} discord.VoiceConnection */
 /** @typedef {import('discord.js').StreamDispatcher} discord.StreamDispatcher */
+/** @typedef {import('@discordjs/voice').VoiceConnection} VoiceConnection */
+/** @typedef {import('@discordjs/voice').AudioPlayer} AudioPlayer */
+/** @typedef {import('@discordjs/voice').PlayerSubscription} PlayerSubscription */
 
 /**
  * Discordボイスチャットの境界モデル
@@ -44,9 +47,23 @@ class DiscordVoiceChatModel {
         /**
          * 音声チャンネルとのコネクション
          *
-         * @type {discord.VoiceConnection}
+         * @type {VoiceConnection}
          */
         this.connection = null;
+
+        /**
+         * 音声チャンネルのオーディオプレイヤー
+         *
+         * @type {AudioPlayer}
+         */
+        this.audioPlayer = null;
+
+        /**
+         * 音声チャンネルのサブスクライブ
+         *
+         * @type {PlayerSubscription}
+         */
+        this.playerSubscribe = null;
 
         /**
          * 現在再生中のストリームのDispatcher
@@ -61,8 +78,6 @@ class DiscordVoiceChatModel {
          * @type {discord.TextChannel[]}
          */
         this.readingChannels = [];
-
-        this.audioPlayer = null;
     }
 
     /**
@@ -118,16 +133,15 @@ class DiscordVoiceChatModel {
             this.clearQueue();
             await this.killStream();
         }
-        // this.connection = await voiceChannel.join();
+
         this.connection = joinVoiceChannel({
             channelId: voiceChannel.id,
             guildId: voiceChannel.guildId,
             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-            selfMute: false,
         });
 
         this.audioPlayer = createAudioPlayer();
-        this.connection.subscribe(this.audioPlayer);
+        this.playerSubscribe = this.connection.subscribe(this.audioPlayer);
     }
 
     /**
@@ -137,6 +151,12 @@ class DiscordVoiceChatModel {
         this.clearReadingChannels();
         this.clearQueue();
         if (this.connection !== null) {
+            this.playerSubscribe.unsubscribe();
+            this.playerSubscribe = null;
+
+            this.audioPlayer.stop();
+            this.audioPlayer = null;
+
             this.connection.disconnect();
             this.connection = null;
         }
@@ -171,6 +191,7 @@ class DiscordVoiceChatModel {
                         noSubscriber: NoSubscriberBehavior.Stop,
                     });
 
+                    // これいいの？
                     this.dispatcher = true;
 
                     this.audioPlayer.once(AudioPlayerStatus.Idle, () => {
