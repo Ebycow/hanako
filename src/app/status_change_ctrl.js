@@ -43,7 +43,6 @@ class StatusChangeCtrl {
         };
         await this.validator.validate(validatorParam);
         this.readCount++;
-        console.log(this.readCount);
         await this.client.user.setActivity(`${prefix}help | ${this.readCount}回読んだ！`, {
             type: ActivityType.Streaming,
         });
