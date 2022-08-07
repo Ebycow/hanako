@@ -69,6 +69,11 @@ class MessageSanitizeMiddleWare {
     async transform(message) {
         let content = replaceDiscordTags(message, message.content);
         content = replaceUnicodeEmojis(content);
+        if (message.stickers.size) {
+            message.stickers.forEach(sticker => {
+                content += sticker.name;
+            });
+        }
         return Promise.resolve([message, content]);
     }
 }
