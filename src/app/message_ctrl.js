@@ -36,8 +36,6 @@ class MessageCtrl {
      * @param {string} content 標準化済みメッセージ内容
      */
     async onMessage(message, content) {
-        console.log(message.stickers.size);
-
         // バリデーション
         const validatorParam = {
             isBot: message.author.bot,
