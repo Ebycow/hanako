@@ -42,6 +42,8 @@ class StatusChangeCtrl {
             channelType: message.channel.type,
         };
         await this.validator.validate(validatorParam);
+
+        // 花子が読み上げたとは言ってないのでセーフ
         this.readCount++;
         await this.client.user.setActivity(`${prefix}help | ${this.readCount}回読んだ！`, {
             type: ActivityType.Streaming,
