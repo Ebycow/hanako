@@ -19,7 +19,7 @@ const Datastore = require('nedb');
  * @property {string} id エンティティID
  * @property {string} serverId DiscordサーバーID
  * @property {number} maxCount 最大読み上げ文字数
- * @property {string} speaker 読み上げキャラクター
+ * @property {{ userId : string , name : string }} speaker 読み上げキャラクター
  */
 
 /**
@@ -81,9 +81,17 @@ async function loadSharedData(serverId) {
             if (doc) {
                 let dict = doc.dict;
                 // Note: マイグレーションはここで行う
+                // スピーカー設定マイグレーション (v4->v5)
+                if (typeof dict.speaker === 'string') {
+                    logger.info('Speaker設定マイグレーションを開始');
+                    dict.speaker = {
+                        default: 'default',
+                    };
+                    logger.info('Speaker設定マイグレーションを終了');
+                }
                 resolve(dict);
             } else {
-                const initialRecord = { id: uuid(), serverId, maxCount: 0, speaker: 'default' };
+                const initialRecord = { id: uuid(), serverId, maxCount: 0, speaker: { default: 'default' } };
                 dbInstance.insert({ id: serverId, dict: initialRecord }, err => {
                     if (err) reject(err);
                     else resolve(initialRecord);
@@ -213,7 +221,7 @@ class NedbSettingsTableManager {
         const record = await loadSharedData(action.serverId);
 
         // 新しくspeakerを設定
-        record.speaker = action.speaker;
+        record.speaker[action.userId] = action.speaker;
 
         // 永続化
         await persistSharedData(action.serverId);

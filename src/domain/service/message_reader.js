@@ -44,7 +44,7 @@ class MessageReader {
         }
 
         // 各Readerによる読み上げ手続き変換を実行
-        const reado = new Reado(hanako);
+        const reado = new Reado(hanako, dmessage);
         const audios = reado.compose(text);
 
         if (audios.length === 0) {
