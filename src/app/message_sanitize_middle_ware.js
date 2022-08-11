@@ -35,7 +35,7 @@ function replaceDiscordTags(message, text) {
             return '#' + (resolveChannelName(channelId) || 'どこですか？');
         }
         if (typeof roleTag !== 'undefined') {
-            const roleId = roleTag.slice(1);
+            const roleId = roleTag.slice(2);
             return '@' + (resolveRoleName(roleId) || '誰ですか？');
         }
 
