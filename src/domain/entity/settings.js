@@ -12,13 +12,13 @@ class Settings {
      * @param {string} data.id エンティティID
      * @param {string} data.serverId DiscordサーバーID
      * @param {number} data.maxCount 最大読み上げ文字数
-     * @param {string} data.speaker サーバーの読み上げキャラクター指定
+     * @param {{ userId : string , name : string }} data.speaker サーバーの読み上げキャラクター指定
      */
     constructor(data) {
         assert(typeof data.id === 'string');
         assert(typeof data.serverId === 'string');
         assert(typeof data.maxCount === 'number' && Number.isInteger(data.maxCount) && data.maxCount >= 0);
-        assert(typeof data.speaker === 'string');
+        assert(typeof data.speaker === 'object');
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),

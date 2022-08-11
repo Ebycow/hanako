@@ -69,6 +69,15 @@ class CommandInput {
     }
 
     /**
+     * 送信元DiscordユーザーID
+     *
+     * @type {string}
+     */
+    get userId() {
+        return this.data.origin.userId;
+    }
+
+    /**
      * 送信元テキストチャンネルID
      *
      * @type {string}

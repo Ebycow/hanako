@@ -32,6 +32,7 @@ class EbyroidStreamApiAdapter {
         const params = {
             text: audio.content,
         };
+
         if (audio.speaker !== 'default') {
             params.name = audio.speaker;
         }

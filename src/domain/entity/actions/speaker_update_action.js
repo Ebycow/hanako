@@ -17,11 +17,13 @@ class SpeakerUpdateAction {
      * @param {object} data
      * @param {string} data.id エンティティID
      * @param {string} data.serverId 対象DiscordサーバーのID
+     * @param {string} data.userId 対象DiscordユーザーのID
      * @param {number} data.speaker 新しい読み上げキャラクター名
      */
     constructor(data) {
         assert(typeof data.id === 'string');
         assert(typeof data.serverId === 'string');
+        assert(typeof data.userId === 'string');
         assert(typeof data.speaker === 'string');
 
         Object.defineProperty(this, 'data', {
@@ -49,6 +51,14 @@ class SpeakerUpdateAction {
     get serverId() {
         return this.data.serverId;
     }
+    /**
+     * 対象DiscordユーザーのID
+     *
+     * @type {string}
+     */
+    get userId() {
+        return this.data.userId;
+    }
 
     /**
      * 新しく設定するキャラクター名
@@ -60,7 +70,7 @@ class SpeakerUpdateAction {
     }
 
     toString() {
-        return `SpeakerAction(id=${this.id}, serverId=${this.serverId}, speaker=${this.speaker})`;
+        return `SpeakerAction(id=${this.id}, serverId=${this.serverId}, userId=${this.userId}, speaker=${this.speaker})`;
     }
 }
 
