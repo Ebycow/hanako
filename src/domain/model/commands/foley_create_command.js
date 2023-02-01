@@ -83,9 +83,9 @@ class FoleyCreateCommand {
         }
 
         // 上限数チェック
-        if (this.hanako.foleyDictionary.lines.length >= 100) {
+        if (this.hanako.foleyDictionary.lines.length >= 10000) {
             return input.newChatResponse(
-                'すでに上限数(100)のSEが登録されています。何か削除してから再度試してください。',
+                'すでに上限数(10000)のSEが登録されています。何か削除してから再度試してください。',
                 'error'
             );
         }
