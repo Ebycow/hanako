@@ -20,14 +20,14 @@
     "node": ">=13.9.0"
   },
   "dependencies": {
-    "@discordjs/opus": "^0.8.0",
-    "@discordjs/rest": "^1.0.1",
-    "@discordjs/voice": "^0.11.0",
+    "@discordjs/opus": "^0.9.0",
+    "@discordjs/rest": "^1.7.1",
+    "@discordjs/voice": "^0.16.1",
     "async-exit-hook": "^2.0.1",
     "axios": "^0.19.2",
     "bufferutil": "^4.0.1",
     "camel-case": "^4.1.1",
-    "discord.js": "^14.1.2",
+    "discord.js": "^14.14.1",
     "erlpack": "github:discordapp/erlpack",
     "ffmpeg-static": "^5.0.2",
     "file-type": "^14.1.2",
