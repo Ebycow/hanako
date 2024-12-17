@@ -14,7 +14,6 @@ const StatusChangeCtrl = require('./app/status_change_ctrl');
 const MessageSanitizeMiddleWare = require('./app/message_sanitize_middle_ware');
 const PagerReactionFilterMiddleWare = require('./app/pager_reaction_filter_middle_ware');
 const VoiceChatActionMiddleWare = require('./app/voice_chat_action_middle_ware');
-const http = require('http');
 
 /**
  * 最上位までハンドルされなかった例外をエラーログとして出力
@@ -54,11 +53,6 @@ class Application {
                 GatewayIntentBits.GuildVoiceStates,
             ],
         });
-
-        this.httpServer = http.createServer((request, response) => {
-            response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-            response.end('OK');
-        });
     }
 
     /**
@@ -84,11 +78,6 @@ class Application {
 
         // 待受開始
         this.client.login(this.appSettings.discordBotToken);
-        this.httpServer.listen(8753, '0.0.0.0', () => {
-            logger.trace(
-                `Webサーバを http://${this.httpServer.address().address}:${this.httpServer.address().port} でリッスン`
-            );
-        });
     }
 
     /**
