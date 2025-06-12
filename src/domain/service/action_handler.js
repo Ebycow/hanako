@@ -67,6 +67,8 @@ class ActionHandler {
             return this.foleyActionRepo.postFoleyCreate(action);
         } else if (type === 'foley_delete') {
             return this.foleyActionRepo.postFoleyDelete(action);
+        } else if (type === 'foley_rename') {
+            return this.foleyActionRepo.postFoleyRename(action);
         } else if (type === 'max_count_update') {
             return this.settingsActionRepo.postMaxCountUpdate(action);
         } else if (type === 'speaker_update') {

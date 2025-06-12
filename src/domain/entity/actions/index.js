@@ -17,6 +17,7 @@ module.exports = {};
 /** @typedef {import('./silence_clear_action')} SilenceClear */
 /** @typedef {import('./foley_create_action')} FoleyCreate */
 /** @typedef {import('./foley_delete_action')} FoleyDelete */
+/** @typedef {import('./foley_rename_action')} FoleyRename */
 /** @typedef {import('./max_count_update_action')} MaxCountUpdateAction */
 /** @typedef {import('./speaker_update_action')} SpeakerUpdateAction */
 
@@ -24,5 +25,5 @@ module.exports = {};
  * アクションエンティティ直和型
  *
  * @typedef ActionT
- * @type {JoinVoice|LeaveVoice|SeibaiAction|WordCreate|WordDelete|WordClear|SilenceCreate|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|MaxCountUpdateAction|SpeakerUpdateAction}
+ * @type {JoinVoice|LeaveVoice|SeibaiAction|WordCreate|WordDelete|WordClear|SilenceCreate|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|FoleyRename|MaxCountUpdateAction|SpeakerUpdateAction}
  */

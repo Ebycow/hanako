@@ -330,6 +330,49 @@ class NedbFoleyDictionaryTableManager {
     }
 
     /**
+     * (impl) IFoleyActionRepo
+     *
+     * @param {FoleyRenameAction} action
+     * @returns {Promise<void>}
+     */
+    async postFoleyRename(action) {
+        assert(typeof action === 'object');
+    
+        // 辞書データをロード
+        const records = await loadSharedData(action.serverId);
+    
+        // 変更対象のキーワードを探す
+        const index = records.findIndex(record => record[0] === action.keywordFrom);
+        if (index === -1) {
+            const message = `Keyword ${action.keywordFrom} not found`;
+            return errors.disappointed(`foley-not-found ${action.keywordFrom}`, message);
+        }
+    
+        // 新しいキーワードが既に存在するかチェック
+        if (records.some(record => record[0] === action.keywordTo)) {
+            const message = `Keyword ${action.keywordTo} already exists`;
+            return errors.disappointed(`keyword-already-exists ${action.keywordTo}`, message);
+        }
+    
+        // 古いファイル名（オブジェクトキー）と新しいファイル名を作成
+        const oldObjectKey = Buffer.from(action.keywordFrom).toString('base64');
+        const newObjectKey = Buffer.from(action.keywordTo).toString('base64');
+    
+        // ファイルを新しいキーでコピー
+        const stream = await this.objectStorageRepo.readFile(action.serverId, oldObjectKey, 'pcm');
+        await this.objectStorageRepo.saveFile(action.serverId, newObjectKey, 'pcm', stream);
+    
+        // 古いファイルを削除
+        await this.objectStorageRepo.deleteFile(action.serverId, oldObjectKey, 'pcm');
+    
+        // キーワードを新しいものに置き換え
+        records[index][0] = action.keywordTo;
+    
+        // データベースに保存
+        await persistSharedData(action.serverId);
+    }
+
+    /**
      * (impl) IFoleyStreamRepo
      *
      * @param {FoleyAudio} audio

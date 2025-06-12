@@ -2,6 +2,7 @@ const Interface = require('../../core/interface');
 
 /** @typedef {import('../entity/actions/foley_create_action')} FoleyCreateAction */
 /** @typedef {import('../entity/actions/foley_delete_action')} FoleyDeleteAction */
+/** @typedef {import('../entity/actions/foley_rename_action')} FoleyRenameAction */
 
 /**
  * SE関連アクションのリポジトリ
@@ -22,6 +23,14 @@ class IFoleyActionRepo extends Interface {
      * @returns {Promise<void>}
      */
     async postFoleyDelete(action) {}
+
+    /**
+     * SE削除アクションを投稿
+     *
+     * @param {FoleyRenameAction} action SE削除アクション
+     * @returns {Promise<void>}
+     */
+    async postFoleyRename(action) {}
 }
 
 module.exports = IFoleyActionRepo;
