@@ -98,6 +98,7 @@ hanakoディレクトリの`app-config-default.yml`をコピーし、`app-config
 
 起動
 ```
+npm run deploy
 node index
 ```
 

@@ -5,6 +5,21 @@ const MessageService = require('../service/message_service');
 const ResponseHandler = require('../service/response_handler');
 const HanakoLoader = require('../service/hanako_loader');
 
+/**
+ * (private) SlashCommand optionを平坦化して引数文字列の配列を生成
+ *
+ * @param {import('discord.js').CommandInteractionOption} option
+ * @returns {string[]}
+ */
+function flattenOptions(option) {
+    if (option.type === 1 || option.type === 2) {
+        // SUB_COMMAND or SUB_COMMAND_GROUP
+        const nested = option.options ? option.options.flatMap(o => flattenOptions(o)) : [];
+        return [option.name, ...nested];
+    }
+    return option.value !== undefined ? [String(option.value)] : [];
+}
+
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Interaction} discord.Interaction */
 
@@ -31,19 +46,23 @@ class InteractionCtrl {
      * Discordから受信したインタラクションを包括的に処理
      *
      * @param {discord.Interaction} interaction 受信したDiscordのメッセージ
-     * @param {string} content 標準化済みメッセージ内容
      */
-    async onInteraction(interaction, content) {
-        // バリデーション
-        // なし
+    async onInteraction(interaction) {
+        // ChatInput以外のインタラクションは無視
+        if (!interaction.isChatInputCommand()) {
+            return;
+        }
 
         // 読み上げ花子モデルを取得
         const hanako = await this.hanakoLoader.load(interaction.guild.id);
 
         // メッセージエンティティの作成
+        const args = interaction.options.data.flatMap(option => flattenOptions(option));
+        const content = `${hanako.prefix}${interaction.commandName}${args.length ? ' ' + args.join(' ') : ''}`;
+
         const builderParam = {
             id: interaction.id,
-            content: hanako.prefix + interaction.commandName, // TODO:引数処理がない
+            content,
             userId: interaction.user.id,
             userName: interaction.user.username,
             channelId: interaction.channel.id,
@@ -63,10 +82,10 @@ class InteractionCtrl {
             // レスポンスハンドラにレスポンス処理をさせて終了
             await this.responseHandler.handle(response);
             await interaction.reply('コマンドを実行しました！😸', { ephemeral: true });
-            await setTimeout(() => interaction.deleteReply(), 3000);
+            setTimeout(() => interaction.deleteReply(), 3000);
         } catch (error) {
             await interaction.reply('コマンドの実行に失敗しました･･･😿', { ephemeral: true });
-            await setTimeout(() => interaction.deleteReply(), 3000);
+            setTimeout(() => interaction.deleteReply(), 3000);
         }
     }
 }
