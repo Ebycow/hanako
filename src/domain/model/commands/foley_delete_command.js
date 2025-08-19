@@ -2,6 +2,7 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const FoleyDeleteAction = require('../../entity/actions/foley_delete_action');
+const FoleyDeleteMultipleAction = require('../../entity/actions/foley_delete_multiple_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
 /** @typedef {import('../../entity/command_input')} CommandInput */
@@ -45,13 +46,19 @@ class FoleyDeleteCommand {
         logger.info(`SE削除コマンドを受理 ${input}`);
 
         // コマンド形式のバリデーション
-        if (input.argc !== 1) {
+        if (input.argc < 1) {
             return input.newChatResponse(
-                'コマンドの形式が間違っています :sob: 例:`@hanako 音声忘却 三倍アイスクリーム`',
+                'コマンドの形式が間違っています :sob: 例:`@hanako se-del 三倍アイスクリーム` または `@hanako se-del SE名1 SE名2 SE名3`',
                 'error'
             );
         }
 
+        // 複数SE削除の場合
+        if (input.argc > 1) {
+            return this.processMultipleDelete(input);
+        }
+
+        // 単一SE削除（従来の処理）
         const foley = this.hanako.foleyDictionary.lines.find(line => line.keyword === input.argv[0]);
 
         // 単語が見つからない
@@ -66,6 +73,63 @@ class FoleyDeleteCommand {
             foleyId: foley.id,
         });
         const onSuccess = input.newChatResponse(`1 2の…ポカン！『${foley.keyword}』のSE設定を忘れました！ :bulb:`);
+        const onFailure = input.newChatResponse('SE削除中にエラーが発生しました :sob:', 'error');
+        return new ActionResponse({ id: input.id, action, onSuccess, onFailure });
+    }
+
+    /**
+     * 複数SE削除を処理
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {ResponseT} レスポンス
+     */
+    processMultipleDelete(input) {
+        const keywords = input.argv;
+        const foundFoleys = [];
+        const notFoundKeywords = [];
+
+        // 各キーワードに対応するSEを検索
+        for (const keyword of keywords) {
+            const foley = this.hanako.foleyDictionary.lines.find(line => line.keyword === keyword);
+            if (foley) {
+                foundFoleys.push(foley);
+            } else {
+                notFoundKeywords.push(keyword);
+            }
+        }
+
+        // 何も見つからない場合
+        if (foundFoleys.length === 0) {
+            return input.newChatResponse(`指定されたSEが見つかりませんでした: ${notFoundKeywords.join('、')}`, 'error');
+        }
+
+        let action;
+        let responseMessage = '';
+
+        if (foundFoleys.length === 1) {
+            // 単一SE削除
+            action = new FoleyDeleteAction({
+                id: input.id,
+                serverId: input.serverId,
+                foleyId: foundFoleys[0].id,
+            });
+            responseMessage = `1 2の…ポカン！『${foundFoleys[0].keyword}』のSE設定を忘れました！ :bulb:`;
+        } else {
+            // 複数SE削除
+            action = new FoleyDeleteMultipleAction({
+                id: input.id,
+                serverId: input.serverId,
+                foleyIds: foundFoleys.map(f => f.id),
+            });
+            const foundNames = foundFoleys.map(f => f.keyword).join('、');
+            responseMessage = `1 2の…ポカン！${foundFoleys.length}個のSE設定を忘れました！『${foundNames}』 :bulb:`;
+        }
+
+        if (notFoundKeywords.length > 0) {
+            responseMessage += `\n見つからなかったSE: ${notFoundKeywords.join('、')}`;
+        }
+
+        const onSuccess = input.newChatResponse(responseMessage);
         const onFailure = input.newChatResponse('SE削除中にエラーが発生しました :sob:', 'error');
         return new ActionResponse({ id: input.id, action, onSuccess, onFailure });
     }

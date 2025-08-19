@@ -60,6 +60,15 @@ class MessageCtrl {
             serverName: message.guild.name,
             voiceChannelId: message.member.voice.channel ? message.member.voice.channel.id : null,
             mentionedUsers: message.mentions.members.reduce((map, m) => map.set(m.displayName, m.id), new Map()),
+            attachments: Array.from(message.attachments.values()).map(attachment => {
+                logger.info(
+                    `Discord添付ファイル: name=${attachment.name}, title=${attachment.title}, url=${attachment.url}`
+                );
+                return {
+                    name: attachment.title || attachment.name, // titleがあればそれを優先、なければname
+                    url: attachment.url,
+                };
+            }),
         };
         const entity = await this.builder.build(hanako, builderParam);
 

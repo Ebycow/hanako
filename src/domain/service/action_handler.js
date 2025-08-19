@@ -65,8 +65,12 @@ class ActionHandler {
             return this.silenceActionRepo.postSilenceClear(action);
         } else if (type === 'foley_create') {
             return this.foleyActionRepo.postFoleyCreate(action);
+        } else if (type === 'foley_create_multiple') {
+            return this.foleyActionRepo.postFoleyCreateMultiple(action);
         } else if (type === 'foley_delete') {
             return this.foleyActionRepo.postFoleyDelete(action);
+        } else if (type === 'foley_delete_multiple') {
+            return this.foleyActionRepo.postFoleyDeleteMultiple(action);
         } else if (type === 'foley_rename') {
             return this.foleyActionRepo.postFoleyRename(action);
         } else if (type === 'max_count_update') {

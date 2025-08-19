@@ -19,7 +19,9 @@ const FoleyDictionaryLine = require('../../domain/entity/foley_dictionary_line')
 
 /** @typedef {import('../../domain/entity/audios/foley_audio')} FoleyAudio */
 /** @typedef {import('../../domain/entity/actions/foley_create_action')} FoleyCreateAction */
+/** @typedef {import('../../domain/entity/actions/foley_create_multiple_action')} FoleyCreateMultipleAction */
 /** @typedef {import('../../domain/entity/actions/foley_delete_action')} FoleyDeleteAction */
+/** @typedef {import('../../domain/entity/actions/foley_delete_multiple_action')} FoleyDeleteMultipleAction */
 /** @typedef {import('../../domain/entity/actions/foley_clear_action')} FoleyClearAction */
 
 /** @typedef {string} ServerID サーバーID */
@@ -299,6 +301,59 @@ class NedbFoleyDictionaryTableManager {
     /**
      * (impl) IFoleyActionRepo
      *
+     * @param {FoleyCreateMultipleAction} action
+     * @returns {Promise<void>}
+     */
+    async postFoleyCreateMultiple(action) {
+        assert(typeof action === 'object');
+        const records = await loadSharedData(action.serverId);
+
+        // 各アイテムを順次処理
+        for (const item of action.items) {
+            // 重複チェック（既に処理済みのアイテムも含む）
+            if (records.some(record => item.keyword === record[0])) {
+                logger.warn(`キーワード重複をスキップ: ${item.keyword}`);
+                continue;
+            }
+
+            let response;
+            try {
+                response = await axios.get(item.url, {
+                    responseType: 'arraybuffer',
+                    maxContentLength: this.appSettings.foleyMaxDownloadByteSize,
+                });
+            } catch (err) {
+                logger.warn(`ファイルダウンロード失敗をスキップ: ${item.keyword} - ${err.message}`);
+                continue;
+            }
+
+            const fileType = await FileType.fromBuffer(response.data);
+            if (!fileType || !fileType.mime.startsWith('audio')) {
+                logger.warn(`音声ファイル以外をスキップ: ${item.keyword}`);
+                continue;
+            }
+
+            try {
+                const args = this.ffmpegOptions.slice();
+                const ffmpeg = new prism.FFmpeg({ args });
+                const stream = Readable.from(response.data, { objectMode: false }).pipe(ffmpeg);
+                const objectKey = Buffer.from(item.keyword).toString('base64');
+                await this.objectStorageRepo.saveFile(action.serverId, objectKey, 'pcm', stream);
+
+                records.push([item.keyword, item.url, uuid()]);
+                logger.info(`SE追加成功: ${item.keyword}`);
+            } catch (err) {
+                logger.warn(`ファイル保存失敗をスキップ: ${item.keyword} - ${err.message}`);
+                continue;
+            }
+        }
+
+        await persistSharedData(action.serverId);
+    }
+
+    /**
+     * (impl) IFoleyActionRepo
+     *
      * @param {FoleyDeleteAction} action
      * @returns {Promise<void>}
      */
@@ -332,42 +387,81 @@ class NedbFoleyDictionaryTableManager {
     /**
      * (impl) IFoleyActionRepo
      *
+     * @param {FoleyDeleteMultipleAction} action
+     * @returns {Promise<void>}
+     */
+    async postFoleyDeleteMultiple(action) {
+        assert(typeof action === 'object');
+        const records = await loadSharedData(action.serverId);
+        const deletedRecords = [];
+
+        // 各IDに対応するレコードを検索して削除
+        for (const foleyId of action.foleyIds) {
+            const index = records.findIndex(record => foleyId === record[2]);
+            if (index !== -1) {
+                const deletedRecord = records.splice(index, 1)[0];
+                deletedRecords.push(deletedRecord);
+                logger.info(`SE削除: ${deletedRecord[0]} (ID: ${foleyId})`);
+            } else {
+                logger.warn(`SE削除対象が見つからない: ID ${foleyId}`);
+            }
+        }
+
+        // データベースに保存
+        await persistSharedData(action.serverId);
+
+        // オブジェクトストレージからファイルを削除
+        for (const record of deletedRecords) {
+            try {
+                const objectKey = Buffer.from(record[0]).toString('base64');
+                await this.objectStorageRepo.deleteFile(action.serverId, objectKey, 'pcm');
+                logger.info(`ファイル削除成功: ${record[0]}`);
+            } catch (err) {
+                logger.error(`ファイル削除失敗: ${record[0]} - ${err.message}`);
+                // ファイル削除に失敗してもエラーにはしない（既に削除済みの可能性もある）
+            }
+        }
+    }
+
+    /**
+     * (impl) IFoleyActionRepo
+     *
      * @param {FoleyRenameAction} action
      * @returns {Promise<void>}
      */
     async postFoleyRename(action) {
         assert(typeof action === 'object');
-    
+
         // 辞書データをロード
         const records = await loadSharedData(action.serverId);
-    
+
         // 変更対象のキーワードを探す
         const index = records.findIndex(record => record[0] === action.keywordFrom);
         if (index === -1) {
             const message = `Keyword ${action.keywordFrom} not found`;
             return errors.disappointed(`foley-not-found ${action.keywordFrom}`, message);
         }
-    
+
         // 新しいキーワードが既に存在するかチェック
         if (records.some(record => record[0] === action.keywordTo)) {
             const message = `Keyword ${action.keywordTo} already exists`;
             return errors.disappointed(`keyword-already-exists ${action.keywordTo}`, message);
         }
-    
+
         // 古いファイル名（オブジェクトキー）と新しいファイル名を作成
         const oldObjectKey = Buffer.from(action.keywordFrom).toString('base64');
         const newObjectKey = Buffer.from(action.keywordTo).toString('base64');
-    
+
         // ファイルを新しいキーでコピー
         const stream = await this.objectStorageRepo.readFile(action.serverId, oldObjectKey, 'pcm');
         await this.objectStorageRepo.saveFile(action.serverId, newObjectKey, 'pcm', stream);
-    
+
         // 古いファイルを削除
         await this.objectStorageRepo.deleteFile(action.serverId, oldObjectKey, 'pcm');
-    
+
         // キーワードを新しいものに置き換え
         records[index][0] = action.keywordTo;
-    
+
         // データベースに保存
         await persistSharedData(action.serverId);
     }

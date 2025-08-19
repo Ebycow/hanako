@@ -105,6 +105,15 @@ class CommandInput {
     }
 
     /**
+     * 元のDiscordメッセージの添付ファイル
+     *
+     * @type {Array<{name: string, url: string}>}
+     */
+    get attachments() {
+        return this.data.origin.attachments;
+    }
+
+    /**
      * コマンド引数を１つ消費した新しいエンティティを返す
      *
      * @returns {CommandInput} 1番目の引数が消費されたCommandInput
