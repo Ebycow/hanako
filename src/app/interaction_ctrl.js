@@ -31,19 +31,36 @@ class InteractionCtrl {
      * Discordから受信したインタラクションを包括的に処理
      *
      * @param {discord.Interaction} interaction 受信したDiscordのメッセージ
-     * @param {string} content 標準化済みメッセージ内容
      */
-    async onInteraction(interaction, content) {
+    async onInteraction(interaction) {
         // バリデーション
         // なし
 
         // 読み上げ花子モデルを取得
         const hanako = await this.hanakoLoader.load(interaction.guild.id);
 
+        // スラッシュコマンドのオプションを処理
+        let content = hanako.prefix + interaction.commandName;
+        const options = interaction.options.data;
+        const mentionedUsers = new Map();
+        if (options.length > 0) {
+            const args = options.map(option => {
+                if (option.type === 6) {
+                    // USER
+                    const username = option.user.username;
+                    const userId = option.value;
+                    mentionedUsers.set(username, userId);
+                    return '@' + username;
+                }
+                return option.value;
+            });
+            content += ' ' + args.join(' ');
+        }
+
         // メッセージエンティティの作成
         const builderParam = {
             id: interaction.id,
-            content: hanako.prefix + interaction.commandName, // TODO:引数処理がない
+            content,
             userId: interaction.user.id,
             userName: interaction.user.username,
             channelId: interaction.channel.id,
@@ -51,7 +68,7 @@ class InteractionCtrl {
             serverId: interaction.guildId,
             serverName: interaction.guild.name,
             voiceChannelId: interaction.member.voice.channel ? interaction.member.voice.channel.id : null,
-            mentionedUsers: new Map(), // 空なので一応空宣言
+            mentionedUsers,
         };
         const entity = await this.builder.build(hanako, builderParam);
 
