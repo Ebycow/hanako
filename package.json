@@ -30,7 +30,6 @@
     "bufferutil": "^4.0.1",
     "camel-case": "^4.1.1",
     "discord.js": "^14.25.1",
-    "erlpack": "github:discordapp/erlpack",
     "ffmpeg-static": "^5.0.2",
     "file-type": "^16.5.3",
     "glob": "^7.1.6",
