@@ -68,7 +68,7 @@ class Application {
         Injector.registerSingleton(discord.Client, this.client);
 
         // コントローラの登録
-        this.bind('ready', ReadyCtrl);
+        this.bind('clientReady', ReadyCtrl);
         this.bind('interactionCreate', InteractionCtrl);
         this.bind('messageCreate', MessageCtrl, [MessageSanitizeMiddleWare]);
         this.bind('messageCreate', StatusChangeCtrl, [MessageSanitizeMiddleWare]);
