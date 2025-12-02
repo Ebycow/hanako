@@ -7,7 +7,7 @@ const ISilenceActionRepo = require('../../domain/repo/i_silence_action_repo');
 const ISilenceDictionaryRepo = require('../../domain/repo/i_silence_dictionary_repo');
 const SilenceDictionary = require('../../domain/entity/silence_dictionary');
 const SilenceDictionaryLine = require('../../domain/entity/silence_dictionary_line');
-const Datastore = require('nedb');
+const Datastore = require('@seald-io/nedb');
 
 /** @typedef {import('../../domain/entity/actions/silence_create_action')} SilenceCreateAction */
 /** @typedef {import('../../domain/entity/actions/silence_delete_action')} SilenceDeleteAction */
@@ -48,7 +48,7 @@ function init() {
     // Nedbのロード
     dbInstance = new Datastore({ filename: './db/blacklist.db', autoload: true });
     dbInstance.loadDatabase();
-    dbInstance.persistence.setAutocompactionInterval(86400000);
+    dbInstance.setAutocompactionInterval(86400000);
 
     // キャッシュ領域の割当
     cache = new Map();

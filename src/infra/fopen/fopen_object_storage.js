@@ -3,7 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const fs = require('fs');
 const uuid = require('uuidv4').uuid;
 const errors = require('../../core/errors').types;
-const Datastore = require('nedb');
+const Datastore = require('@seald-io/nedb');
 const IObjectStorageRepo = require('../../domain/repo/i_object_storage_repo');
 
 /** @typedef {import('stream').Readable} Readable */
@@ -38,7 +38,7 @@ function init() {
     // Nedbのロード
     dbInstance = new Datastore({ filename: './db/files.db', autoload: true });
     dbInstance.loadDatabase();
-    dbInstance.persistence.setAutocompactionInterval(86400000);
+    dbInstance.setAutocompactionInterval(86400000);
 
     logger.trace('モジュールが初期化された');
 }

@@ -13,7 +13,7 @@ const IFoleyActionRepo = require('../../domain/repo/i_foley_action_repo');
 const IFoleyDictionaryRepo = require('../../domain/repo/i_foley_dictionary_repo');
 const IFoleyStreamRepo = require('../../domain/repo/i_foley_stream_repo');
 const IObjectStorageRepo = require('../../domain/repo/i_object_storage_repo');
-const Datastore = require('nedb');
+const Datastore = require('@seald-io/nedb');
 const FoleyDictionary = require('../../domain/entity/foley_dictionary');
 const FoleyDictionaryLine = require('../../domain/entity/foley_dictionary_line');
 
@@ -58,7 +58,7 @@ function init() {
     // Nedbのロード
     dbInstance = new Datastore({ filename: './db/soundeffect.db', autoload: true });
     dbInstance.loadDatabase();
-    dbInstance.persistence.setAutocompactionInterval(86400000);
+    dbInstance.setAutocompactionInterval(86400000);
 
     // キャッシュ領域の割当
     cache = new Map();

@@ -63,10 +63,10 @@ class InteractionCtrl {
             // レスポンスハンドラにレスポンス処理をさせて終了
             await this.responseHandler.handle(response);
             await interaction.reply('コマンドを実行しました！😸', { ephemeral: true });
-            await setTimeout(() => interaction.deleteReply(), 3000);
+            await interaction.deleteReply({ timeout: 3000 });
         } catch (error) {
             await interaction.reply('コマンドの実行に失敗しました･･･😿', { ephemeral: true });
-            await setTimeout(() => interaction.deleteReply(), 3000);
+            await interaction.deleteReply({ timeout: 3000 });
         }
     }
 }

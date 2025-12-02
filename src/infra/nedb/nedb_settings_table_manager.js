@@ -6,7 +6,7 @@ const errors = require('../../core/errors').promises;
 const ISettingsRepo = require('../../domain/repo/i_settings_repo');
 const ISettingsActionRepo = require('../../domain/repo/i_settings_action_repo');
 const Settings = require('../../domain/entity/settings');
-const Datastore = require('nedb');
+const Datastore = require('@seald-io/nedb');
 
 /** @typedef {import('../../domain/entity/actions/max_count_update_action')} MaxCountUpdateAction */
 /** @typedef {import('../../domain/entity/actions/speaker_update_action')} SpeakerUpdateAction */
@@ -50,7 +50,7 @@ function init() {
     // Nedbのロード
     dbInstance = new Datastore({ filename: './db/settings.db', autoload: true });
     dbInstance.loadDatabase();
-    dbInstance.persistence.setAutocompactionInterval(86400000);
+    dbInstance.setAutocompactionInterval(86400000);
 
     // キャッシュ領域の割当
     cache = new Map();

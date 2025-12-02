@@ -5,7 +5,7 @@ const uuid = require('uuidv4').uuid;
 const errors = require('../../core/errors').promises;
 const IWordActionRepo = require('../../domain/repo/i_word_action_repo');
 const IWordDictionaryRepo = require('../../domain/repo/i_word_dictionary_repo');
-const Datastore = require('nedb');
+const Datastore = require('@seald-io/nedb');
 const WordDictionary = require('../../domain/entity/word_dictionary');
 const WordDictionaryLine = require('../../domain/entity/word_dictionary_line');
 
@@ -47,7 +47,7 @@ function init() {
     // Nedbのロード
     dbInstance = new Datastore({ filename: './db/teach.db', autoload: true });
     dbInstance.loadDatabase();
-    dbInstance.persistence.setAutocompactionInterval(86400000);
+    dbInstance.setAutocompactionInterval(86400000);
 
     // キャッシュ領域の割当
     cache = new Map();
