@@ -1,4 +1,6 @@
 const assert = require('assert').strict;
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 
 const {
     joinVoiceChannel,
@@ -183,21 +185,31 @@ class DiscordVoiceChatModel {
         if (stream && this.connection) {
             setImmediate(() => {
                 if (this.connection) {
+                    logger.debug('Creating audio resource for stream');
                     const resource = createAudioResource(stream, {
                         inputType: StreamType.Raw,
                     });
 
+                    logger.debug('Playing audio resource');
                     this.audioPlayer.play(resource, {
                         noSubscriber: NoSubscriberBehavior.Stop,
                     });
 
-                    // これいいの？
-                    this.dispatcher = true;
+                    this.dispatcher = resource;
 
                     this.audioPlayer.once(AudioPlayerStatus.Idle, () => {
+                        logger.debug('Audio playback idle, playing next');
+                        this.dispatcher = null;
+                        this.play();
+                    });
+
+                    this.audioPlayer.once('error', error => {
+                        logger.error('Audio player error:', error);
+                        this.dispatcher = null;
                         this.play();
                     });
                 } else {
+                    logger.warn('Connection lost during play');
                     this.dispatcher = null;
                 }
             });

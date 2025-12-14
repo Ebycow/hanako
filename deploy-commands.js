@@ -58,10 +58,6 @@ const commands = [
         .setDescription('教育済みの単語一覧を表示します')
         .toJSON(),
     new SlashCommandBuilder()
-        .setName('alldelete')
-        .setDescription('すべての教育単語を削除します')
-        .toJSON(),
-    new SlashCommandBuilder()
         .setName('se-add')
         .setDescription('SE（効果音）を追加します')
         .addStringOption(option =>
