@@ -76,6 +76,14 @@ class Application {
         this.bind('messageReactionRemove', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
         this.bind('voiceStateUpdate', AutoLeaveCtrl, [VoiceChatActionMiddleWare]);
 
+        // Discordクライアントのエラーハンドラ（再接続はdiscord.jsが自動で行う）
+        this.client.on('error', err => {
+            logger.warn('Discordクライアントエラーが発生。', err);
+        });
+        this.client.on('shardError', (err, shardId) => {
+            logger.warn(`シャード${shardId}でWebSocketエラーが発生。`, err);
+        });
+
         // 待受開始
         this.client.login(this.appSettings.discordBotToken);
     }

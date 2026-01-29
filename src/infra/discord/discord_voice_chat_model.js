@@ -9,6 +9,8 @@ const {
     NoSubscriberBehavior,
     StreamType,
     AudioPlayerStatus,
+    VoiceConnectionStatus,
+    entersState,
 } = require('@discordjs/voice');
 
 /** @typedef {import('stream').Readable} Readable */
@@ -140,6 +142,49 @@ class DiscordVoiceChatModel {
             channelId: voiceChannel.id,
             guildId: voiceChannel.guildId,
             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+        });
+
+        // 音声接続の切断を検知して再接続を試みる
+        this.connection.on('stateChange', async (_oldState, newState) => {
+            if (newState.status === VoiceConnectionStatus.Disconnected) {
+                logger.warn(`音声接続が切断された (server: ${this.serverId})`);
+                try {
+                    // discord.js内部の自動復帰（Signalling/Connecting状態への遷移）を待つ
+                    await Promise.race([
+                        entersState(this.connection, VoiceConnectionStatus.Signalling, 5000),
+                        entersState(this.connection, VoiceConnectionStatus.Connecting, 5000),
+                    ]);
+                    logger.info(`音声接続の自動復帰を検知 (server: ${this.serverId})`);
+                    await entersState(this.connection, VoiceConnectionStatus.Ready, 20000);
+                    logger.info(`音声接続がReady状態に復帰 (server: ${this.serverId})`);
+                } catch {
+                    // 自動復帰しなかった場合、手動でrejoinを試みる
+                    try {
+                        logger.info(`音声接続のrejoinを試行 (server: ${this.serverId})`);
+                        this.connection.rejoin();
+                        await entersState(this.connection, VoiceConnectionStatus.Ready, 20000);
+                        logger.info(`音声接続のrejoinに成功 (server: ${this.serverId})`);
+                    } catch {
+                        // rejoinも失敗した場合は接続を破棄してクリーンアップ
+                        logger.error(`音声接続の復帰に失敗。接続を破棄する (server: ${this.serverId})`);
+                        this.clearQueue();
+                        this.clearReadingChannels();
+                        this.dispatcher = null;
+                        try {
+                            this.connection.destroy();
+                        } catch {
+                            // destroy自体が失敗しても無視
+                        }
+                        this.connection = null;
+                        this.audioPlayer = null;
+                        this.playerSubscribe = null;
+                    }
+                }
+            }
+        });
+
+        this.connection.on('error', err => {
+            logger.warn(`音声接続エラー (server: ${this.serverId})`, err);
         });
 
         this.audioPlayer = createAudioPlayer();
