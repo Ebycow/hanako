@@ -7,7 +7,7 @@ on:
     branches: [master]
 
 jobs:
-  build:
+  lint-and-test:
     runs-on: windows-latest
 
     steps:
@@ -34,7 +34,7 @@ jobs:
           path: coverage/
 
   production-smoke:
-    needs: build
+    needs: lint-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/cicd'
     runs-on:
       - self-hosted
