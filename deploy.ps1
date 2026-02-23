@@ -176,10 +176,18 @@ function Install-RuntimeDependencies {
         return
     }
 
-    Write-Step "Installing runtime dependencies with npm ci --omit=dev ($ContextLabel)."
-    & $npmCmd "ci" "--omit=dev"
+    Write-Step "Installing runtime dependencies with npm ci --omit=dev --ignore-scripts=false ($ContextLabel)."
+    & $npmCmd "ci" "--omit=dev" "--ignore-scripts=false"
     if ($LASTEXITCODE -ne 0) {
-        throw "npm ci --omit=dev failed in $ContextLabel with exit code $LASTEXITCODE."
+        throw "npm ci --omit=dev --ignore-scripts=false failed in $ContextLabel with exit code $LASTEXITCODE."
+    }
+}
+
+function Assert-NativeDependencies {
+    Write-Step "Validating native runtime dependencies."
+    & $NodeExePath "-e" "require('@discordjs/opus')"
+    if ($LASTEXITCODE -ne 0) {
+        throw "@discordjs/opus failed to load. Check npm install logs and whether install scripts are allowed."
     }
 }
 
@@ -228,6 +236,7 @@ try {
     Push-Location $AppDir
     try {
         Install-RuntimeDependencies -ContextLabel "deploy"
+        Assert-NativeDependencies
 
         if (-not $SkipDeployCommands.IsPresent) {
             Write-Step "Running deploy-commands.js."
@@ -268,6 +277,7 @@ catch {
         Push-Location $AppDir
         try {
             Install-RuntimeDependencies -ContextLabel "rollback"
+            Assert-NativeDependencies
         }
         finally {
             Pop-Location
