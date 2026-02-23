@@ -307,12 +307,15 @@ class NedbFoleyDictionaryTableManager {
     async postFoleyCreateMultiple(action) {
         assert(typeof action === 'object');
         const records = await loadSharedData(action.serverId);
+        const failedItems = [];
+        const succeededKeywords = [];
 
         // 各アイテムを順次処理
         for (const item of action.items) {
             // 重複チェック（既に処理済みのアイテムも含む）
             if (records.some(record => item.keyword === record[0])) {
                 logger.warn(`キーワード重複をスキップ: ${item.keyword}`);
+                failedItems.push(`${item.keyword}: すでに登録済みです`);
                 continue;
             }
 
@@ -324,12 +327,14 @@ class NedbFoleyDictionaryTableManager {
                 });
             } catch (err) {
                 logger.warn(`ファイルダウンロード失敗をスキップ: ${item.keyword} - ${err.message}`);
+                failedItems.push(`${item.keyword}: ダウンロードに失敗しました`);
                 continue;
             }
 
             const fileType = await FileType.fromBuffer(response.data);
             if (!fileType || !fileType.mime.startsWith('audio')) {
                 logger.warn(`音声ファイル以外をスキップ: ${item.keyword}`);
+                failedItems.push(`${item.keyword}: 音声ファイルではありません`);
                 continue;
             }
 
@@ -341,14 +346,29 @@ class NedbFoleyDictionaryTableManager {
                 await this.objectStorageRepo.saveFile(action.serverId, objectKey, 'pcm', stream);
 
                 records.push([item.keyword, item.url, uuid()]);
+                succeededKeywords.push(item.keyword);
                 logger.info(`SE追加成功: ${item.keyword}`);
             } catch (err) {
                 logger.warn(`ファイル保存失敗をスキップ: ${item.keyword} - ${err.message}`);
+                failedItems.push(`${item.keyword}: 保存に失敗しました`);
                 continue;
             }
         }
 
         await persistSharedData(action.serverId);
+
+        // 全件失敗した場合はエラーを投げる
+        if (failedItems.length === action.items.length) {
+            const message = `すべてのSE登録に失敗しました :sob:\n${failedItems.join('\n')}`;
+            return errors.unexpected('foley-create-multiple-all-failed', message);
+        }
+
+        // 一部失敗した場合もエラーを投げる（成功分は既に保存済み）
+        if (failedItems.length > 0) {
+            const successNames = succeededKeywords.map(k => `『${k}』`).join(' ');
+            const message = `${successNames} は登録しました :bulb:\n登録できなかったもの:\n${failedItems.join('\n')}`;
+            return errors.disappointed('foley-create-multiple-partial-failed', message);
+        }
     }
 
     /**
