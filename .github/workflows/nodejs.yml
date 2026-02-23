@@ -75,14 +75,28 @@ jobs:
         run: |
           $nodeDir = Split-Path -Path $env:HANAKO_NODE_EXE_PATH -Parent
           $npmCmd = Join-Path -Path $nodeDir -ChildPath "npm.cmd"
-          & $npmCmd "rebuild" "@discordjs/opus" "--build-from-source" "--foreground-scripts" "--verbose"
+          & $npmCmd "rebuild" "@discordjs/opus" "--build-from-source" "--foreground-scripts" "--ignore-scripts=false" "--verbose"
           if ($LASTEXITCODE -ne 0) {
             throw "npm rebuild @discordjs/opus failed with exit code $LASTEXITCODE."
+          }
+
+          $opusCandidates = Get-ChildItem -LiteralPath ".\\node_modules\\@discordjs\\opus" -Recurse -File -Filter "opus.node" -ErrorAction SilentlyContinue
+          if ($opusCandidates) {
+            Write-Output "Found opus.node candidates after rebuild:"
+            $opusCandidates | Select-Object -ExpandProperty FullName
+          } else {
+            Write-Warning "No opus.node file was found after rebuild."
           }
 
       - name: Validate @discordjs/opus load
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
         run: |
+          $nodeDir = Split-Path -Path $env:HANAKO_NODE_EXE_PATH -Parent
+          $npmCmd = Join-Path -Path $nodeDir -ChildPath "npm.cmd"
+          $ignoreScripts = (& $npmCmd "config" "get" "ignore-scripts" | Out-String).Trim()
+          Write-Output "npm config ignore-scripts=$ignoreScripts"
+
+          & $env:HANAKO_NODE_EXE_PATH "-e" "const { resolve } = require('node:path'); const { find } = require('@discordjs/node-pre-gyp'); process.stdout.write(find(resolve(process.cwd(),'node_modules','@discordjs','opus','package.json')));"
           & $env:HANAKO_NODE_EXE_PATH "-e" "require('@discordjs/opus')"
           if ($LASTEXITCODE -ne 0) {
             throw "@discordjs/opus failed to load on the production Node runtime."

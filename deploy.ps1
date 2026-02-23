@@ -225,11 +225,17 @@ function Assert-NativeDependencies {
     }
 
     Write-Warning "@discordjs/opus failed to load after npm ci. Running explicit rebuild for diagnosis."
-    & $npmCmd "rebuild" "@discordjs/opus" "--build-from-source" "--foreground-scripts" "--verbose"
+    & $npmCmd "rebuild" "@discordjs/opus" "--build-from-source" "--foreground-scripts" "--ignore-scripts=false" "--verbose"
     $rebuildExitCode = $LASTEXITCODE
     if ($rebuildExitCode -ne 0) {
         Write-OpusDiagnostics
         throw "@discordjs/opus rebuild failed with exit code $rebuildExitCode. Build prerequisites (Python/Visual C++ Build Tools) may be missing for this Node runtime."
+    }
+
+    $opusCandidates = Get-ChildItem -LiteralPath (Join-Path $AppDir "node_modules\\@discordjs\\opus") -Recurse -File -Filter "opus.node" -ErrorAction SilentlyContinue
+    if ($opusCandidates) {
+        Write-Step "Found opus.node candidates after rebuild:"
+        $opusCandidates | Select-Object FullName
     }
 
     if (-not (Test-OpusLoad)) {
