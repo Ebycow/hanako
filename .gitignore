@@ -6,3 +6,7 @@ files
 app-config.yml
 *.bat
 .claude
+
+# nyc/istanbul coverage
+.nyc_output/
+coverage/

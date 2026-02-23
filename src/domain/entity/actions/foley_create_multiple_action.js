@@ -23,7 +23,7 @@ class FoleyCreateMultipleAction {
         assert(typeof data.id === 'string');
         assert(typeof data.serverId === 'string');
         assert(Array.isArray(data.items));
-        assert(data.items.every(item => typeof item.keyword === 'string' && typeof item.url === 'string'));
+        assert(data.items.every((item) => typeof item.keyword === 'string' && typeof item.url === 'string'));
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -61,7 +61,7 @@ class FoleyCreateMultipleAction {
     }
 
     toString() {
-        const itemsStr = this.items.map(item => `${item.keyword}:${item.url}`).join(',');
+        const itemsStr = this.items.map((item) => `${item.keyword}:${item.url}`).join(',');
         return `FoleyCreateMultipleAction(id=${this.id}, serverId=${this.serverId}, items=[${itemsStr}])`;
     }
 }

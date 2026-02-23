@@ -27,7 +27,7 @@ class InteractionParser {
         assert(dmessage.type === 'interaction');
 
         // Note: 全角スペースをマッチさせるためESLintを黙らせる
-        // eslint-disable-next-line no-irregular-whitespace
+
         let parts = dmessage.content.split(/[\s　]+/);
 
         // コマンド指定形式を判定
@@ -43,7 +43,7 @@ class InteractionParser {
         }
 
         // 空白が含まれていないこと
-        if (!parts.every(x => x.length > 0)) {
+        if (!parts.every((x) => x.length > 0)) {
             logger.info(`コマンド引数のパースに失敗 ${dmessage}`);
             return errors.abort();
         }

@@ -90,9 +90,9 @@ async function loadSharedData(serverId) {
                 let dict = doc.dict;
                 // <!-- 2020-04-01 マイグレーション処理
                 // TODO いずれ消す
-                if (dict.some(data => typeof data[2] === 'undefined')) {
+                if (dict.some((data) => typeof data[2] === 'undefined')) {
                     logger.info('マイグレーションを開始');
-                    dict = dict.map(data => {
+                    dict = dict.map((data) => {
                         if (typeof data[2] === 'undefined') {
                             data[2] = uuid();
                             logger.info(`migrate: ${data}`);
@@ -104,7 +104,7 @@ async function loadSharedData(serverId) {
                 // -->
                 resolve(dict);
             } else {
-                dbInstance.insert({ id: serverId, dict: [] }, err => {
+                dbInstance.insert({ id: serverId, dict: [] }, (err) => {
                     if (err) reject(err);
                     else resolve([]);
                 });
@@ -145,7 +145,9 @@ async function persistSharedData(serverId) {
 
     // SE辞書データのスライスを永続化
     const promise = new Promise((resolve, reject) =>
-        dbInstance.update({ id: serverId }, { $set: { dict: records.slice() } }, err => (err ? reject(err) : resolve()))
+        dbInstance.update({ id: serverId }, { $set: { dict: records.slice() } }, (err) =>
+            err ? reject(err) : resolve()
+        )
     );
     await promise;
 
@@ -183,7 +185,7 @@ function createDict(records, serverId) {
     assert(typeof records === 'object' && Array.isArray(records));
     assert(typeof serverId === 'string');
 
-    const lines = records.map(record => createLine(record, serverId));
+    const lines = records.map((record) => createLine(record, serverId));
     return new FoleyDictionary({
         id: serverId,
         serverId,
@@ -250,7 +252,7 @@ class NedbFoleyDictionaryTableManager {
 
         const records = await loadSharedData(action.serverId);
 
-        if (records.some(record => action.keyword === record[0])) {
+        if (records.some((record) => action.keyword === record[0])) {
             const message = 'すでに登録されてるみたい... :sob:';
             return errors.disappointed(`keyword-already-exists ${action} ${records}`, message);
         }
@@ -313,7 +315,7 @@ class NedbFoleyDictionaryTableManager {
         // 各アイテムを順次処理
         for (const item of action.items) {
             // 重複チェック（既に処理済みのアイテムも含む）
-            if (records.some(record => item.keyword === record[0])) {
+            if (records.some((record) => item.keyword === record[0])) {
                 logger.warn(`キーワード重複をスキップ: ${item.keyword}`);
                 failedItems.push(`${item.keyword}: すでに登録済みです`);
                 continue;
@@ -365,7 +367,7 @@ class NedbFoleyDictionaryTableManager {
 
         // 一部失敗した場合もエラーを投げる（成功分は既に保存済み）
         if (failedItems.length > 0) {
-            const successNames = succeededKeywords.map(k => `『${k}』`).join(' ');
+            const successNames = succeededKeywords.map((k) => `『${k}』`).join(' ');
             const message = `${successNames} は登録しました :bulb:\n登録できなかったもの:\n${failedItems.join('\n')}`;
             return errors.disappointed('foley-create-multiple-partial-failed', message);
         }
@@ -384,7 +386,7 @@ class NedbFoleyDictionaryTableManager {
         //       以下errorsを返す時はかならずmessageを添える
 
         const records = await loadSharedData(action.serverId);
-        const index = records.findIndex(record => action.foleyId === record[2]);
+        const index = records.findIndex((record) => action.foleyId === record[2]);
 
         if (index === -1) {
             const message = 'すでに削除されてるみたい... :sob:';
@@ -417,7 +419,7 @@ class NedbFoleyDictionaryTableManager {
 
         // 各IDに対応するレコードを検索して削除
         for (const foleyId of action.foleyIds) {
-            const index = records.findIndex(record => foleyId === record[2]);
+            const index = records.findIndex((record) => foleyId === record[2]);
             if (index !== -1) {
                 const deletedRecord = records.splice(index, 1)[0];
                 deletedRecords.push(deletedRecord);
@@ -456,14 +458,14 @@ class NedbFoleyDictionaryTableManager {
         const records = await loadSharedData(action.serverId);
 
         // 変更対象のキーワードを探す
-        const index = records.findIndex(record => record[0] === action.keywordFrom);
+        const index = records.findIndex((record) => record[0] === action.keywordFrom);
         if (index === -1) {
             const message = `Keyword ${action.keywordFrom} not found`;
             return errors.disappointed(`foley-not-found ${action.keywordFrom}`, message);
         }
 
         // 新しいキーワードが既に存在するかチェック
-        if (records.some(record => record[0] === action.keywordTo)) {
+        if (records.some((record) => record[0] === action.keywordTo)) {
             const message = `Keyword ${action.keywordTo} already exists`;
             return errors.disappointed(`keyword-already-exists ${action.keywordTo}`, message);
         }
@@ -496,7 +498,7 @@ class NedbFoleyDictionaryTableManager {
         assert(typeof audio === 'object');
 
         const records = await loadSharedData(audio.serverId);
-        const record = records.find(record => audio.foleyId === record[2]);
+        const record = records.find((record) => audio.foleyId === record[2]);
 
         if (!record) {
             return errors.disappointed(`foley-not-found ${audio} ${records}`);

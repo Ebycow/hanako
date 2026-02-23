@@ -59,7 +59,7 @@ class FoleyDeleteCommand {
         }
 
         // 単一SE削除（従来の処理）
-        const foley = this.hanako.foleyDictionary.lines.find(line => line.keyword === input.argv[0]);
+        const foley = this.hanako.foleyDictionary.lines.find((line) => line.keyword === input.argv[0]);
 
         // 単語が見つからない
         if (!foley) {
@@ -90,7 +90,7 @@ class FoleyDeleteCommand {
 
         // 各キーワードに対応するSEを検索
         for (const keyword of keywords) {
-            const foley = this.hanako.foleyDictionary.lines.find(line => line.keyword === keyword);
+            const foley = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keyword);
             if (foley) {
                 foundFoleys.push(foley);
             } else {
@@ -119,9 +119,9 @@ class FoleyDeleteCommand {
             action = new FoleyDeleteMultipleAction({
                 id: input.id,
                 serverId: input.serverId,
-                foleyIds: foundFoleys.map(f => f.id),
+                foleyIds: foundFoleys.map((f) => f.id),
             });
-            const foundNames = foundFoleys.map(f => f.keyword).join('、');
+            const foundNames = foundFoleys.map((f) => f.keyword).join('、');
             responseMessage = `1 2の…ポカン！${foundFoleys.length}個のSE設定を忘れました！『${foundNames}』 :bulb:`;
         }
 

@@ -29,7 +29,7 @@ class AppConfig {
         }
 
         const overrider = (array, ovc) => {
-            const index = array.findIndex(c => c.interface === ovc.interface);
+            const index = array.findIndex((c) => c.interface === ovc.interface);
             if (index > -1) {
                 return [array.slice(0, index), [ovc], array.slice(index + 1)].flat();
             } else {
@@ -48,8 +48,8 @@ class AppConfig {
      */
     constructor(data) {
         assert(typeof data === 'object' && Array.isArray(data));
-        assert(data.every(elem => typeof elem.interface === 'string'));
-        assert(data.every(elem => typeof elem.dependent === 'string'));
+        assert(data.every((elem) => typeof elem.interface === 'string'));
+        assert(data.every((elem) => typeof elem.dependent === 'string'));
 
         Object.defineProperty(this, 'data', {
             value: data.slice(),
@@ -77,14 +77,14 @@ class AppConfig {
 
         // DIコンフィグに従って依存クラスをプリロードする
         const allFiles = glob.sync('./src/**/*.js', { realpath: true });
-        const dependentFileNames = [...new Set(this.configurations.map(c => `${snakeCase(c.dependent)}.js`))];
-        const dependentFiles = allFiles.filter(file => dependentFileNames.some(name => file.endsWith(name)));
+        const dependentFileNames = [...new Set(this.configurations.map((c) => `${snakeCase(c.dependent)}.js`))];
+        const dependentFiles = allFiles.filter((file) => dependentFileNames.some((name) => file.endsWith(name)));
 
         if (dependentFileNames.length !== dependentFiles.length) {
             throw new TypeError(`Missing dependent file(s).\n${dependentFileNames}\n${dependentFiles}`);
         }
 
-        const loadedClasses = dependentFiles.map(file => require(file));
+        const loadedClasses = dependentFiles.map((file) => require(file));
         logger.trace(`依存クラスをロードした${loadedClasses.map((K, i) => `\n\t${i + 1}. ${K.name}`).join('')}`);
     }
 }

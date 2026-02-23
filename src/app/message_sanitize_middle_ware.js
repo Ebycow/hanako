@@ -13,11 +13,11 @@ const emojiRe = /:(.+):/;
  * @returns {string}
  */
 function replaceDiscordTags(message, text) {
-    const maybe = m => (m ? m : {});
-    const resolveRoleName = x => maybe(message.mentions.roles.find(r => x === r.id)).name;
-    const resolveChannelName = x => maybe(message.mentions.channels.find(c => x === c.id)).name;
-    const resolveUserName = x =>
-        message.mentions.members ? maybe(message.mentions.members.find(m => x === m.id)).displayName : undefined;
+    const maybe = (m) => (m ? m : {});
+    const resolveRoleName = (x) => maybe(message.mentions.roles.find((r) => x === r.id)).name;
+    const resolveChannelName = (x) => maybe(message.mentions.channels.find((c) => x === c.id)).name;
+    const resolveUserName = (x) =>
+        message.mentions.members ? maybe(message.mentions.members.find((m) => x === m.id)).displayName : undefined;
 
     let content = text;
     content = content.replace(tagRe, (_, emojiTag, userTag, channelTag, roleTag) => {
@@ -52,7 +52,7 @@ function replaceDiscordTags(message, text) {
  * @returns {string}
  */
 function replaceUnicodeEmojis(text) {
-    return emoji.replace(text, emoji => `:${emoji.key}:`);
+    return emoji.replace(text, (emoji) => `:${emoji.key}:`);
 }
 
 /**
@@ -72,7 +72,7 @@ class MessageSanitizeMiddleWare {
 
         // ステッカーの名前を読み上げテキストに変換
         if (message.stickers.size) {
-            message.stickers.forEach(sticker => {
+            message.stickers.forEach((sticker) => {
                 content += sticker.name;
             });
         }

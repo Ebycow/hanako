@@ -21,7 +21,7 @@ describe('JoinCommand', () => {
 
         specify('namesは静的に文字列の配列を返す', () => {
             JoinCommand.names.should.be.an('array').that.is.not.empty;
-            JoinCommand.names.forEach(name => name.should.be.a('string'));
+            JoinCommand.names.forEach((name) => name.should.be.a('string'));
         });
 
         specify('processメソッドを持つ', () => {

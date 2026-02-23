@@ -63,7 +63,7 @@ class WordCreateCommand {
         }
 
         // 重複チェック
-        const dup = this.hanako.wordDictionary.lines.find(line => line.from === from);
+        const dup = this.hanako.wordDictionary.lines.find((line) => line.from === from);
         if (dup) {
             return input.newChatResponse(`すでに教育済みの単語です！ 『${dup.from} ⇨ ${dup.to}』`, 'error');
         }

@@ -80,7 +80,7 @@ class MessageBuilder {
  */
 async function inferMessageTypeF(hanako, data) {
     // 花子がメンションされているかどうかの真偽値
-    const isHanakoMentioned = Array.from(data.mentionedUsers.values()).some(id => id === hanako.userId);
+    const isHanakoMentioned = Array.from(data.mentionedUsers.values()).some((id) => id === hanako.userId);
 
     // 花子がメンションされているか、コマンドプリフィクスを持つなら暫定的にコマンド
     if (isHanakoMentioned || hanako.hasCommandPrefix(data.content)) {

@@ -88,7 +88,7 @@ class DiscordVoiceChatModel {
      * キューを空にする
      */
     clearQueue() {
-        this.cue.forEach(stream => stream.destroy());
+        this.cue.forEach((stream) => stream.destroy());
         this.cue = [];
     }
 
@@ -114,7 +114,7 @@ class DiscordVoiceChatModel {
      * @returns {Promise<void>}
      */
     killStream() {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
             if (this.dispatcher !== null) {
                 this.audioPlayer.stop();
                 this.dispatcher = null;
@@ -183,7 +183,7 @@ class DiscordVoiceChatModel {
             }
         });
 
-        this.connection.on('error', err => {
+        this.connection.on('error', (err) => {
             logger.warn(`音声接続エラー (server: ${this.serverId})`, err);
         });
 
@@ -248,7 +248,7 @@ class DiscordVoiceChatModel {
                         this.play();
                     });
 
-                    this.audioPlayer.once('error', error => {
+                    this.audioPlayer.once('error', (error) => {
                         logger.error('Audio player error:', error);
                         this.dispatcher = null;
                         this.play();

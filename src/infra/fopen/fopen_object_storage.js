@@ -110,7 +110,7 @@ class FopenObjectStorage {
         const filePath = `./files/${segmentKey}/${fileType}/${fileName}.${fileType}`;
 
         return new Promise((resolve, reject) => {
-            fs.mkdir(dirPath, { recursive: true }, err => {
+            fs.mkdir(dirPath, { recursive: true }, (err) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -140,14 +140,14 @@ class FopenObjectStorage {
                         const writable = fs.createWriteStream(filePath);
                         dataStream.pipe(writable);
                         writable.on('finish', () => resolve());
-                        writable.on('error', err => reject(err));
+                        writable.on('error', (err) => reject(err));
                     })
             )
             .then(
                 () =>
                     new Promise((resolve, reject) => {
                         const record = newRecord(segmentKey, objectKey, fileType, fileName);
-                        this.db.insert(record, err => {
+                        this.db.insert(record, (err) => {
                             if (err) {
                                 reject(err);
                             } else {
@@ -184,12 +184,12 @@ class FopenObjectStorage {
                 }
             });
         }).then(
-            fileName =>
+            (fileName) =>
                 new Promise((resolve, reject) => {
                     const filePath = `./files/${segmentKey}/${fileType}/${fileName}.${fileType}`;
                     const readable = fs.createReadStream(filePath);
                     readable.on('ready', () => resolve(readable));
-                    readable.on('error', err => {
+                    readable.on('error', (err) => {
                         if (err.code === 'ENOENT') {
                             logger.warn('整合性警告：レコード有り対象ファイル無し');
                             logger.warn('error:', err);
@@ -230,12 +230,12 @@ class FopenObjectStorage {
                 }
             });
         })
-            .then(docs => {
-                const remove = async doc => {
+            .then((docs) => {
+                const remove = async (doc) => {
                     const fileName = doc.file;
                     const filePath = `./files/${segmentKey}/${fileType}/${fileName}.${fileType}`;
                     return new Promise((resolve, reject) =>
-                        fs.unlink(filePath, err => {
+                        fs.unlink(filePath, (err) => {
                             if (err) {
                                 if (err.code === 'ENOENT') {
                                     logger.warn('整合性警告：レコード有り対象ファイル無し');

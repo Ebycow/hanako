@@ -38,7 +38,7 @@ class PagerReactionFilterMiddleWare {
         }
 
         // 花子起源のリアクションがちょうど2つのときのみ扱う
-        const selfReactions = reaction.message.reactions.cache.filter(reaction => reaction.me);
+        const selfReactions = reaction.message.reactions.cache.filter((reaction) => reaction.me);
         if (selfReactions.size !== 2) {
             return errors.abort();
         }

@@ -49,7 +49,7 @@ class WordDeleteCommand {
             return input.newChatResponse('コマンドの形式が間違っています :sob: 例:`@hanako 忘却 御伽原`', 'error');
         }
 
-        const word = this.hanako.wordDictionary.lines.find(line => line.from === input.argv[0]);
+        const word = this.hanako.wordDictionary.lines.find((line) => line.from === input.argv[0]);
 
         // 単語が見つからない
         if (!word) {

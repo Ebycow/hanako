@@ -87,7 +87,7 @@ class FoleyCreateCommand {
         }
 
         // 重複チェック
-        const dup = this.hanako.foleyDictionary.lines.find(line => line.keyword === keyword);
+        const dup = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keyword);
         if (dup) {
             return input.newChatResponse(`すでに登録済みのキーワードです！ 『${dup.keyword}』`, 'error');
         }
@@ -138,7 +138,7 @@ class FoleyCreateCommand {
             }
 
             // 重複チェック
-            const dup = this.hanako.foleyDictionary.lines.find(line => line.keyword === keyword);
+            const dup = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keyword);
             if (dup) {
                 errors.push(`${attachment.name}: すでに登録済みのキーワードです！ 『${dup.keyword}』`);
                 continue;
@@ -159,7 +159,7 @@ class FoleyCreateCommand {
         }
 
         // 複数SE追加アクションを作成
-        const items = results.map(r => ({ keyword: r.keyword, url: r.url }));
+        const items = results.map((r) => ({ keyword: r.keyword, url: r.url }));
         const action = new FoleyCreateMultipleAction({
             id: input.id,
             serverId: input.serverId,
@@ -167,7 +167,7 @@ class FoleyCreateCommand {
         });
 
         let successMessage;
-        const successKeywords = results.map(r => r.keyword);
+        const successKeywords = results.map((r) => r.keyword);
         const undoCommand = `@hanako se-del ${successKeywords.join(' ')}`;
 
         if (errors.length > 0) {

@@ -58,13 +58,13 @@ class FoleySearchCommand {
 
         // 各SEとの距離を計算して近い順にソート
         const suggestions = this.hanako.foleyDictionary.lines
-            .map(line => ({
+            .map((line) => ({
                 keyword: line.keyword,
                 distance: utils.levenshteinDistance(query.toLowerCase(), line.keyword.toLowerCase()),
             }))
             .sort((a, b) => a.distance - b.distance)
             .slice(0, 5) // 上位5つ
-            .map(item => item.keyword);
+            .map((item) => item.keyword);
 
         const message = `もしかしてこれかな: ${suggestions.join(' ')}`;
         return input.newChatResponse(message);

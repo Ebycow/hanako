@@ -80,9 +80,9 @@ async function loadSharedData(serverId) {
                 let dict = doc.users;
                 // <!-- 2020-03-29 マイグレーション処理
                 // TODO いずれ消す
-                if (dict.some(data => typeof data === 'string')) {
+                if (dict.some((data) => typeof data === 'string')) {
                     logger.info('マイグレーションを開始');
-                    dict = dict.map(data => {
+                    dict = dict.map((data) => {
                         if (typeof data === 'string') {
                             const record = [];
                             record[0] = data;
@@ -98,7 +98,7 @@ async function loadSharedData(serverId) {
                 // -->
                 resolve(dict);
             } else {
-                dbInstance.insert({ id: serverId, users: [] }, err => {
+                dbInstance.insert({ id: serverId, users: [] }, (err) => {
                     if (err) reject(err);
                     else resolve([]);
                 });
@@ -139,7 +139,7 @@ async function persistSharedData(serverId) {
 
     // 辞書データのスライスを永続化
     const promise = new Promise((resolve, reject) =>
-        dbInstance.update({ id: serverId }, { $set: { users: records.slice() } }, err =>
+        dbInstance.update({ id: serverId }, { $set: { users: records.slice() } }, (err) =>
             err ? reject(err) : resolve()
         )
     );
@@ -179,7 +179,7 @@ function createDict(records, serverId) {
     assert(typeof records === 'object' && Array.isArray(records));
     assert(typeof serverId === 'string');
 
-    const lines = records.map(record => createLine(record, serverId));
+    const lines = records.map((record) => createLine(record, serverId));
     return new SilenceDictionary({
         id: serverId,
         serverId,
@@ -230,7 +230,7 @@ class NedbSilenceDictionaryTableManager {
 
         const records = await loadSharedData(action.serverId);
 
-        if (records.some(record => action.userId === record[0])) {
+        if (records.some((record) => action.userId === record[0])) {
             return errors.disappointed(`silence-already-exists ${action} ${records}`);
         }
 
@@ -249,7 +249,7 @@ class NedbSilenceDictionaryTableManager {
         assert(typeof action === 'object');
 
         const records = await loadSharedData(action.serverId);
-        const index = records.findIndex(record => action.silenceId === record[2]);
+        const index = records.findIndex((record) => action.silenceId === record[2]);
 
         if (index === -1) {
             return errors.disappointed(`silence-not-found ${action} ${records}`);

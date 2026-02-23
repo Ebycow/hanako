@@ -37,15 +37,15 @@ class AutoLeaveService {
         assert(typeof data.serverName === 'string');
         assert(typeof data.voiceChannelName === 'string');
         assert(typeof data.voiceChannelMembersId === 'object' && Array.isArray(data.voiceChannelMembersId));
-        assert(data.voiceChannelMembersId.every(id => typeof id === 'string'));
+        assert(data.voiceChannelMembersId.every((id) => typeof id === 'string'));
 
         // 花子が残っていないなら errors.disappointed
-        if (data.voiceChannelMembersId.every(id => id !== hanako.userId)) {
+        if (data.voiceChannelMembersId.every((id) => id !== hanako.userId)) {
             return errors.disappointed(`hanako-does-not-exist ${data}`);
         }
 
         // 花子以外にも誰か残っているなら中止
-        if (data.voiceChannelMembersId.some(id => id !== hanako.userId)) {
+        if (data.voiceChannelMembersId.some((id) => id !== hanako.userId)) {
             return errors.abort();
         }
 

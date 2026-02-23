@@ -97,7 +97,7 @@ class NedbRecoveryInfoTableManager {
 
         const newRecord = toRecord(info);
         return new Promise((resolve, reject) =>
-            dbInstance.insert(newRecord, err => {
+            dbInstance.insert(newRecord, (err) => {
                 if (err) {
                     reject(err);
                 } else {

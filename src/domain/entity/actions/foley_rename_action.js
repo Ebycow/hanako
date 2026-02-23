@@ -20,7 +20,7 @@ class FoleyRenameAction {
      * @param {string} data.keywordFrom SEに対応するキーワード（元）
      * @param {string} data.keywordTo SEに対応するキーワード（先）
      */
-    constructor(data) {        
+    constructor(data) {
         assert(typeof data.id === 'string');
         assert(typeof data.serverId === 'string');
         assert(typeof data.keywordFrom === 'string');

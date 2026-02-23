@@ -56,7 +56,7 @@ function toVoiceStatus(vcModel) {
         serverId: vcModel.serverId,
         state: vcModel.dispatcher === null ? 'ready' : 'speaking',
         voiceChannelId: vcModel.connection.joinConfig.channelId,
-        readingChannelsId: vcModel.readingChannels.map(c => c.id),
+        readingChannelsId: vcModel.readingChannels.map((c) => c.id),
     });
 }
 
@@ -118,7 +118,7 @@ class DiscordVoiceQueueManager {
     async loadAllVoiceStatus() {
         let vcModels = Array.from(cache.values());
         // 接続していないものを除外
-        vcModels = vcModels.filter(vc => vc.connection !== null);
+        vcModels = vcModels.filter((vc) => vc.connection !== null);
         return Promise.resolve(vcModels.map(toVoiceStatus));
     }
 

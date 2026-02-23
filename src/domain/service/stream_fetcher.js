@@ -31,7 +31,7 @@ class StreamFetcher {
         assert(typeof audios === 'object' && Array.isArray(audios));
 
         // Promise<Readable>の配列に変換
-        const promises = audios.map(audio => {
+        const promises = audios.map((audio) => {
             // 手続きタイプによって各リポジトリに振り分け
             if (audio.type === 'voiceroid') {
                 return this.vrStreamRepo.getVoiceroidStream(audio);

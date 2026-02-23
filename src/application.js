@@ -77,7 +77,7 @@ class Application {
         this.bind('voiceStateUpdate', AutoLeaveCtrl, [VoiceChatActionMiddleWare]);
 
         // Discordクライアントのエラーハンドラ（再接続はdiscord.jsが自動で行う）
-        this.client.on('error', err => {
+        this.client.on('error', (err) => {
             logger.warn('Discordクライアントエラーが発生。', err);
         });
         this.client.on('shardError', (err, shardId) => {
@@ -97,10 +97,10 @@ class Application {
      * @private
      */
     bind(event, C, middlewares = []) {
-        const chain = middlewares.map(M => M.prototype.transform.bind(new M(this.client)));
+        const chain = middlewares.map((M) => M.prototype.transform.bind(new M(this.client)));
         const method = 'on' + C.name.slice(0, -4);
         chain.push(C.prototype[method].bind(new C(this.client)));
-        const callp = zP => chain.reduce((p, f) => p.then(r => (Array.isArray(r) ? f(...r) : f(r))), zP);
+        const callp = (zP) => chain.reduce((p, f) => p.then((r) => (Array.isArray(r) ? f(...r) : f(r))), zP);
         this.client.on(event, (...args) => callp(Promise.resolve(args)).catch(handleUncaughtError));
     }
 }

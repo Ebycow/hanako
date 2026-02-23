@@ -92,7 +92,7 @@ async function loadSharedData(serverId) {
                 resolve(dict);
             } else {
                 const initialRecord = { id: uuid(), serverId, maxCount: 0, speaker: { default: 'default' } };
-                dbInstance.insert({ id: serverId, dict: initialRecord }, err => {
+                dbInstance.insert({ id: serverId, dict: initialRecord }, (err) => {
                     if (err) reject(err);
                     else resolve(initialRecord);
                 });
@@ -134,7 +134,7 @@ async function persistSharedData(serverId) {
     // データの複製を永続化
     const dict = Object.assign({}, record);
     const promise = new Promise((resolve, reject) =>
-        dbInstance.update({ id: serverId }, { $set: { dict } }, err => (err ? reject(err) : resolve()))
+        dbInstance.update({ id: serverId }, { $set: { dict } }, (err) => (err ? reject(err) : resolve()))
     );
     await promise;
 

@@ -21,7 +21,7 @@ describe('AskCommand', () => {
 
         specify('namesは静的に文字列の配列を返す', () => {
             AskCommand.names.should.be.an('array').that.is.not.empty;
-            AskCommand.names.forEach(name => name.should.be.a('string'));
+            AskCommand.names.forEach((name) => name.should.be.a('string'));
         });
 
         specify('processメソッドを持つ', () => {

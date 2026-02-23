@@ -61,7 +61,7 @@ class SilenceCreateCommand {
         const userId = input.mentionedUsers.get(username);
 
         // 重複チェック
-        const dup = this.hanako.silenceDictionary.lines.find(line => line.userId === userId);
+        const dup = this.hanako.silenceDictionary.lines.find((line) => line.userId === userId);
         if (dup) {
             const month = dup.createdAt.getMonth() + 1;
             return input.newChatResponse(

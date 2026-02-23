@@ -23,7 +23,7 @@ class FoleyDeleteMultipleAction {
         assert(typeof data.id === 'string');
         assert(typeof data.serverId === 'string');
         assert(Array.isArray(data.foleyIds));
-        assert(data.foleyIds.every(id => typeof id === 'string'));
+        assert(data.foleyIds.every((id) => typeof id === 'string'));
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),

@@ -23,7 +23,7 @@ function isTransientNetworkError(err) {
         return true;
     }
     const transientStatuses = ['502', '503', '504', '522', '524'];
-    if (err.message && transientStatuses.some(s => err.message.includes(s))) {
+    if (err.message && transientStatuses.some((s) => err.message.includes(s))) {
         return true;
     }
     return false;
@@ -34,7 +34,7 @@ function isTransientNetworkError(err) {
  */
 function init() {
     // 非キャッチ例外のハンドラ（一時的なネットワークエラーはプロセスを維持する）
-    process.on('uncaughtException', err => {
+    process.on('uncaughtException', (err) => {
         if (isTransientNetworkError(err)) {
             logger.warn('一時的なネットワークエラーが発生。プロセスを維持する。', err);
             return;
@@ -45,7 +45,7 @@ function init() {
     });
 
     // 未処理のPromiseリジェクションのハンドラ
-    process.on('unhandledRejection', err => {
+    process.on('unhandledRejection', (err) => {
         if (isTransientNetworkError(err)) {
             logger.warn('一時的なネットワークエラー(Promise)が発生。プロセスを維持する。', err);
             return;
@@ -95,7 +95,7 @@ class ProcessGracefulShutdownManager {
 
         const ensured = async () => func();
         const start = () => ensured().catch(suppress);
-        exitHook(done => start().finally(() => done()));
+        exitHook((done) => start().finally(() => done()));
     }
 }
 

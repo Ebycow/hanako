@@ -21,7 +21,7 @@ class CommandInput {
         assert(typeof data.id === 'string');
         assert(typeof data.argc === 'number' && Number.isInteger(data.argc) && data.argc >= 0);
         assert(Array.isArray(data.argv) && data.argv.length === data.argc);
-        assert(data.argv.every(x => typeof x === 'string'));
+        assert(data.argv.every((x) => typeof x === 'string'));
         assert(typeof data.origin === 'object');
 
         Object.defineProperty(this, 'data', {

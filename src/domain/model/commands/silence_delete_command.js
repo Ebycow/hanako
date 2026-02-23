@@ -59,7 +59,7 @@ class SilenceDeleteCommand {
         }
 
         const userId = input.mentionedUsers.get(username);
-        const silence = this.hanako.silenceDictionary.lines.find(line => line.userId === userId);
+        const silence = this.hanako.silenceDictionary.lines.find((line) => line.userId === userId);
 
         // ユーザーが登録されていない
         if (!silence) {

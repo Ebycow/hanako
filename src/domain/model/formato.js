@@ -14,8 +14,8 @@ class Formato {
      * @param {Hanako} hanako Formatter適用下の読み上げ花子モデル
      */
     constructor(hanako) {
-        const formats = formatters.sorted.map(F => F.prototype.format.bind(new F(hanako)));
-        this.fold = z => formats.reduce((acc, f) => f(acc), z);
+        const formats = formatters.sorted.map((F) => F.prototype.format.bind(new F(hanako)));
+        this.fold = (z) => formats.reduce((acc, f) => f(acc), z);
     }
 
     /**

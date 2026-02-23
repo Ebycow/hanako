@@ -21,8 +21,8 @@ class Reado {
      * @param {DiscordMessage} dmessage 読み上げるDiscordメッセージ
      */
     constructor(hanako, dMessage) {
-        const lifters = readers.sorted.map(R => R.prototype.read.bind(new R(hanako, dMessage)));
-        this.squash = z => lifters.reduce((arr, f) => arr.map(f).flat(), [z]);
+        const lifters = readers.sorted.map((R) => R.prototype.read.bind(new R(hanako, dMessage)));
+        this.squash = (z) => lifters.reduce((arr, f) => arr.map(f).flat(), [z]);
     }
 
     /**
@@ -38,10 +38,10 @@ class Reado {
         const plain = new Plain({ content: text });
 
         // 構築結果からNoopを除去する
-        const arr = this.squash(plain).filter(v => v.type !== 'noop');
+        const arr = this.squash(plain).filter((v) => v.type !== 'noop');
 
         // Plainは残っているはずがない
-        assert(arr.every(v => v.type !== 'plain'));
+        assert(arr.every((v) => v.type !== 'plain'));
 
         return arr;
     }

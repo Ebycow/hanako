@@ -55,15 +55,15 @@ class FoleyRenameCommand {
 
         const keywordFrom = input.argv[0];
         const keywordTo = input.argv[1];
-        
+
         // 存在チェック
-        const exs = this.hanako.foleyDictionary.lines.find(line => line.keyword === keywordFrom);
+        const exs = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keywordFrom);
         if (exs === undefined) {
             return input.newChatResponse(`そのキーワードは存在しません･･･`, 'error');
         }
 
         // 存在チェック
-        const dup = this.hanako.foleyDictionary.lines.find(line => line.keyword === keywordTo);
+        const dup = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keywordTo);
         if (dup) {
             return input.newChatResponse(`そのキーワードはすでに存在しています･･･`, 'error');
         }

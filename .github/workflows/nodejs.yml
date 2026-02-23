@@ -1,23 +1,34 @@
-# name: Node.js CI
+name: Node.js CI
 
-# on: [push]
+on:
+  push:
+    branches: [master, cicd]
+  pull_request:
+    branches: [master]
 
-# jobs:
-#   build:
+jobs:
+  build:
+    runs-on: windows-latest
 
-#     runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
 
-#     strategy:
-#       matrix:
-#         node-version: ['13.9.0']
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
-#     steps:
-#     - uses: actions/checkout@v2
-#     - name: Use Node.js ${{ matrix.node-version }}
-#       uses: actions/setup-node@v1
-#       with:
-#         node-version: ${{ matrix.node-version }}
-#     - run: npm install
-#     - run: npm test
-#       env:
-#         CI: true
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Test with coverage
+        run: npm test
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/

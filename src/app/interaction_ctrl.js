@@ -44,7 +44,7 @@ class InteractionCtrl {
         const options = interaction.options.data;
         const mentionedUsers = new Map();
         if (options.length > 0) {
-            const args = options.map(option => {
+            const args = options.map((option) => {
                 if (option.type === 6) {
                     // USER
                     const username = option.user.username;
