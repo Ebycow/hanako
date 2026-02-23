@@ -19,7 +19,7 @@ jobs:
           node-version: '24'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Lint
         run: npx eslint .
@@ -32,3 +32,57 @@ jobs:
         with:
           name: coverage-report
           path: coverage/
+
+  production-smoke:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/cicd'
+    runs-on:
+      - self-hosted
+      - windows
+    env:
+      HANAKO_NODE_EXE_PATH: ${{ vars.HANAKO_NODE_EXE_PATH }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate production node path
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:HANAKO_NODE_EXE_PATH)) {
+            throw "Repository variable 'HANAKO_NODE_EXE_PATH' is required."
+          }
+          if (-not (Test-Path -LiteralPath $env:HANAKO_NODE_EXE_PATH)) {
+            throw "HANAKO_NODE_EXE_PATH was not found: $env:HANAKO_NODE_EXE_PATH"
+          }
+
+      - name: Install production dependencies
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        run: |
+          $nodeDir = Split-Path -Path $env:HANAKO_NODE_EXE_PATH -Parent
+          $npmCmd = Join-Path -Path $nodeDir -ChildPath "npm.cmd"
+          if (-not (Test-Path -LiteralPath $npmCmd)) {
+            throw "npm.cmd was not found: $npmCmd"
+          }
+
+          & $npmCmd "ci" "--omit=dev" "--ignore-scripts=false"
+          if ($LASTEXITCODE -ne 0) {
+            throw "npm ci --omit=dev --ignore-scripts=false failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Rebuild @discordjs/opus from source
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        run: |
+          $nodeDir = Split-Path -Path $env:HANAKO_NODE_EXE_PATH -Parent
+          $npmCmd = Join-Path -Path $nodeDir -ChildPath "npm.cmd"
+          & $npmCmd "rebuild" "@discordjs/opus" "--build-from-source" "--foreground-scripts" "--verbose"
+          if ($LASTEXITCODE -ne 0) {
+            throw "npm rebuild @discordjs/opus failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Validate @discordjs/opus load
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        run: |
+          & $env:HANAKO_NODE_EXE_PATH "-e" "require('@discordjs/opus')"
+          if ($LASTEXITCODE -ne 0) {
+            throw "@discordjs/opus failed to load on the production Node runtime."
+          }

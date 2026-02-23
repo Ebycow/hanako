@@ -10,3 +10,5 @@ app-config.yml
 # nyc/istanbul coverage
 .nyc_output/
 coverage/
+
+*.pid
