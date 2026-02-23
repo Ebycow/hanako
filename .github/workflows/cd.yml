@@ -1,0 +1,82 @@
+﻿name: CD Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - Node.js CI
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hanako-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'cicd'
+    runs-on:
+      - self-hosted
+      - windows
+    timeout-minutes: 30
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Validate deploy variables
+        shell: pwsh
+        env:
+          HANAKO_APP_DIR: ${{ vars.HANAKO_APP_DIR }}
+          HANAKO_NODE_EXE_PATH: ${{ vars.HANAKO_NODE_EXE_PATH }}
+        run: |
+          $requiredVars = @(
+            "HANAKO_APP_DIR",
+            "HANAKO_NODE_EXE_PATH"
+          )
+
+          foreach ($name in $requiredVars) {
+            $value = [Environment]::GetEnvironmentVariable($name)
+            if ([string]::IsNullOrWhiteSpace($value)) {
+              throw "Repository variable '$name' is required."
+            }
+          }
+
+      - name: Deploy
+        shell: pwsh
+        env:
+          HANAKO_APP_DIR: ${{ vars.HANAKO_APP_DIR }}
+          HANAKO_NODE_EXE_PATH: ${{ vars.HANAKO_NODE_EXE_PATH }}
+          HANAKO_SKIP_DEPLOY_COMMANDS: ${{ vars.HANAKO_SKIP_DEPLOY_COMMANDS }}
+          HANAKO_PID_FILE_NAME: ${{ vars.HANAKO_PID_FILE_NAME }}
+          HANAKO_WINDOW_TITLE: ${{ vars.HANAKO_WINDOW_TITLE }}
+        run: |
+          $deployArgs = @(
+            "-AppDir", $env:HANAKO_APP_DIR,
+            "-Branch", "${{ github.event.workflow_run.head_branch }}",
+            "-CommitSha", "${{ github.event.workflow_run.head_sha }}",
+            "-NodeExePath", $env:HANAKO_NODE_EXE_PATH
+          )
+
+          if (-not [string]::IsNullOrWhiteSpace($env:HANAKO_PID_FILE_NAME)) {
+            $deployArgs += @("-PidFileName", $env:HANAKO_PID_FILE_NAME)
+          }
+
+          if (-not [string]::IsNullOrWhiteSpace($env:HANAKO_WINDOW_TITLE)) {
+            $deployArgs += @("-WindowTitle", $env:HANAKO_WINDOW_TITLE)
+          }
+
+          if ($env:HANAKO_SKIP_DEPLOY_COMMANDS -eq "true") {
+            $deployArgs += "-SkipDeployCommands"
+          }
+
+          & .\deploy.ps1 @deployArgs
+
