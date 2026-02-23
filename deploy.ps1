@@ -256,6 +256,9 @@ $nodeDir = Split-Path -Path $NodeExePath -Parent
 $npmCmd = Join-Path -Path $nodeDir -ChildPath "npm.cmd"
 Assert-PathExists -Path $npmCmd -Label "npm.cmd"
 
+# Ensure lifecycle scripts (e.g. node-pre-gyp) resolve to the same Node runtime as deploy.
+$env:Path = "$nodeDir;$($env:Path)"
+
 $targetCommit = $CommitSha.Trim()
 if ([string]::IsNullOrWhiteSpace($targetCommit)) {
     throw "CommitSha is required."
