@@ -111,8 +111,29 @@ function Start-HanakoConsole {
         New-Item -Path (Join-Path $AppDir "log") -ItemType Directory -Force | Out-Null
     }
 
-    $cmdLine = "title $WindowTitle && cd /d `"$AppDir`" && `"$NodeExePath`" index.js"
-    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/k", $cmdLine -WorkingDirectory $AppDir -PassThru
+    $runnerTrackingId = $env:RUNNER_TRACKING_ID
+    if (-not [string]::IsNullOrWhiteSpace($runnerTrackingId)) {
+        Write-Step "Detaching launched process from GitHub Actions runner tracking."
+        $env:RUNNER_TRACKING_ID = ""
+    }
+
+    $cmdLinePrefix = ""
+    if (-not [string]::IsNullOrWhiteSpace($runnerTrackingId)) {
+        $cmdLinePrefix = "set RUNNER_TRACKING_ID= && "
+    }
+
+    $cmdLine = "${cmdLinePrefix}title $WindowTitle && cd /d `"$AppDir`" && `"$NodeExePath`" index.js"
+    try {
+        $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/k", $cmdLine -WorkingDirectory $AppDir -PassThru
+    }
+    finally {
+        if ($null -ne $runnerTrackingId) {
+            $env:RUNNER_TRACKING_ID = $runnerTrackingId
+        }
+        else {
+            Remove-Item Env:RUNNER_TRACKING_ID -ErrorAction SilentlyContinue
+        }
+    }
 
     if (-not $proc) {
         throw "Failed to start Hanako console process."
