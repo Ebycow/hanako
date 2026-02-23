@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node index",
     "debug": "node index --trace-warnings --trace-uncaught",
-    "test": "mocha --reporter nyan --recursive"
+    "test": "mocha --reporter nyan --recursive",
+    "prepare": "node -e \"try { require.resolve('husky'); require('child_process').execSync('husky', { stdio: 'inherit', shell: true }); } catch (e) { if (e && e.code === 'MODULE_NOT_FOUND') process.exit(0); throw e; }\""
   },
   "keywords": [],
   "author": "",
