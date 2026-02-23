@@ -13,6 +13,13 @@ const ActionHandler = require('../../src/domain/service/action_handler');
 describe('ActionHandler', () => {
     let vcActionRepo, wordActionRepo, silenceActionRepo, foleyActionRepo, settingsActionRepo;
     let handler;
+    let dispatchTargets;
+    let allRepoStubs;
+
+    function assertExclusiveDispatch(expectedStub, action) {
+        sinon.assert.calledOnceWithExactly(expectedStub, action);
+        allRepoStubs.filter((stub) => stub !== expectedStub).forEach((stub) => sinon.assert.notCalled(stub));
+    }
 
     beforeEach(() => {
         vcActionRepo = {
@@ -49,6 +56,26 @@ describe('ActionHandler', () => {
             foleyActionRepo,
             settingsActionRepo
         );
+
+        dispatchTargets = {
+            join_voice: vcActionRepo.postJoinVoice,
+            leave_voice: vcActionRepo.postLeaveVoice,
+            seibai: vcActionRepo.postSeibai,
+            word_create: wordActionRepo.postWordCreate,
+            word_delete: wordActionRepo.postWordDelete,
+            word_clear: wordActionRepo.postWordClear,
+            silence_create: silenceActionRepo.postSilenceCreate,
+            silence_delete: silenceActionRepo.postSilenceDelete,
+            silence_clear: silenceActionRepo.postSilenceClear,
+            foley_create: foleyActionRepo.postFoleyCreate,
+            foley_create_multiple: foleyActionRepo.postFoleyCreateMultiple,
+            foley_delete: foleyActionRepo.postFoleyDelete,
+            foley_delete_multiple: foleyActionRepo.postFoleyDeleteMultiple,
+            foley_rename: foleyActionRepo.postFoleyRename,
+            max_count_update: settingsActionRepo.postMaxCountUpdate,
+            speaker_update: settingsActionRepo.postSpeakerUpdate,
+        };
+        allRepoStubs = Object.values(dispatchTargets);
     });
 
     afterEach(() => {
@@ -60,19 +87,19 @@ describe('ActionHandler', () => {
             specify('join_voiceはvcActionRepo.postJoinVoiceを呼ぶ', async () => {
                 const action = { type: 'join_voice' };
                 await handler.handle(action);
-                vcActionRepo.postJoinVoice.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.join_voice, action);
             });
 
             specify('leave_voiceはvcActionRepo.postLeaveVoiceを呼ぶ', async () => {
                 const action = { type: 'leave_voice' };
                 await handler.handle(action);
-                vcActionRepo.postLeaveVoice.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.leave_voice, action);
             });
 
             specify('seibaiはvcActionRepo.postSeibaiを呼ぶ', async () => {
                 const action = { type: 'seibai' };
                 await handler.handle(action);
-                vcActionRepo.postSeibai.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.seibai, action);
             });
         });
 
@@ -80,19 +107,19 @@ describe('ActionHandler', () => {
             specify('word_createはwordActionRepo.postWordCreateを呼ぶ', async () => {
                 const action = { type: 'word_create' };
                 await handler.handle(action);
-                wordActionRepo.postWordCreate.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.word_create, action);
             });
 
             specify('word_deleteはwordActionRepo.postWordDeleteを呼ぶ', async () => {
                 const action = { type: 'word_delete' };
                 await handler.handle(action);
-                wordActionRepo.postWordDelete.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.word_delete, action);
             });
 
             specify('word_clearはwordActionRepo.postWordClearを呼ぶ', async () => {
                 const action = { type: 'word_clear' };
                 await handler.handle(action);
-                wordActionRepo.postWordClear.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.word_clear, action);
             });
         });
 
@@ -100,19 +127,19 @@ describe('ActionHandler', () => {
             specify('silence_createはsilenceActionRepo.postSilenceCreateを呼ぶ', async () => {
                 const action = { type: 'silence_create' };
                 await handler.handle(action);
-                silenceActionRepo.postSilenceCreate.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.silence_create, action);
             });
 
             specify('silence_deleteはsilenceActionRepo.postSilenceDeleteを呼ぶ', async () => {
                 const action = { type: 'silence_delete' };
                 await handler.handle(action);
-                silenceActionRepo.postSilenceDelete.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.silence_delete, action);
             });
 
             specify('silence_clearはsilenceActionRepo.postSilenceClearを呼ぶ', async () => {
                 const action = { type: 'silence_clear' };
                 await handler.handle(action);
-                silenceActionRepo.postSilenceClear.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.silence_clear, action);
             });
         });
 
@@ -120,31 +147,31 @@ describe('ActionHandler', () => {
             specify('foley_createはfoleyActionRepo.postFoleyCreateを呼ぶ', async () => {
                 const action = { type: 'foley_create' };
                 await handler.handle(action);
-                foleyActionRepo.postFoleyCreate.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.foley_create, action);
             });
 
             specify('foley_create_multipleはfoleyActionRepo.postFoleyCreateMultipleを呼ぶ', async () => {
                 const action = { type: 'foley_create_multiple' };
                 await handler.handle(action);
-                foleyActionRepo.postFoleyCreateMultiple.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.foley_create_multiple, action);
             });
 
             specify('foley_deleteはfoleyActionRepo.postFoleyDeleteを呼ぶ', async () => {
                 const action = { type: 'foley_delete' };
                 await handler.handle(action);
-                foleyActionRepo.postFoleyDelete.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.foley_delete, action);
             });
 
             specify('foley_delete_multipleはfoleyActionRepo.postFoleyDeleteMultipleを呼ぶ', async () => {
                 const action = { type: 'foley_delete_multiple' };
                 await handler.handle(action);
-                foleyActionRepo.postFoleyDeleteMultiple.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.foley_delete_multiple, action);
             });
 
             specify('foley_renameはfoleyActionRepo.postFoleyRenameを呼ぶ', async () => {
                 const action = { type: 'foley_rename' };
                 await handler.handle(action);
-                foleyActionRepo.postFoleyRename.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.foley_rename, action);
             });
         });
 
@@ -152,13 +179,13 @@ describe('ActionHandler', () => {
             specify('max_count_updateはsettingsActionRepo.postMaxCountUpdateを呼ぶ', async () => {
                 const action = { type: 'max_count_update' };
                 await handler.handle(action);
-                settingsActionRepo.postMaxCountUpdate.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.max_count_update, action);
             });
 
             specify('speaker_updateはsettingsActionRepo.postSpeakerUpdateを呼ぶ', async () => {
                 const action = { type: 'speaker_update' };
                 await handler.handle(action);
-                settingsActionRepo.postSpeakerUpdate.calledOnceWith(action).should.be.true;
+                assertExclusiveDispatch(dispatchTargets.speaker_update, action);
             });
         });
 
@@ -171,6 +198,7 @@ describe('ActionHandler', () => {
                 } catch (e) {
                     e.message.should.equal('unreachable');
                 }
+                allRepoStubs.forEach((stub) => sinon.assert.notCalled(stub));
             });
         });
     });
