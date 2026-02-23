@@ -10,7 +10,8 @@ param(
     [string]$NodeExePath = "",
     [string]$PidFileName = ".hanako-console.pid",
     [string]$WindowTitle = "Hanako Bot",
-    [switch]$SkipDeployCommands
+    [switch]$SkipDeployCommands,
+    [switch]$SkipNpmInstall
 )
 
 $ErrorActionPreference = "Stop"
@@ -164,6 +165,24 @@ function Assert-AppStarted {
     throw "Startup log entry 'Logged in as' was not found in $appLog within ${TimeoutSec}s."
 }
 
+function Install-RuntimeDependencies {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ContextLabel
+    )
+
+    if ($SkipNpmInstall.IsPresent) {
+        Write-Step "Skipping npm install in $ContextLabel because -SkipNpmInstall was specified."
+        return
+    }
+
+    Write-Step "Installing runtime dependencies with npm ci --omit=dev ($ContextLabel)."
+    & $npmCmd "ci" "--omit=dev"
+    if ($LASTEXITCODE -ne 0) {
+        throw "npm ci --omit=dev failed in $ContextLabel with exit code $LASTEXITCODE."
+    }
+}
+
 Assert-PathExists -Path $AppDir -Label "AppDir"
 $AppDir = (Resolve-Path -LiteralPath $AppDir).Path
 
@@ -208,11 +227,7 @@ try {
 
     Push-Location $AppDir
     try {
-        Write-Step "Installing runtime dependencies with npm ci --omit=dev."
-        & $npmCmd "ci" "--omit=dev"
-        if ($LASTEXITCODE -ne 0) {
-            throw "npm ci --omit=dev failed with exit code $LASTEXITCODE."
-        }
+        Install-RuntimeDependencies -ContextLabel "deploy"
 
         if (-not $SkipDeployCommands.IsPresent) {
             Write-Step "Running deploy-commands.js."
@@ -252,10 +267,7 @@ catch {
 
         Push-Location $AppDir
         try {
-            & $npmCmd "ci" "--omit=dev"
-            if ($LASTEXITCODE -ne 0) {
-                throw "npm ci --omit=dev failed during rollback with exit code $LASTEXITCODE."
-            }
+            Install-RuntimeDependencies -ContextLabel "rollback"
         }
         finally {
             Pop-Location

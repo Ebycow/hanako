@@ -33,7 +33,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Validate deploy variables
-        shell: pwsh
+        shell: powershell
         env:
           HANAKO_APP_DIR: ${{ vars.HANAKO_APP_DIR }}
           HANAKO_NODE_EXE_PATH: ${{ vars.HANAKO_NODE_EXE_PATH }}
@@ -51,7 +51,7 @@ jobs:
           }
 
       - name: Deploy
-        shell: pwsh
+        shell: powershell
         env:
           HANAKO_APP_DIR: ${{ vars.HANAKO_APP_DIR }}
           HANAKO_NODE_EXE_PATH: ${{ vars.HANAKO_NODE_EXE_PATH }}
