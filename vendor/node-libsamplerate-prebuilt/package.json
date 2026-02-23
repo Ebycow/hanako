@@ -1,0 +1,21 @@
+{
+  "name": "node-libsamplerate",
+  "version": "1.0.0-prebuilt",
+  "description": "Prebuilt node-libsamplerate binary for hanako (Windows x64)",
+  "main": "index.js",
+  "license": "MIT",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "index.js",
+    "LICENSE",
+    "build/Release/node-libsamplerate.node"
+  ],
+  "dependencies": {
+    "bindings": "^1.3.0"
+  }
+}
