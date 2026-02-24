@@ -1,11 +1,11 @@
 const should = require('chai').should();
 const FoleyCreate = require('../../src/domain/model/commands/foley_create_command');
-const DiscordMessage = require('../../src/domain/entity/discord_message');
-const CommandInput = require('../../src/domain/entity/command_input');
-const Settings = require('../../src/domain/entity/settings');
-const ServerStatus = require('../../src/domain/entity/server_status');
-const FoleyDictionary = require('../../src/domain/entity/foley_dictionary');
-const Hanako = require('../../src/domain/model/hanako');
+const {
+    basicHanako,
+    commandInputBlueprint,
+    foleyDictionaryLineBlueprint,
+    FoleyDictionary,
+} = require('../helpers/blueprints');
 
 /************************************************************************
  * FoleyCreateCommandクラス単体スペック
@@ -17,32 +17,11 @@ const Hanako = require('../../src/domain/model/hanako');
  *          ∧ 出力音声に対応するリソース文字列のコードポイント数が３００以内のこと
  *          ∧ 出力音声に対応するリソース文字列が一般的なURL形式を満たしているか
  *          ∧ 既に当該キーワードが登録されていない
- *          ∧ 既に上限数（１００登録）をこえてしまっていない
- * 備考：なし
+ *          ∧ 既に上限数（10000登録）をこえてしまっていない
+ * 備考：URL指定方式と添付ファイル方式の2モードあり
  ***********************************************************************/
 
 describe('FoleyCreateCommand', () => {
-    // helper
-    function settingsBlueprint() {
-        return {
-            id: 'mock-settings-id',
-            serverId: 'mock-server-id',
-            maxCount: 0,
-            speaker: { userId: 'default', name: 'default' },
-        };
-    }
-
-    // helper
-    function serverStatusBlueprint() {
-        return {
-            id: 'mock-status-id',
-            serverId: 'mock-server-id',
-            serverName: 'mock-server-name',
-            userId: 'mock-user-id',
-            prefix: 'mock-prefix',
-        };
-    }
-
     describe('Commandクラスメタスペック', () => {
         specify('typeは文字列を返す', () => {
             const sub = new FoleyCreate();
@@ -61,44 +40,175 @@ describe('FoleyCreateCommand', () => {
     });
 
     describe('#process', () => {
-        context('正常系', () => {
+        context('正常系 - URL指定方式', () => {
             specify('正しいSE追加アクションレスポンスを返す', () => {
-                const mockEntityId = 'mock-001';
-                const mockTextChannelId = 'mock-text-001';
-                const mockDiscirdServerId = 'mock-discord-server-001';
-
-                const dmessage = new DiscordMessage({
-                    id: mockEntityId,
-                    content: 'dummy',
-                    type: 'command',
-                    serverId: mockDiscirdServerId,
-                    channelId: mockTextChannelId,
-                    userId: 'dummy-user-id',
-                    voiceChannelId: null,
-                    mentionedUsers: new Map(),
-                });
-                const input = new CommandInput({
-                    id: mockEntityId,
-                    argc: 2,
-                    argv: ['hello', 'http://hello:123/some.mp3'],
-                    origin: dmessage,
-                });
-
-                const stb = settingsBlueprint();
-                const ssb = serverStatusBlueprint();
-                const theEmptyDict = new FoleyDictionary({ id: 'dummg', serverId: 'dummy', lines: [] });
-                const hanako = new Hanako(new Settings(stb), new ServerStatus(ssb), null, null, null, theEmptyDict);
-
-                const sub = new FoleyCreate(hanako);
+                const input = commandInputBlueprint({ argc: 2, argv: ['hello', 'http://example.com/se.mp3'] });
+                const sub = new FoleyCreate(basicHanako());
                 const res = sub.process(input);
 
-                // 正しいアクションレスポンス
                 res.type.should.equal('action');
-                res.id.should.equal(mockEntityId);
                 res.action.type.should.equal('foley_create');
-                res.action.serverId.should.equal(mockDiscirdServerId);
+                res.action.keyword.should.equal('hello');
+                res.action.url.should.equal('http://example.com/se.mp3');
                 res.onSuccess.code.should.equal('simple');
                 res.onFailure.code.should.equal('error');
+            });
+        });
+
+        context('正常系 - 添付ファイル方式', () => {
+            specify('1ファイル+0引数 → foley_create_multipleアクション', () => {
+                const attachments = [{ name: 'ドンッ.wav', url: 'http://cdn.example.com/don.wav' }];
+                const input = commandInputBlueprint({ argc: 0, argv: [] }, { attachments });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('action');
+                res.action.type.should.equal('foley_create_multiple');
+                res.action.items.should.have.lengthOf(1);
+                res.action.items[0].keyword.should.equal('ドンッ'); // 拡張子除去
+            });
+
+            specify('1ファイル+1引数(SE名) → foley_createアクション', () => {
+                const attachments = [{ name: 'audio.wav', url: 'http://cdn.example.com/audio.wav' }];
+                const input = commandInputBlueprint({ argc: 1, argv: ['カスタム名'] }, { attachments });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('action');
+                res.action.type.should.equal('foley_create');
+                res.action.keyword.should.equal('カスタム名');
+            });
+
+            specify('複数ファイル+0引数 → foley_create_multipleアクション', () => {
+                const attachments = [
+                    { name: 'ドンッ.wav', url: 'http://cdn.example.com/don.wav' },
+                    { name: 'バシッ.mp3', url: 'http://cdn.example.com/bashi.mp3' },
+                ];
+                const input = commandInputBlueprint({ argc: 0, argv: [] }, { attachments });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('action');
+                res.action.type.should.equal('foley_create_multiple');
+                res.action.items.should.have.lengthOf(2);
+            });
+        });
+
+        context('異常系 - 引数不正', () => {
+            specify('0ファイル+0引数 → エラー', () => {
+                const input = commandInputBlueprint({ argc: 0, argv: [] });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('0ファイル+1引数 → エラー', () => {
+                const input = commandInputBlueprint({ argc: 1, argv: ['hello'] });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('0ファイル+3引数 → エラー', () => {
+                const input = commandInputBlueprint({ argc: 3, argv: ['a', 'b', 'c'] });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('複数ファイル+1引数 → エラー', () => {
+                const attachments = [
+                    { name: 'a.wav', url: 'http://cdn.example.com/a.wav' },
+                    { name: 'b.wav', url: 'http://cdn.example.com/b.wav' },
+                ];
+                const input = commandInputBlueprint({ argc: 1, argv: ['SE名'] }, { attachments });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('添付ファイル+2引数以上 → エラー', () => {
+                const attachments = [{ name: 'a.wav', url: 'http://cdn.example.com/a.wav' }];
+                const input = commandInputBlueprint({ argc: 2, argv: ['a', 'b'] }, { attachments });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+        });
+
+        context('異常系 - バリデーション', () => {
+            specify('1文字キーワード → エラー', () => {
+                const input = commandInputBlueprint({ argc: 2, argv: ['あ', 'http://example.com/se.mp3'] });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('50文字以上キーワード → エラー', () => {
+                const longKeyword = 'あ'.repeat(50);
+                const input = commandInputBlueprint({ argc: 2, argv: [longKeyword, 'http://example.com/se.mp3'] });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('URL300文字超 → エラー', () => {
+                const longUrl = 'http://example.com/' + 'a'.repeat(300);
+                const input = commandInputBlueprint({ argc: 2, argv: ['テスト', longUrl] });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('不正URL形式 → エラー', () => {
+                const input = commandInputBlueprint({ argc: 2, argv: ['テスト', 'これはURLではない'] });
+                const sub = new FoleyCreate(basicHanako());
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+        });
+
+        context('異常系 - 重複・上限', () => {
+            specify('既存キーワードと重複 → エラー', () => {
+                const line = foleyDictionaryLineBlueprint({ keyword: 'hello' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
+                const input = commandInputBlueprint({ argc: 2, argv: ['hello', 'http://example.com/se.mp3'] });
+                const sub = new FoleyCreate(basicHanako({ foleyDictionary: fd }));
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('10000件登録済み → エラー', () => {
+                const lines = Array.from({ length: 10000 }, (_, i) =>
+                    foleyDictionaryLineBlueprint({ id: `fdl-${i}`, keyword: `kw${i}` })
+                );
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines });
+                const input = commandInputBlueprint({ argc: 2, argv: ['新規SE', 'http://example.com/se.mp3'] });
+                const sub = new FoleyCreate(basicHanako({ foleyDictionary: fd }));
+                const res = sub.process(input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
             });
         });
     });

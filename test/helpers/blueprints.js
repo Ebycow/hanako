@@ -9,6 +9,7 @@ const SilenceDictionary = require('../../src/domain/entity/silence_dictionary');
 const SilenceDictionaryLine = require('../../src/domain/entity/silence_dictionary_line');
 const FoleyDictionary = require('../../src/domain/entity/foley_dictionary');
 const FoleyDictionaryLine = require('../../src/domain/entity/foley_dictionary_line');
+const FoleyAudio = require('../../src/domain/entity/audios/foley_audio');
 const Hanako = require('../../src/domain/model/hanako');
 
 function settingsBlueprint(overrides = {}) {
@@ -128,6 +129,18 @@ function emptyWordDictionary(serverId = 'mock-server-id') {
     return new WordDictionary({ id: 'mock-wd-id', serverId, lines: [] });
 }
 
+function foleyAudioBlueprint(overrides = {}) {
+    return new FoleyAudio(
+        Object.assign(
+            {
+                serverId: 'mock-server-id',
+                foleyId: 'mock-fdl-id',
+            },
+            overrides
+        )
+    );
+}
+
 function emptyFoleyDictionary(serverId = 'mock-server-id') {
     return new FoleyDictionary({ id: 'mock-fd-id', serverId, lines: [] });
 }
@@ -168,6 +181,7 @@ module.exports = {
     commandInputBlueprint,
     wordDictionaryLineBlueprint,
     foleyDictionaryLineBlueprint,
+    foleyAudioBlueprint,
     silenceDictionaryLineBlueprint,
     emptyWordDictionary,
     emptyFoleyDictionary,
@@ -185,5 +199,6 @@ module.exports = {
     SilenceDictionaryLine,
     FoleyDictionary,
     FoleyDictionaryLine,
+    FoleyAudio,
     Hanako,
 };
