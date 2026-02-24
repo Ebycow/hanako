@@ -94,13 +94,34 @@ function Stop-HanakoConsole {
         return
     }
 
-    Write-Step "Stopping Hanako process tree (PID: $hanakoPid)."
-    & taskkill /PID $hanakoPid /T /F | Out-Null
-    if (($LASTEXITCODE -ne 0) -and ($LASTEXITCODE -ne 128)) {
-        throw "taskkill failed with exit code $LASTEXITCODE."
+    # Attempt graceful shutdown by sending WM_CLOSE to the console window.
+    # This generates CTRL_CLOSE_EVENT, allowing async-exit-hook handlers to run.
+    Write-Step "Requesting graceful shutdown (PID: $hanakoPid)."
+    & taskkill /PID $hanakoPid 2>&1 | Out-Null
+
+    $gracefulTimeoutSec = 10
+    $deadline = (Get-Date).AddSeconds($gracefulTimeoutSec)
+    $exited = $false
+    while ((Get-Date) -lt $deadline) {
+        if (-not (Get-Process -Id $hanakoPid -ErrorAction SilentlyContinue)) {
+            $exited = $true
+            break
+        }
+        Start-Sleep -Milliseconds 500
     }
 
-    Start-Sleep -Seconds 2
+    if ($exited) {
+        Write-Step "Process exited gracefully."
+    }
+    else {
+        Write-Step "Graceful shutdown timed out (${gracefulTimeoutSec}s). Force-killing process tree (PID: $hanakoPid)."
+        & taskkill /PID $hanakoPid /T /F | Out-Null
+        if (($LASTEXITCODE -ne 0) -and ($LASTEXITCODE -ne 128)) {
+            throw "taskkill failed with exit code $LASTEXITCODE."
+        }
+        Start-Sleep -Seconds 2
+    }
+
     Remove-Item -LiteralPath $pidFilePath -Force -ErrorAction SilentlyContinue
 }
 
