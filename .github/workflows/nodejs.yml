@@ -2,7 +2,7 @@ name: Node.js CI
 
 on:
   push:
-    branches: [master, cicd]
+    branches: [master, slashbros]
   pull_request:
     branches: [master]
 
@@ -35,7 +35,7 @@ jobs:
 
   production-smoke:
     needs: lint-and-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/cicd'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/slashbros'
     runs-on:
       - self-hosted
       - windows

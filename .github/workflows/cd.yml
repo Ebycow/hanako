@@ -19,7 +19,7 @@ jobs:
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'cicd'
+      github.event.workflow_run.head_branch == 'slashbros'
     runs-on:
       - self-hosted
       - windows
