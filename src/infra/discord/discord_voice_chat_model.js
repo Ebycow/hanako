@@ -145,9 +145,15 @@ class DiscordVoiceChatModel {
         });
 
         // 音声接続の切断を検知して再接続を試みる
+        // leave()による意図的な切断ではconnectionがnullになるため、
+        // 各段階でconnectionの存在を確認してから処理を続行する
         this.connection.on('stateChange', async (_oldState, newState) => {
             if (newState.status === VoiceConnectionStatus.Disconnected) {
                 logger.warn(`音声接続が切断された (server: ${this.serverId})`);
+                if (this.connection === null) {
+                    logger.info(`意図的な切断のため復帰処理をスキップ (server: ${this.serverId})`);
+                    return;
+                }
                 try {
                     // discord.js内部の自動復帰（Signalling/Connecting状態への遷移）を待つ
                     await Promise.race([
@@ -155,9 +161,14 @@ class DiscordVoiceChatModel {
                         entersState(this.connection, VoiceConnectionStatus.Connecting, 5000),
                     ]);
                     logger.info(`音声接続の自動復帰を検知 (server: ${this.serverId})`);
+                    if (this.connection === null) return;
                     await entersState(this.connection, VoiceConnectionStatus.Ready, 20000);
                     logger.info(`音声接続がReady状態に復帰 (server: ${this.serverId})`);
                 } catch {
+                    if (this.connection === null) {
+                        logger.info(`復帰待機中に切断されたため復帰処理をスキップ (server: ${this.serverId})`);
+                        return;
+                    }
                     // 自動復帰しなかった場合、手動でrejoinを試みる
                     try {
                         logger.info(`音声接続のrejoinを試行 (server: ${this.serverId})`);
@@ -204,8 +215,11 @@ class DiscordVoiceChatModel {
             this.audioPlayer.stop();
             this.audioPlayer = null;
 
-            this.connection.disconnect();
+            // connectionを先にnullにしてからdestroyすることで、
+            // stateChangeハンドラが復帰処理をスキップできるようにする
+            const conn = this.connection;
             this.connection = null;
+            conn.destroy();
         }
     }
 
