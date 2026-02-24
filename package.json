@@ -18,7 +18,10 @@
   "license": "ISC",
   "type": "commonjs",
   "engines": {
-    "node": ">=24.0.0"
+    "node": "24.11.1"
+  },
+  "volta": {
+    "node": "24.11.1"
   },
   "dependencies": {
     "@discordjs/opus": "^0.10.0",
