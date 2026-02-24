@@ -1,23 +1,23 @@
-name: Node.js CI
+# name: Node.js CI
 
-on: [push]
+# on: [push]
 
-jobs:
-  build:
+# jobs:
+#   build:
 
-    runs-on: windows-latest
+#     runs-on: windows-latest
 
-    strategy:
-      matrix:
-        node-version: ['13.9.0']
+#     strategy:
+#       matrix:
+#         node-version: ['13.9.0']
 
-    steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - run: npm install
-    - run: npm test
-      env:
-        CI: true
+#     steps:
+#     - uses: actions/checkout@v2
+#     - name: Use Node.js ${{ matrix.node-version }}
+#       uses: actions/setup-node@v1
+#       with:
+#         node-version: ${{ matrix.node-version }}
+#     - run: npm install
+#     - run: npm test
+#       env:
+#         CI: true

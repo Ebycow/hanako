@@ -1,30 +1,30 @@
 const assert = require('assert').strict;
 
 /**
- * キャラクター名更新アクションのエンティティ
+ * SE追加アクションのエンティティ
  */
-class SpeakerUpdateAction {
+class FoleyRenameAction {
     /**
-     * @type {'speaker_update'}
+     * @type {'foley_rename'}
      */
     get type() {
-        return 'speaker_update';
+        return 'foley_rename';
     }
 
     /**
-     * キャラクター名更新エンティティを構築
+     * FoleyCreateActionエンティティを構築
      *
      * @param {object} data
      * @param {string} data.id エンティティID
      * @param {string} data.serverId 対象DiscordサーバーのID
-     * @param {string} data.userId 対象DiscordユーザーのID
-     * @param {number} data.speaker 新しい読み上げキャラクター名
+     * @param {string} data.keywordFrom SEに対応するキーワード（元）
+     * @param {string} data.keywordTo SEに対応するキーワード（先）
      */
-    constructor(data) {
+    constructor(data) {        
         assert(typeof data.id === 'string');
         assert(typeof data.serverId === 'string');
-        assert(typeof data.userId === 'string');
-        assert(typeof data.speaker === 'string');
+        assert(typeof data.keywordFrom === 'string');
+        assert(typeof data.keywordTo === 'string');
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -51,27 +51,28 @@ class SpeakerUpdateAction {
     get serverId() {
         return this.data.serverId;
     }
+
     /**
-     * 対象DiscordユーザーのID
+     * SEに対応するキーワード
      *
      * @type {string}
      */
-    get userId() {
-        return this.data.userId;
+    get keywordFrom() {
+        return this.data.keywordFrom;
     }
 
     /**
-     * 新しく設定するキャラクター名
+     * SEに対応するキーワード
      *
      * @type {string}
      */
-    get speaker() {
-        return this.data.speaker;
+    get keywordTo() {
+        return this.data.keywordTo;
     }
 
     toString() {
-        return `SpeakerAction(id=${this.id}, serverId=${this.serverId}, userId=${this.userId}, speaker=${this.speaker})`;
+        return `FoleyRenameAction(id=${this.id}, serverId=${this.serverId}, keywordFrom=${this.keywordFrom}, keywordTo=${this.keywordTo})`;
     }
 }
 
-module.exports = SpeakerUpdateAction;
+module.exports = FoleyRenameAction;

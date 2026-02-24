@@ -69,6 +69,15 @@ class CommandInput {
     }
 
     /**
+     * 送信元DiscordユーザーID
+     *
+     * @type {string}
+     */
+    get userId() {
+        return this.data.origin.userId;
+    }
+
+    /**
      * 送信元テキストチャンネルID
      *
      * @type {string}
@@ -93,6 +102,15 @@ class CommandInput {
      */
     get mentionedUsers() {
         return this.data.origin.mentionedUsers;
+    }
+
+    /**
+     * 元のDiscordメッセージの添付ファイル
+     *
+     * @type {Array<{name: string, url: string}>}
+     */
+    get attachments() {
+        return this.data.origin.attachments;
     }
 
     /**

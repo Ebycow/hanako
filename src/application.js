@@ -1,9 +1,11 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const discord = require('discord.js');
+const { GatewayIntentBits } = require('discord.js');
 const Injector = require('./core/injector');
 const AppConfig = require('./core/app_config');
 const AppSettings = require('./core/app_settings');
+const InteractionCtrl = require('./app/interaction_ctrl');
 const MessageCtrl = require('./app/message_ctrl');
 const ReadyCtrl = require('./app/ready_ctrl');
 const PagerReactionCtrl = require('./app/pager_reaction_ctrl');
@@ -41,7 +43,16 @@ class Application {
     constructor(appConfig, appSettings) {
         this.appConfig = appConfig;
         this.appSettings = appSettings;
-        this.client = new discord.Client();
+        this.client = new discord.Client({
+            intents: [
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.GuildMessages,
+                GatewayIntentBits.MessageContent,
+                GatewayIntentBits.GuildMessageReactions,
+                GatewayIntentBits.DirectMessageReactions,
+                GatewayIntentBits.GuildVoiceStates,
+            ],
+        });
     }
 
     /**
@@ -57,12 +68,21 @@ class Application {
         Injector.registerSingleton(discord.Client, this.client);
 
         // コントローラの登録
-        this.bind('ready', ReadyCtrl);
-        this.bind('message', MessageCtrl, [MessageSanitizeMiddleWare]);
-        this.bind('message', StatusChangeCtrl, [MessageSanitizeMiddleWare]);
+        this.bind('clientReady', ReadyCtrl);
+        this.bind('interactionCreate', InteractionCtrl);
+        this.bind('messageCreate', MessageCtrl, [MessageSanitizeMiddleWare]);
+        this.bind('messageCreate', StatusChangeCtrl, [MessageSanitizeMiddleWare]);
         this.bind('messageReactionAdd', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
         this.bind('messageReactionRemove', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
         this.bind('voiceStateUpdate', AutoLeaveCtrl, [VoiceChatActionMiddleWare]);
+
+        // Discordクライアントのエラーハンドラ（再接続はdiscord.jsが自動で行う）
+        this.client.on('error', err => {
+            logger.warn('Discordクライアントエラーが発生。', err);
+        });
+        this.client.on('shardError', (err, shardId) => {
+            logger.warn(`シャード${shardId}でWebSocketエラーが発生。`, err);
+        });
 
         // 待受開始
         this.client.login(this.appSettings.discordBotToken);

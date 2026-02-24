@@ -1,7 +1,4 @@
-const path = require('path');
-const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const errors = require('../core/errors').promises;
 const DiscordMessage = require('../domain/entity/discord_message');
 
 /** @typedef {import('../domain/model/hanako')} Hanako */
@@ -20,14 +17,13 @@ const DiscordMessage = require('../domain/entity/discord_message');
  * @property {string} serverName
  * @property {?string} voiceChannelId
  * @property {Map<string, string>} mentionedUsers
- * @property {Array<{name: string, url: string}>} attachments
  */
 
 /**
  * アプリケーションサービス
  * DiscordMessageエンティティの構築
  */
-class MessageBuilder {
+class InteractionBuilder {
     /**
      * DiscordMessageエンティティの構築
      *
@@ -47,54 +43,22 @@ class MessageBuilder {
         assert(typeof param.serverName === 'string');
         assert(typeof param.voiceChannelId === 'string' || param.voiceChannelId === null);
         assert(typeof param.mentionedUsers === 'object');
-        assert(Array.isArray(param.attachments || []));
 
         const data = Object.assign({}, param);
-
-        // コマンドか読み上げか無視かを判断する
-        const type = await inferMessageTypeF.call(this, hanako, data);
 
         const dmessage = new DiscordMessage({
             id: data.id,
             content: data.content,
-            type: type,
+            type: 'interaction',
             serverId: data.serverId,
             channelId: data.channelId,
             userId: data.userId,
             voiceChannelId: data.voiceChannelId,
             mentionedUsers: data.mentionedUsers,
-            attachments: data.attachments || [],
         });
 
         return Promise.resolve(dmessage);
     }
 }
 
-/**
- * (private) コマンドか読み上げか無視かを判断する。無視しないならタイプを返す。
- *
- * @this {MessageBuilder}
- * @param {Hanako} hanako
- * @param {MessageBuilderData} data
- * @returns {Promise<'command'|'read'>}
- */
-async function inferMessageTypeF(hanako, data) {
-    // 花子がメンションされているかどうかの真偽値
-    const isHanakoMentioned = Array.from(data.mentionedUsers.values()).some(id => id === hanako.userId);
-
-    // 花子がメンションされているか、コマンドプリフィクスを持つなら暫定的にコマンド
-    if (isHanakoMentioned || hanako.hasCommandPrefix(data.content)) {
-        logger.trace(`command: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
-        return Promise.resolve('command');
-    }
-    // それ以外で、読み上げ対象のチャンネルなら読み上げ
-    if (hanako.isReadingChannel(data.channelId)) {
-        logger.trace(`read: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
-        return Promise.resolve('read');
-    }
-    // どちらでもなければ無視
-    logger.trace(`pass: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
-    return errors.abort();
-}
-
-module.exports = MessageBuilder;
+module.exports = InteractionBuilder;

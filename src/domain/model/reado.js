@@ -4,6 +4,7 @@ const Plain = require('../entity/audios/plain');
 
 /** @typedef {import('../entity/audios').AudioT} AudioT */
 /** @typedef {import('../model/hanako')} Hanako */
+/** @typedef {import('../entity/discord_message')} DiscordMessage */
 
 /**
  * ドメインモデル
@@ -17,9 +18,10 @@ class Reado {
      * リードーを構築
      *
      * @param {Hanako} hanako Reader適用下の読み上げ花子モデル
+     * @param {DiscordMessage} dmessage 読み上げるDiscordメッセージ
      */
-    constructor(hanako) {
-        const lifters = readers.sorted.map(R => R.prototype.read.bind(new R(hanako)));
+    constructor(hanako, dMessage) {
+        const lifters = readers.sorted.map(R => R.prototype.read.bind(new R(hanako, dMessage)));
         this.squash = z => lifters.reduce((arr, f) => arr.map(f).flat(), [z]);
     }
 

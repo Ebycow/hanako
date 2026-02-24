@@ -17,16 +17,18 @@ class DiscordMessage {
      * @param {string} data.userId 送信者のユーザーID
      * @param {?string} data.voiceChannelId 送信者が参加中の音声チャンネルID またはnull
      * @param {Map<string, string>} data.mentionedUsers メンションされているユーザーの表示名とユーザーIDの辞書配列
+     * @param {Array<{name: string, url: string}>} data.attachments 添付ファイルの配列
      */
     constructor(data) {
         assert(typeof data.id === 'string');
         assert(typeof data.content === 'string');
-        assert(data.type === 'command' || data.type === 'read');
+        assert(data.type === 'command' || data.type === 'interaction' || data.type === 'read');
         assert(typeof data.serverId === 'string');
         assert(typeof data.channelId === 'string');
         assert(typeof data.userId === 'string');
         assert(typeof data.voiceChannelId === 'string' || data.voiceChannelId === null);
         assert(typeof data.mentionedUsers === 'object');
+        assert(Array.isArray(data.attachments || []));
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -106,6 +108,15 @@ class DiscordMessage {
      */
     get mentionedUsers() {
         return new Map(this.data.mentionedUsers);
+    }
+
+    /**
+     * 添付ファイルの配列
+     *
+     * @type {Array<{name: string, url: string}>}
+     */
+    get attachments() {
+        return (this.data.attachments || []).slice();
     }
 
     toString() {

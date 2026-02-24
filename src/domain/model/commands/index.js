@@ -18,7 +18,9 @@ module.exports = {
     silence_clear: require('./silence_clear_command'),
     foley_create: require('./foley_create_command'),
     foley_delete: require('./foley_delete_command'),
+    foley_rename: require('./foley_rename_command'),
     foley_read: require('./foley_read_command'),
+    foley_search: require('./foley_search_command'),
     help: require('./help_command'),
 };
 
@@ -44,11 +46,13 @@ module.exports = {
 /** @typedef {import('./silence_clear_command')} SilenceClear */
 /** @typedef {import('./foley_create_command')} FoleyCreate */
 /** @typedef {import('./foley_delete_command')} FoleyDelete */
+/** @typedef {import('./foley_rename_command')} FoleyRename */
 /** @typedef {import('./foley_read_command')} FoleyRead */
+/** @typedef {import('./foley_search_command')} FoleySearch */
 
 /**
  * コマンドモデル直和型
  *
  * @typedef CommandT
- * @type {Ask|Join|Leave|Seibai|Limit|Speaker|WordCreate|WordRead|WordDelete|SilenceCreate|SilenceRead|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|FoleyRead}
+ * @type {Ask|Join|Leave|Seibai|Limit|Speaker|WordCreate|WordRead|WordDelete|SilenceCreate|SilenceRead|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|FoleyRename|FoleyRead|FoleySearch}
  */

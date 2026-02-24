@@ -2,6 +2,7 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const MessageValidator = require('../service/message_validator');
 const HanakoLoader = require('../service/hanako_loader');
+const { ActivityType } = require('discord.js');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
@@ -41,8 +42,12 @@ class StatusChangeCtrl {
             channelType: message.channel.type,
         };
         await this.validator.validate(validatorParam);
+
+        // 花子が読み上げたとは言ってないのでセーフ
         this.readCount++;
-        await this.client.user.setActivity(`${prefix}help | ${this.readCount}回読んだ！`);
+        await this.client.user.setActivity(`${prefix}help | ${this.readCount}回読んだ！`, {
+            type: ActivityType.Streaming,
+        });
     }
 }
 

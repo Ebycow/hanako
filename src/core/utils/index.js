@@ -2,6 +2,7 @@ const utils = {
     countUnicode: require('./count_unicode'),
     neutralizeUrls: require('./neutralize_urls'),
     ensure: require('./ensure'),
+    levenshteinDistance: require('./levenshtein_distance'),
 };
 
 /**

@@ -1,30 +1,29 @@
 const assert = require('assert').strict;
 
 /**
- * キャラクター名更新アクションのエンティティ
+ * 複数SE削除アクションのエンティティ
  */
-class SpeakerUpdateAction {
+class FoleyDeleteMultipleAction {
     /**
-     * @type {'speaker_update'}
+     * @type {'foley_delete_multiple'}
      */
     get type() {
-        return 'speaker_update';
+        return 'foley_delete_multiple';
     }
 
     /**
-     * キャラクター名更新エンティティを構築
+     * FoleyDeleteMultipleActionエンティティを構築
      *
      * @param {object} data
      * @param {string} data.id エンティティID
      * @param {string} data.serverId 対象DiscordサーバーのID
-     * @param {string} data.userId 対象DiscordユーザーのID
-     * @param {number} data.speaker 新しい読み上げキャラクター名
+     * @param {Array<string>} data.foleyIds 削除するSEのID配列
      */
     constructor(data) {
         assert(typeof data.id === 'string');
         assert(typeof data.serverId === 'string');
-        assert(typeof data.userId === 'string');
-        assert(typeof data.speaker === 'string');
+        assert(Array.isArray(data.foleyIds));
+        assert(data.foleyIds.every(id => typeof id === 'string'));
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -51,27 +50,21 @@ class SpeakerUpdateAction {
     get serverId() {
         return this.data.serverId;
     }
-    /**
-     * 対象DiscordユーザーのID
-     *
-     * @type {string}
-     */
-    get userId() {
-        return this.data.userId;
-    }
 
     /**
-     * 新しく設定するキャラクター名
+     * 削除するSEのID配列
      *
-     * @type {string}
+     * @type {Array<string>}
      */
-    get speaker() {
-        return this.data.speaker;
+    get foleyIds() {
+        return this.data.foleyIds.slice();
     }
 
     toString() {
-        return `SpeakerAction(id=${this.id}, serverId=${this.serverId}, userId=${this.userId}, speaker=${this.speaker})`;
+        return `FoleyDeleteMultipleAction(id=${this.id}, serverId=${this.serverId}, foleyIds=[${this.foleyIds.join(
+            ','
+        )}])`;
     }
 }
 
-module.exports = SpeakerUpdateAction;
+module.exports = FoleyDeleteMultipleAction;

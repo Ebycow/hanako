@@ -12,12 +12,46 @@ const IShutdownDelegator = require('../../domain/service/i_shutdown_delegator');
 let firstCall = true;
 
 /**
+ * 一時的なネットワークエラーかどうかを判定
+ *
+ * @param {Error} err
+ * @returns {boolean}
+ */
+function isTransientNetworkError(err) {
+    const transientCodes = ['ENOTFOUND', 'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN'];
+    if (err.code && transientCodes.includes(err.code)) {
+        return true;
+    }
+    const transientStatuses = ['502', '503', '504', '522', '524'];
+    if (err.message && transientStatuses.some(s => err.message.includes(s))) {
+        return true;
+    }
+    return false;
+}
+
+/**
  * モジュールの初期化（実際にこの実装がDIされるまで初期化処理を遅延させる）
  */
 function init() {
-    // 非キャッチ例外で死ぬ時のフック
-    exitHook.uncaughtExceptionHandler(err => {
+    // 非キャッチ例外のハンドラ（一時的なネットワークエラーはプロセスを維持する）
+    process.on('uncaughtException', err => {
+        if (isTransientNetworkError(err)) {
+            logger.warn('一時的なネットワークエラーが発生。プロセスを維持する。', err);
+            return;
+        }
         logger.fatal('キャッチされなかった例外が発生。', err);
+        // SIGTERMでexitHookの非同期グレースフルシャットダウンをトリガー
+        process.kill(process.pid, 'SIGTERM');
+    });
+
+    // 未処理のPromiseリジェクションのハンドラ
+    process.on('unhandledRejection', err => {
+        if (isTransientNetworkError(err)) {
+            logger.warn('一時的なネットワークエラー(Promise)が発生。プロセスを維持する。', err);
+            return;
+        }
+        logger.fatal('未処理のPromiseリジェクションが発生。', err);
+        process.kill(process.pid, 'SIGTERM');
     });
 
     logger.trace('モジュールが初期化された');

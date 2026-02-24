@@ -3,6 +3,9 @@ const SampleRate = require('node-libsamplerate');
 const transforms = require('../../library/transforms');
 const AppSettings = require('../../core/app_settings');
 const IVoiceroidStreamRepo = require('../../domain/repo/i_voiceroid_stream_repo');
+const log4js = require('log4js');
+
+const logger = log4js.getLogger(require('path').basename(__filename));
 
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('../../domain/entity/audios/voiceroid_audio')} VoiceroidAudio */
@@ -32,10 +35,24 @@ class EbyroidStreamApiAdapter {
         const params = {
             text: audio.content,
         };
+
         if (audio.speaker !== 'default') {
             params.name = audio.speaker;
         }
-        const response = await axios.get(this.url, { responseType: 'stream', params: params });
+        const maxRetries = 3;
+        let response;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                response = await axios.get(this.url, { responseType: 'stream', params: params });
+                break;
+            } catch (err) {
+                if (err.code === 'ECONNRESET' && attempt < maxRetries) {
+                    logger.warn(`ECONNRESET発生。リトライします (${attempt}/${maxRetries})`);
+                    continue;
+                }
+                throw err;
+            }
+        }
 
         const sampleRate = parseInt(response.headers['ebyroid-pcm-sample-rate'], 10);
         const bitDepth = parseInt(response.headers['ebyroid-pcm-bit-depth'], 10);
