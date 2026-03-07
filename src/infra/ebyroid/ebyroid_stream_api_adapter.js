@@ -77,6 +77,10 @@ class EbyroidStreamApiAdapter {
             toDepth: 16,
         });
         stream = stream.pipe(resample);
+
+        // Voiceroid音声の末尾無音を除去（SE等との結合時にスムーズにする）
+        stream = stream.pipe(new transforms.TrailingSilenceTrimmer());
+
         return Promise.resolve(stream);
     }
 }
