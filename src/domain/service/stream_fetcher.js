@@ -3,6 +3,7 @@ const Injector = require('../../core/injector');
 const IVoiceroidStreamRepo = require('../repo/i_voiceroid_stream_repo');
 const IFoleyStreamRepo = require('../repo/i_foley_stream_repo');
 const EbyStream = require('../../library/ebystream');
+const transforms = require('../../library/transforms');
 
 /** @typedef {import('../entity/audios').AudioT} AudioT */
 /** @typedef {import('stream').Readable} Readable */
@@ -30,11 +31,18 @@ class StreamFetcher {
     async fetch(audios) {
         assert(typeof audios === 'object' && Array.isArray(audios));
 
+        const lastIndex = audios.length - 1;
+
         // Promise<Readable>の配列に変換
-        const promises = audios.map((audio) => {
+        const promises = audios.map((audio, index) => {
             // 手続きタイプによって各リポジトリに振り分け
             if (audio.type === 'voiceroid') {
-                return this.vrStreamRepo.getVoiceroidStream(audio);
+                const p = this.vrStreamRepo.getVoiceroidStream(audio);
+                // 末尾でないVoiceroid音声は無音トリミングを適用（SE等との結合時にスムーズにする）
+                if (index < lastIndex) {
+                    return p.then((stream) => stream.pipe(new transforms.TrailingSilenceTrimmer()));
+                }
+                return p;
             } else if (audio.type === 'foley') {
                 return this.foleyStreamRepo.getFoleyStream(audio);
             } else {
