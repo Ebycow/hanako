@@ -5,6 +5,7 @@ const MessageService = require('../service/message_service');
 const ResponseHandler = require('../service/response_handler');
 const HanakoLoader = require('../service/hanako_loader');
 const ChatResponse = require('../domain/entity/responses/chat_response');
+const { MessageFlags } = require('discord.js');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Interaction} discord.Interaction */
@@ -82,11 +83,11 @@ class InteractionCtrl {
         try {
             // レスポンスハンドラにレスポンス処理をさせて終了
             await this.responseHandler.handle(response);
-            await interaction.reply('コマンドを実行しました！😸', { ephemeral: true });
-            await interaction.deleteReply({ timeout: 3000 });
+            await interaction.reply({ content: 'コマンドを実行しました！😸', flags: MessageFlags.Ephemeral });
+            setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
         } catch (error) {
-            await interaction.reply('コマンドの実行に失敗しました･･･😿', { ephemeral: true });
-            await interaction.deleteReply({ timeout: 3000 });
+            await interaction.reply({ content: 'コマンドの実行に失敗しました･･･😿', flags: MessageFlags.Ephemeral });
+            setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
         }
     }
 }

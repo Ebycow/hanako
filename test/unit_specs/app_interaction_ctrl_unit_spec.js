@@ -2,6 +2,7 @@ const should = require('chai').should();
 const sinon = require('sinon');
 const proxyquire = require('proxyquire').noCallThru();
 const ChatResponse = require('../../src/domain/entity/responses/chat_response');
+const { MessageFlags } = require('discord.js');
 
 describe('InteractionCtrl', () => {
     let sandbox;
@@ -163,7 +164,7 @@ describe('InteractionCtrl', () => {
         responseHandle.callCount.should.equal(2);
         responseHandle.secondCall.args[0].should.equal(serviceResponse);
         interaction.reply.calledOnce.should.be.true;
-        interaction.reply.firstCall.args[1].should.deep.equal({ ephemeral: true });
+        interaction.reply.firstCall.args[0].should.have.property('flags', MessageFlags.Ephemeral);
     });
 
     specify('不明なスラッシュコマンド名は同名のテキストコマンド名にフォールバックする', async () => {
