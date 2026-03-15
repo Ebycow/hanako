@@ -38,6 +38,22 @@ describe('Formato', () => {
                 const formato = new Formato(basicHanako());
                 formato.normalize('').should.equal('');
             });
+
+            specify('キリル文字をカタカナに変換する', () => {
+                const formato = new Formato(basicHanako());
+                const result = formato.normalize('привет');
+                result.should.be.a('string');
+                result.should.not.match(/[а-яА-ЯёЁ]/);
+                result.should.equal('プリヴェト');
+            });
+
+            specify('辞書置換がキリル文字変換より先に適用される', () => {
+                const line = wordDictionaryLineBlueprint({ from: 'привет', to: 'プリヴェート' });
+                const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
+                const hanako = basicHanako({ wordDictionary: wd });
+                const formato = new Formato(hanako);
+                formato.normalize('привет мир').should.equal('プリヴェート ミル');
+            });
         });
     });
 });
