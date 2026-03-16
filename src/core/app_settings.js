@@ -52,6 +52,7 @@ class AppSettings {
      * @param {string} data.ebyroidStreamApiUrl
      * @param {number} data.foleyMaxDownloadByteSize
      * @param {number} data.foleyMaxAudioSeconds
+     * @param {number} data.foleyNormalizeTargetPeak
      */
     constructor(data) {
         assert(typeof data === 'object');
@@ -62,6 +63,11 @@ class AppSettings {
         assert(typeof data.ebyroidStreamApiUrl === 'string');
         assert(typeof data.foleyMaxDownloadByteSize === 'number');
         assert(typeof data.foleyMaxAudioSeconds === 'number');
+        assert(typeof data.foleyNormalizeTargetPeak === 'number');
+        assert(
+            data.foleyNormalizeTargetPeak >= 0.0 && data.foleyNormalizeTargetPeak <= 1.0,
+            `foleyNormalizeTargetPeak must be in range [0.0, 1.0], got ${data.foleyNormalizeTargetPeak}`
+        );
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -132,6 +138,15 @@ class AppSettings {
      */
     get foleyMaxAudioSeconds() {
         return this.data.foleyMaxAudioSeconds;
+    }
+
+    /**
+     * SE音量正規化のターゲットピークレベル（0.0〜1.0の範囲）
+     *
+     * @type {number}
+     */
+    get foleyNormalizeTargetPeak() {
+        return this.data.foleyNormalizeTargetPeak;
     }
 }
 

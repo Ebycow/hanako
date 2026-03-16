@@ -28,6 +28,7 @@
 | SEの一覧           | 音声辞書 音声一覧 se-dictionary se-dic se-list | @hanako se-list                                     |
 | SEの検索           | se?                                         | @hanako se? 泣                                         |
 | SEの名前変更       | 音声名置換 se-rename                        | @hanako se-rename （泣く） （号泣）                    |
+| SE正規化           | SE正規化 se-normalize senorm                | @hanako se-normalize 80                                |
 | ブラックリスト追加 | 沈黙 blacklist-add                          | @hanako blacklist-add @seikin                          |
 | ブラックリスト除外 | 恩赦 blacklist-remove                       | @hanako blacklist-remove @hikakin                      |
 | ブラックリスト一覧 | 名簿 blacklist-show                         | @hanako blacklist-show                                 |
@@ -70,6 +71,12 @@
 * 対応形式: `.wav` `.mp3`
 * キーワードは2〜50文字、サーバごとに最大10,000件まで登録可能
 * ファイルサイズ上限: 2MB、再生時間上限: 60秒
+
+**SE音量正規化:**
+`@hanako se-normalize 80` でSEの音量を正規化するレベルを設定します（0〜100）
+デフォルト値はグローバル設定（`foley_normalize_target_peak`）から決まります（未設定時は50%）
+音量が小さいSEファイルを指定したレベルまで持ち上げることで、再生時の音量バランスを改善します
+`@hanako se-normalize 0` で正規化を無効化できます
 
 ## ブラックリスト（ユーザのミュート）
 ボイスチャットにはなこを参加させた状態で `@hanako blacklist-add @username` と発言、@usernameの発言は読まれなくなる

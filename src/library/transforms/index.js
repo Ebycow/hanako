@@ -6,4 +6,5 @@ module.exports = {
     StereoByteAdjuster: require('./stereo_byte_adjuster'),
     TrailingSilenceTrimmer: require('./trailing_silence_trimmer'),
     WaveFileHeaderTrimmmer: require('./wave_file_header_trimmer'),
+    normalizePeak: require('./peak_normalizer'),
 };

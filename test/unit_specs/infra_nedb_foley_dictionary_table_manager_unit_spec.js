@@ -32,6 +32,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
     let fakeFileType;
     let fakePrism;
     let objectStorageRepo;
+    let settingsRepo;
 
     /** テスト用 AppSettings を構築 */
     function createAppSettings() {
@@ -43,6 +44,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
             ebyroidStreamApiUrl: 'http://localhost:0',
             foleyMaxDownloadByteSize: 1048576,
             foleyMaxAudioSeconds: 10,
+            foleyNormalizeTargetPeak: 0.5,
         });
     }
 
@@ -75,7 +77,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
     /** Manager インスタンスをワンショットで生成 */
     function createManager() {
         const Manager = loadFreshModule();
-        return new Manager(appSettings, objectStorageRepo);
+        return new Manager(appSettings, objectStorageRepo, settingsRepo);
     }
 
     /** 有効な audio バッファ（stub が audio/mpeg を返す前提の任意データ） */
@@ -106,6 +108,20 @@ describe('NedbFoleyDictionaryTableManager', () => {
             saveFile: sandbox.stub().resolves(),
             readFile: sandbox.stub().resolves(new PassThrough()),
             deleteFile: sandbox.stub().resolves(),
+        };
+
+        // settingsRepo stub - デフォルトでseNormalize=0.5のSettingsを返す
+        const Settings = require('../../src/domain/entity/settings');
+        settingsRepo = {
+            loadSettings: sandbox.stub().resolves(
+                new Settings({
+                    id: 'test-settings-id',
+                    serverId: 'test-server',
+                    maxCount: 0,
+                    speaker: { default: 'default' },
+                    seNormalize: 0.5,
+                })
+            ),
         };
     });
 
@@ -711,15 +727,26 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 })
             );
 
-            const expectedStream = new PassThrough();
-            objectStorageRepo.readFile.resolves(expectedStream);
+            // PCMデータのダミーストリームを作成（16-bit stereo）
+            const dummyPcmData = Buffer.alloc(8); // 2フレーム分
+            dummyPcmData.writeInt16LE(1000, 0);
+            dummyPcmData.writeInt16LE(1000, 2);
+            dummyPcmData.writeInt16LE(1000, 4);
+            dummyPcmData.writeInt16LE(1000, 6);
+
+            const mockStream = new PassThrough();
+            mockStream.end(dummyPcmData);
+            objectStorageRepo.readFile.resolves(mockStream);
 
             const dict = await mgr.loadFoleyDictionary('sv-stream');
             const foleyId = dict.lines[0].id;
 
             const audio = new FoleyAudio({ serverId: 'sv-stream', foleyId });
             const stream = await mgr.getFoleyStream(audio);
-            stream.should.equal(expectedStream);
+
+            // 正規化後のストリームが返されることを確認（元のストリームとは別オブジェクト）
+            should.exist(stream);
+            stream.should.be.an.instanceOf(require('stream').Readable);
         });
 
         specify('foleyId 不存在 → rejected (disappointed)', async () => {

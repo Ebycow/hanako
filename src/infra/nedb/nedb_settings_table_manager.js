@@ -3,6 +3,8 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const uuid = require('uuidv4').uuid;
 const errors = require('../../core/errors').promises;
+const Injector = require('../../core/injector');
+const AppSettings = require('../../core/app_settings');
 const ISettingsRepo = require('../../domain/repo/i_settings_repo');
 const ISettingsActionRepo = require('../../domain/repo/i_settings_action_repo');
 const Settings = require('../../domain/entity/settings');
@@ -10,6 +12,7 @@ const Datastore = require('@seald-io/nedb');
 
 /** @typedef {import('../../domain/entity/actions/max_count_update_action')} MaxCountUpdateAction */
 /** @typedef {import('../../domain/entity/actions/speaker_update_action')} SpeakerUpdateAction */
+/** @typedef {import('../../domain/entity/actions/se_normalize_update_action')} SeNormalizeUpdateAction */
 
 /** @typedef {string} ServerID サーバーID */
 
@@ -37,6 +40,13 @@ let dbInstance;
 let cache;
 
 /**
+ * AppSettingsインスタンス（デフォルト値計算用）
+ *
+ * @type {AppSettings}
+ */
+let appSettings;
+
+/**
  * モジュールの初回呼び出しフラグ
  *
  * @type {boolean}
@@ -45,8 +55,10 @@ let firstCall = true;
 
 /**
  * モジュールの初期化（実際にこの実装がDIされるまで初期化処理を遅延させる）
+ *
+ * @param {AppSettings} settings
  */
-function init() {
+function init(settings) {
     // Nedbのロード
     dbInstance = new Datastore({ filename: './db/settings.db', autoload: true });
     dbInstance.loadDatabase();
@@ -55,7 +67,31 @@ function init() {
     // キャッシュ領域の割当
     cache = new Map();
 
+    // AppSettingsを保持
+    appSettings = settings;
+
     logger.trace('モジュールが初期化された');
+}
+
+/**
+ * グローバル設定からSE正規化のデフォルト値を取得
+ *
+ * @returns {number} 0.0〜1.0
+ */
+function calculateDefaultSeNormalize() {
+    const config = appSettings.foleyNormalizeTargetPeak;
+
+    // 設定がない場合のフォールバック
+    if (config === undefined || config === null) {
+        logger.info('foleyNormalizeTargetPeak未設定: デフォルト0.5を使用');
+        return 0.5;
+    }
+
+    // app_settings.jsで既にバリデーション済みのため、ここでは範囲チェックのみ
+    assert(config >= 0.0 && config <= 1.0, `foleyNormalizeTargetPeak must be in range [0.0, 1.0], got ${config}`);
+
+    logger.debug(`foleyNormalizeTargetPeak=${config} → seNormalize=${config}`);
+    return config;
 }
 
 /**
@@ -70,7 +106,9 @@ async function loadSharedData(serverId) {
 
     // キャッシュにデータがあればそのまま返却
     if (cache.has(serverId)) {
-        return Promise.resolve(cache.get(serverId));
+        const cached = cache.get(serverId);
+        logger.trace(`Settings読み込み: serverId=${serverId}, キャッシュから取得, seNormalize=${cached.seNormalize}`);
+        return Promise.resolve(cached);
     }
 
     // キャッシュにデータがなければDBから取得
@@ -89,9 +127,26 @@ async function loadSharedData(serverId) {
                     };
                     logger.info('Speaker設定マイグレーションを終了');
                 }
+                // SE正規化設定マイグレーション (既存レコードにseNormalizeを追加)
+                if (dict.seNormalize === undefined) {
+                    const defaultSeNormalize = calculateDefaultSeNormalize();
+                    logger.info(
+                        `SE正規化設定マイグレーションを開始: seNormalize=${defaultSeNormalize}をデフォルト値として設定`
+                    );
+                    dict.seNormalize = defaultSeNormalize;
+                    logger.info('SE正規化設定マイグレーションを終了');
+                }
+                logger.trace(`Settings読み込み: serverId=${serverId}, DBから取得, seNormalize=${dict.seNormalize}`);
                 resolve(dict);
             } else {
-                const initialRecord = { id: uuid(), serverId, maxCount: 0, speaker: { default: 'default' } };
+                const defaultSeNormalize = calculateDefaultSeNormalize();
+                const initialRecord = {
+                    id: uuid(),
+                    serverId,
+                    maxCount: 0,
+                    speaker: { default: 'default' },
+                    seNormalize: defaultSeNormalize,
+                };
                 dbInstance.insert({ id: serverId, dict: initialRecord }, (err) => {
                     if (err) reject(err);
                     else resolve(initialRecord);
@@ -156,6 +211,7 @@ function toSettings(record) {
         serverId: record.serverId,
         maxCount: record.maxCount,
         speaker: record.speaker,
+        seNormalize: record.seNormalize,
     });
 }
 
@@ -169,11 +225,14 @@ class NedbSettingsTableManager {
     /**
      * DIコンテナ用コンストラクタ
      * 初回呼び出し時にはモジュール初期化を行う
+     *
+     * @param {AppSettings} settings DI
      */
-    constructor() {
+    constructor(settings = null) {
+        const resolvedSettings = settings || Injector.resolve(AppSettings);
         if (firstCall) {
             firstCall = false;
-            init();
+            init(resolvedSettings);
         }
     }
 
@@ -226,12 +285,33 @@ class NedbSettingsTableManager {
         // 永続化
         await persistSharedData(action.serverId);
     }
+
+    /**
+     * (impl) ISettingsActionRepo
+     *
+     * @param {SeNormalizeUpdateAction} action
+     * @returns {Promise<void>}
+     */
+    async postSeNormalizeUpdate(action) {
+        assert(typeof action === 'object');
+
+        const record = await loadSharedData(action.serverId);
+        logger.debug(`SE正規化更新前: serverId=${action.serverId}, 現在のseNormalize=${record.seNormalize}`);
+
+        // 新しくseNormalizeを設定
+        record.seNormalize = action.seNormalize;
+        logger.debug(`SE正規化更新後: serverId=${action.serverId}, 新しいseNormalize=${record.seNormalize}`);
+
+        // 永続化
+        await persistSharedData(action.serverId);
+        logger.debug(`SE音量永続化完了: serverId=${action.serverId}`);
+    }
 }
 
 // ISettingsRepoの実装として登録
-ISettingsRepo.comprise(NedbSettingsTableManager);
+ISettingsRepo.comprise(NedbSettingsTableManager, [AppSettings]);
 
 // ISettingsActionRepoの実装として登録
-ISettingsActionRepo.comprise(NedbSettingsTableManager);
+ISettingsActionRepo.comprise(NedbSettingsTableManager, [AppSettings]);
 
 module.exports = NedbSettingsTableManager;
