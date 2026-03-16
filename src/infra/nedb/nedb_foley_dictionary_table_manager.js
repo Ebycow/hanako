@@ -16,6 +16,7 @@ const IObjectStorageRepo = require('../../domain/repo/i_object_storage_repo');
 const Datastore = require('@seald-io/nedb');
 const FoleyDictionary = require('../../domain/entity/foley_dictionary');
 const FoleyDictionaryLine = require('../../domain/entity/foley_dictionary_line');
+const normalizePeak = require('../../library/transforms/peak_normalizer');
 
 /** @typedef {import('../../domain/entity/audios/foley_audio')} FoleyAudio */
 /** @typedef {import('../../domain/entity/actions/foley_create_action')} FoleyCreateAction */
@@ -506,6 +507,13 @@ class NedbFoleyDictionaryTableManager {
 
         const objectKey = Buffer.from(record[0]).toString('base64');
         const stream = await this.objectStorageRepo.readFile(audio.serverId, objectKey, 'pcm');
+
+        // SE音量正規化を適用
+        const targetPeak = Math.round(this.appSettings.foleyNormalizeTargetPeak * 32767);
+        if (targetPeak > 0) {
+            return normalizePeak(stream, targetPeak);
+        }
+
         return Promise.resolve(stream);
     }
 }

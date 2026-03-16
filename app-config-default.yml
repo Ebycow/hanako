@@ -23,6 +23,11 @@ settings:
   # SE音源を取得するときの最大再生時間（秒）
   foley_max_audio_seconds: 60
 
+  # SE音量正規化のターゲットピークレベル（0.0〜1.0の範囲、0で無効化）
+  # 音量が小さいSEファイルをこのレベルまで持ち上げます
+  # 例: 0.5 = 最大振幅の50%（約-6dBFS）
+  foley_normalize_target_peak: 0.5
+
 # アプリケーションのDIコンフィグ
 configurations:
 
