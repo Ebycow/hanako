@@ -110,7 +110,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
             deleteFile: sandbox.stub().resolves(),
         };
 
-        // settingsRepo stub - デフォルトでseNormalize=50のSettingsを返す
+        // settingsRepo stub - デフォルトでseNormalize=0.5のSettingsを返す
         const Settings = require('../../src/domain/entity/settings');
         settingsRepo = {
             loadSettings: sandbox.stub().resolves(
@@ -119,7 +119,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
                     serverId: 'test-server',
                     maxCount: 0,
                     speaker: { default: 'default' },
-                    seNormalize: 50,
+                    seNormalize: 0.5,
                 })
             ),
         };

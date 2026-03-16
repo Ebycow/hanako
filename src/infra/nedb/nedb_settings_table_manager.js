@@ -74,31 +74,24 @@ function init(settings) {
 }
 
 /**
- * グローバル設定からSE正規化のデフォルト値を計算
+ * グローバル設定からSE正規化のデフォルト値を取得
  *
- * @returns {number} 0〜100
+ * @returns {number} 0.0〜1.0
  */
 function calculateDefaultSeNormalize() {
     const config = appSettings.foleyNormalizeTargetPeak;
 
     // 設定がない場合のフォールバック
     if (config === undefined || config === null) {
-        logger.info('foleyNormalizeTargetPeak未設定: デフォルト50を使用');
-        return 50;
+        logger.info('foleyNormalizeTargetPeak未設定: デフォルト0.5を使用');
+        return 0.5;
     }
 
-    // 防御的クランプ: 0.0〜1.0の範囲外の値は丸める
-    const clampedConfig = Math.max(0.0, Math.min(1.0, config));
-    if (clampedConfig !== config) {
-        logger.warn(
-            `foleyNormalizeTargetPeak=${config}が範囲外のため、${clampedConfig}にクランプされました（有効範囲: 0.0〜1.0）`
-        );
-    }
+    // app_settings.jsで既にバリデーション済みのため、ここでは範囲チェックのみ
+    assert(config >= 0.0 && config <= 1.0, `foleyNormalizeTargetPeak must be in range [0.0, 1.0], got ${config}`);
 
-    // 0.0〜1.0 → 0〜100 に変換
-    const value = Math.round(clampedConfig * 100);
-    logger.debug(`foleyNormalizeTargetPeak=${clampedConfig} → seNormalize=${value}`);
-    return value;
+    logger.debug(`foleyNormalizeTargetPeak=${config} → seNormalize=${config}`);
+    return config;
 }
 
 /**

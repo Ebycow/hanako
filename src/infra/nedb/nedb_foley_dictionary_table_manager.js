@@ -512,13 +512,11 @@ class NedbFoleyDictionaryTableManager {
         const stream = await this.objectStorageRepo.readFile(audio.serverId, objectKey, 'pcm');
 
         // SE正規化処理を適用
-        // サーバー設定のseNormalize（0-100）を優先的に使用
+        // サーバー設定のseNormalize（0.0～1.0）を使用
         const settings = await this.settingsRepo.loadSettings(audio.serverId);
-        const seNormalize = settings.seNormalize; // デフォルト50（Settings entityで設定）
-        logger.debug(
-            `SE正規化設定読み込み: serverId=${audio.serverId}, seNormalize=${seNormalize}, settings=${settings}`
-        );
-        const targetPeak = Math.round((seNormalize / 100) * 32767);
+        const seNormalize = settings.seNormalize; // デフォルト0.5（Settings entityで設定）
+        logger.debug(`SE正規化設定読み込み: serverId=${audio.serverId}, seNormalize=${seNormalize}`);
+        const targetPeak = Math.round(seNormalize * 32767);
 
         if (targetPeak > 0) {
             return normalizePeak(stream, targetPeak);

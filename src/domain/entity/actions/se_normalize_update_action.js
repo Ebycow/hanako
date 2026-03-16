@@ -20,13 +20,13 @@ class SeNormalizeUpdateAction {
      * @param {object} data
      * @param {string} data.id エンティティID
      * @param {string} data.serverId DiscordサーバーID
-     * @param {number} data.seNormalize SE正規化レベル（0〜100）
+     * @param {number} data.seNormalize SE正規化レベル（0.0〜1.0）
      */
     constructor(data) {
         assert(typeof data.id === 'string');
         assert(typeof data.serverId === 'string');
-        assert(typeof data.seNormalize === 'number' && Number.isInteger(data.seNormalize));
-        assert(data.seNormalize >= 0 && data.seNormalize <= 100);
+        assert(typeof data.seNormalize === 'number');
+        assert(data.seNormalize >= 0.0 && data.seNormalize <= 1.0);
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -55,7 +55,7 @@ class SeNormalizeUpdateAction {
     }
 
     /**
-     * SE正規化レベル（0〜100）
+     * SE正規化レベル（0.0〜1.0）
      *
      * @type {number}
      */

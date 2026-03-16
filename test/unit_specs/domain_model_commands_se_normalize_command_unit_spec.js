@@ -37,7 +37,7 @@ describe('SeNormalizeCommand', () => {
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('se_normalize_update');
-                res.action.seNormalize.should.equal(80);
+                res.action.seNormalize.should.equal(0.8);
                 res.onSuccess.type.should.equal('chat');
                 res.onSuccess.content.should.include('80');
             });
@@ -48,7 +48,7 @@ describe('SeNormalizeCommand', () => {
                 const res = sub.process(input);
 
                 res.type.should.equal('action');
-                res.action.seNormalize.should.equal(0);
+                res.action.seNormalize.should.equal(0.0);
                 res.onSuccess.content.should.include('無効');
             });
 
@@ -58,7 +58,7 @@ describe('SeNormalizeCommand', () => {
                 const res = sub.process(input);
 
                 res.type.should.equal('action');
-                res.action.seNormalize.should.equal(50);
+                res.action.seNormalize.should.equal(0.5);
             });
 
             specify('100を指定しても正常', () => {
@@ -67,7 +67,7 @@ describe('SeNormalizeCommand', () => {
                 const res = sub.process(input);
 
                 res.type.should.equal('action');
-                res.action.seNormalize.should.equal(100);
+                res.action.seNormalize.should.equal(1.0);
             });
         });
 

@@ -51,12 +51,15 @@ class SeNormalizeCommand {
             return input.newChatResponse('コマンドの形式が間違っています :sob: 例:`@hanako se-normalize 80`', 'error');
         }
 
-        const newSeNormalize = parsed;
+        const newSeNormalizePercent = parsed;
 
         // 設定値範囲のバリデーション (0-100)
-        if (newSeNormalize < 0 || newSeNormalize > 100) {
+        if (newSeNormalizePercent < 0 || newSeNormalizePercent > 100) {
             return input.newChatResponse('SE正規化レベルは0から100の間で指定してね', 'error');
         }
+
+        // 0～100を0.0～1.0に変換
+        const newSeNormalize = newSeNormalizePercent / 100;
 
         // SE正規化更新アクションを作成
         const action = new SeNormalizeUpdateAction({
@@ -66,10 +69,10 @@ class SeNormalizeCommand {
         });
 
         let onSuccess;
-        if (newSeNormalize === 0) {
+        if (newSeNormalizePercent === 0) {
             onSuccess = input.newChatResponse('SE正規化を無効にしました（0%） :mute:');
         } else {
-            onSuccess = input.newChatResponse(`SEを${newSeNormalize}%に正規化するよう設定しました :loud_sound:`);
+            onSuccess = input.newChatResponse(`SEを${newSeNormalizePercent}%に正規化するよう設定しました :loud_sound:`);
         }
 
         return new ActionResponse({ id: input.id, action, onSuccess });
