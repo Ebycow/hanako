@@ -87,9 +87,17 @@ function calculateDefaultSeNormalize() {
         return 50;
     }
 
+    // 防御的クランプ: 0.0〜1.0の範囲外の値は丸める
+    const clampedConfig = Math.max(0.0, Math.min(1.0, config));
+    if (clampedConfig !== config) {
+        logger.warn(
+            `foleyNormalizeTargetPeak=${config}が範囲外のため、${clampedConfig}にクランプされました（有効範囲: 0.0〜1.0）`
+        );
+    }
+
     // 0.0〜1.0 → 0〜100 に変換
-    const value = Math.round(config * 100);
-    logger.debug(`foleyNormalizeTargetPeak=${config} → seNormalize=${value}`);
+    const value = Math.round(clampedConfig * 100);
+    logger.debug(`foleyNormalizeTargetPeak=${clampedConfig} → seNormalize=${value}`);
     return value;
 }
 

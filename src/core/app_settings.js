@@ -64,6 +64,10 @@ class AppSettings {
         assert(typeof data.foleyMaxDownloadByteSize === 'number');
         assert(typeof data.foleyMaxAudioSeconds === 'number');
         assert(typeof data.foleyNormalizeTargetPeak === 'number');
+        assert(
+            data.foleyNormalizeTargetPeak >= 0.0 && data.foleyNormalizeTargetPeak <= 1.0,
+            `foleyNormalizeTargetPeak must be in range [0.0, 1.0], got ${data.foleyNormalizeTargetPeak}`
+        );
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
