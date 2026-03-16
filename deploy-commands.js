@@ -57,6 +57,13 @@ const commands = [
         .addStringOption((option) => option.setName('keyword').setDescription('検索キーワード').setRequired(true))
         .toJSON(),
     new SlashCommandBuilder()
+        .setName('se-normalize')
+        .setDescription('SEの音量を正規化するレベルを設定します（0〜100、0で無効化）')
+        .addIntegerOption((option) =>
+            option.setName('level').setDescription('正規化レベル（0〜100、デフォルト50）').setRequired(true)
+        )
+        .toJSON(),
+    new SlashCommandBuilder()
         .setName('blacklist-add')
         .setDescription('ユーザーをブラックリストに追加します')
         .addUserOption((option) => option.setName('user').setDescription('ミュートするユーザー').setRequired(true))

@@ -13,6 +13,7 @@ const IFoleyActionRepo = require('../../domain/repo/i_foley_action_repo');
 const IFoleyDictionaryRepo = require('../../domain/repo/i_foley_dictionary_repo');
 const IFoleyStreamRepo = require('../../domain/repo/i_foley_stream_repo');
 const IObjectStorageRepo = require('../../domain/repo/i_object_storage_repo');
+const ISettingsRepo = require('../../domain/repo/i_settings_repo');
 const Datastore = require('@seald-io/nedb');
 const FoleyDictionary = require('../../domain/entity/foley_dictionary');
 const FoleyDictionaryLine = require('../../domain/entity/foley_dictionary_line');
@@ -208,14 +209,16 @@ class NedbFoleyDictionaryTableManager {
      *
      * @param {AppSettings} appSettings DI
      * @param {IObjectStorageRepo} objectStorageRepo DI
+     * @param {ISettingsRepo} settingsRepo DI
      */
-    constructor(appSettings, objectStorageRepo) {
+    constructor(appSettings, objectStorageRepo, settingsRepo) {
         if (firstCall) {
             firstCall = false;
             init();
         }
         this.appSettings = appSettings;
         this.objectStorageRepo = objectStorageRepo;
+        this.settingsRepo = settingsRepo;
         this.ffmpegOptions = ['-analyzeduration', '0', '-loglevel', '0', '-f', 's16le', '-ar', '48000', '-ac', '2'];
 
         // FFmpeg 出力ファイルサイズ制限を適用する
@@ -508,8 +511,15 @@ class NedbFoleyDictionaryTableManager {
         const objectKey = Buffer.from(record[0]).toString('base64');
         const stream = await this.objectStorageRepo.readFile(audio.serverId, objectKey, 'pcm');
 
-        // SE音量正規化を適用
-        const targetPeak = Math.round(this.appSettings.foleyNormalizeTargetPeak * 32767);
+        // SE正規化処理を適用
+        // サーバー設定のseNormalize（0-100）を優先的に使用
+        const settings = await this.settingsRepo.loadSettings(audio.serverId);
+        const seNormalize = settings.seNormalize; // デフォルト50（Settings entityで設定）
+        logger.debug(
+            `SE正規化設定読み込み: serverId=${audio.serverId}, seNormalize=${seNormalize}, settings=${settings}`
+        );
+        const targetPeak = Math.round((seNormalize / 100) * 32767);
+
         if (targetPeak > 0) {
             return normalizePeak(stream, targetPeak);
         }
@@ -519,12 +529,12 @@ class NedbFoleyDictionaryTableManager {
 }
 
 // IFoleyActionRepoの実装として登録
-IFoleyActionRepo.comprise(NedbFoleyDictionaryTableManager, [AppSettings, IObjectStorageRepo]);
+IFoleyActionRepo.comprise(NedbFoleyDictionaryTableManager, [AppSettings, IObjectStorageRepo, ISettingsRepo]);
 
 // IFoleyDictionaryRepoの実装として登録
-IFoleyDictionaryRepo.comprise(NedbFoleyDictionaryTableManager, [AppSettings, IObjectStorageRepo]);
+IFoleyDictionaryRepo.comprise(NedbFoleyDictionaryTableManager, [AppSettings, IObjectStorageRepo, ISettingsRepo]);
 
 // IFoleyStreamRepoの実装として登録
-IFoleyStreamRepo.comprise(NedbFoleyDictionaryTableManager, [AppSettings, IObjectStorageRepo]);
+IFoleyStreamRepo.comprise(NedbFoleyDictionaryTableManager, [AppSettings, IObjectStorageRepo, ISettingsRepo]);
 
 module.exports = NedbFoleyDictionaryTableManager;

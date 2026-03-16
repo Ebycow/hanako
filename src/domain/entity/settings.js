@@ -13,6 +13,7 @@ class Settings {
      * @param {string} data.serverId DiscordサーバーID
      * @param {number} data.maxCount 最大読み上げ文字数
      * @param {{ userId : string , name : string }} data.speaker サーバーの読み上げキャラクター指定
+     * @param {number} [data.seNormalize=50] SE正規化レベル（0〜100、デフォルト50）
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -20,8 +21,14 @@ class Settings {
         assert(typeof data.maxCount === 'number' && Number.isInteger(data.maxCount) && data.maxCount >= 0);
         assert(typeof data.speaker === 'object');
 
+        // seNormalizeはオプショナル（既存レコード互換のためデフォルト値を設定）
+        const seNormalize = data.seNormalize !== undefined ? data.seNormalize : 50;
+        assert(
+            typeof seNormalize === 'number' && Number.isInteger(seNormalize) && seNormalize >= 0 && seNormalize <= 100
+        );
+
         Object.defineProperty(this, 'data', {
-            value: Object.assign({}, data),
+            value: Object.assign({}, data, { seNormalize }),
             writable: false,
             enumerable: true,
             configurable: false,
@@ -64,8 +71,17 @@ class Settings {
         return this.data.speaker;
     }
 
+    /**
+     * SE正規化レベル（0〜100のパーセンテージ）
+     *
+     * @type {number}
+     */
+    get seNormalize() {
+        return this.data.seNormalize;
+    }
+
     toString() {
-        return `Settings(id=${this.id}, serverId=${this.serverId}, maxCount=${this.maxCount}, speaker=${this.speaker})`;
+        return `Settings(id=${this.id}, serverId=${this.serverId}, maxCount=${this.maxCount}, speaker=${this.speaker}, seNormalize=${this.seNormalize})`;
     }
 }
 

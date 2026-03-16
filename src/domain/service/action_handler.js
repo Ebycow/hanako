@@ -77,6 +77,8 @@ class ActionHandler {
             return this.settingsActionRepo.postMaxCountUpdate(action);
         } else if (type === 'speaker_update') {
             return this.settingsActionRepo.postSpeakerUpdate(action);
+        } else if (type === 'se_normalize_update') {
+            return this.settingsActionRepo.postSeNormalizeUpdate(action);
         } else {
             throw new Error('unreachable');
         }

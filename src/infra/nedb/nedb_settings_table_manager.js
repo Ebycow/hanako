@@ -10,6 +10,7 @@ const Datastore = require('@seald-io/nedb');
 
 /** @typedef {import('../../domain/entity/actions/max_count_update_action')} MaxCountUpdateAction */
 /** @typedef {import('../../domain/entity/actions/speaker_update_action')} SpeakerUpdateAction */
+/** @typedef {import('../../domain/entity/actions/se_normalize_update_action')} SeNormalizeUpdateAction */
 
 /** @typedef {string} ServerID サーバーID */
 
@@ -70,7 +71,9 @@ async function loadSharedData(serverId) {
 
     // キャッシュにデータがあればそのまま返却
     if (cache.has(serverId)) {
-        return Promise.resolve(cache.get(serverId));
+        const cached = cache.get(serverId);
+        logger.trace(`Settings読み込み: serverId=${serverId}, キャッシュから取得, seNormalize=${cached.seNormalize}`);
+        return Promise.resolve(cached);
     }
 
     // キャッシュにデータがなければDBから取得
@@ -89,9 +92,22 @@ async function loadSharedData(serverId) {
                     };
                     logger.info('Speaker設定マイグレーションを終了');
                 }
+                // SE正規化設定マイグレーション (既存レコードにseNormalizeを追加)
+                if (dict.seNormalize === undefined) {
+                    logger.info('SE正規化設定マイグレーションを開始: seNormalize=50をデフォルト値として設定');
+                    dict.seNormalize = 50;
+                    logger.info('SE正規化設定マイグレーションを終了');
+                }
+                logger.trace(`Settings読み込み: serverId=${serverId}, DBから取得, seNormalize=${dict.seNormalize}`);
                 resolve(dict);
             } else {
-                const initialRecord = { id: uuid(), serverId, maxCount: 0, speaker: { default: 'default' } };
+                const initialRecord = {
+                    id: uuid(),
+                    serverId,
+                    maxCount: 0,
+                    speaker: { default: 'default' },
+                    seNormalize: 50,
+                };
                 dbInstance.insert({ id: serverId, dict: initialRecord }, (err) => {
                     if (err) reject(err);
                     else resolve(initialRecord);
@@ -156,6 +172,7 @@ function toSettings(record) {
         serverId: record.serverId,
         maxCount: record.maxCount,
         speaker: record.speaker,
+        seNormalize: record.seNormalize,
     });
 }
 
@@ -225,6 +242,27 @@ class NedbSettingsTableManager {
 
         // 永続化
         await persistSharedData(action.serverId);
+    }
+
+    /**
+     * (impl) ISettingsActionRepo
+     *
+     * @param {SeNormalizeUpdateAction} action
+     * @returns {Promise<void>}
+     */
+    async postSeNormalizeUpdate(action) {
+        assert(typeof action === 'object');
+
+        const record = await loadSharedData(action.serverId);
+        logger.debug(`SE正規化更新前: serverId=${action.serverId}, 現在のseNormalize=${record.seNormalize}`);
+
+        // 新しくseNormalizeを設定
+        record.seNormalize = action.seNormalize;
+        logger.debug(`SE正規化更新後: serverId=${action.serverId}, 新しいseNormalize=${record.seNormalize}`);
+
+        // 永続化
+        await persistSharedData(action.serverId);
+        logger.debug(`SE音量永続化完了: serverId=${action.serverId}`);
     }
 }
 
