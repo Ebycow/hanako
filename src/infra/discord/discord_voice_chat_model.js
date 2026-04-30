@@ -25,82 +25,116 @@ const RECONNECT_MAX_DELAY_MS = 300000;
 /** @typedef {import('@discordjs/voice').AudioPlayer} AudioPlayer */
 /** @typedef {import('@discordjs/voice').PlayerSubscription} PlayerSubscription */
 
+/**
+ * Discordボイスチャットの境界モデル
+ */
 class DiscordVoiceChatModel {
     /**
-     * @param {string} serverId Discord server ID
+     * DiscordVoiceChatModelを構築
+     *
+     * @param {string} serverId DiscordサーバーID
      */
     constructor(serverId) {
         assert(typeof serverId === 'string');
 
         /**
+         * 所属するDiscordサーバーのID
+         *
          * @type {string}
          */
         this.serverId = serverId;
 
         /**
+         * 音声ストリーム待ち行列
+         *
          * @type {Readable[]}
          */
         this.cue = [];
 
         /**
+         * 音声チャンネルとのコネクション
+         *
          * @type {VoiceConnection | null}
          */
         this.connection = null;
 
         /**
-         * Last joined voice channel. Used to recreate the connection after Discord voice recovery fails.
+         * 最後に参加した音声チャンネル
+         * rejoin失敗後に新しい音声接続を作り直すために保持する。
          *
          * @type {discord.VoiceChannel | null}
          */
         this.voiceChannel = null;
 
         /**
+         * 音声チャンネルのオーディオプレイヤー
+         *
          * @type {AudioPlayer | null}
          */
         this.audioPlayer = null;
 
         /**
+         * 音声チャンネルのサブスクライブ
+         *
          * @type {PlayerSubscription | null}
          */
         this.playerSubscribe = null;
 
         /**
+         * 現在再生中のストリームのDispatcher
+         *
          * @type {object | null}
          */
         this.dispatcher = null;
 
         /**
+         * 現在読み上げ中のテキストチャンネルの配列
+         *
          * @type {discord.TextChannel[]}
          */
         this.readingChannels = [];
 
         /**
+         * 再接続タイマー
+         *
          * @type {NodeJS.Timeout | null}
          */
         this.reconnectTimer = null;
 
         /**
+         * 再接続試行回数
+         *
          * @type {number}
          */
         this.reconnectAttempts = 0;
 
         /**
+         * 再接続処理中フラグ
+         *
          * @type {boolean}
          */
         this.reconnecting = false;
     }
 
+    /**
+     * キューを空にする
+     */
     clearQueue() {
         this.cue.forEach((stream) => stream.destroy());
         this.cue = [];
     }
 
+    /**
+     * 読み上げ対象チャネルを空にする
+     */
     clearReadingChannels() {
         this.readingChannels = [];
     }
 
     /**
-     * @param {discord.TextChannel} textChannel
+     * 読み上げ対象チャネルを追加する
+     *
+     * @param {discord.TextChannel} textChannel 読み上げ対象チャネル
      */
     addReadingChannel(textChannel) {
         if (!this.readingChannels.some((channel) => channel.id === textChannel.id)) {
@@ -109,6 +143,8 @@ class DiscordVoiceChatModel {
     }
 
     /**
+     * 現在再生中の音声を強制的に中止する
+     *
      * @returns {Promise<void>}
      */
     killStream() {
@@ -122,7 +158,9 @@ class DiscordVoiceChatModel {
     }
 
     /**
-     * @param {discord.VoiceChannel} voiceChannel
+     * VCに参加する
+     *
+     * @param {discord.VoiceChannel} voiceChannel 参加するチャンネル。
      * @returns {Promise<void>}
      */
     async join(voiceChannel) {
@@ -137,7 +175,10 @@ class DiscordVoiceChatModel {
     }
 
     /**
-     * @param {discord.VoiceChannel} voiceChannel
+     * Discord音声接続とAudioPlayerを作る。
+     * 古い接続のイベントが新しい接続を破棄しないよう、呼び出し側で接続インスタンスを保持して比較する。
+     *
+     * @param {discord.VoiceChannel} voiceChannel 参加するチャンネル。
      * @returns {VoiceConnection}
      * @private
      */
@@ -171,13 +212,15 @@ class DiscordVoiceChatModel {
 
         connection.on('error', (err) => {
             if (connection !== this.connection) return;
-            logger.warn(`Voice connection error (server: ${this.serverId})`, err);
+            logger.warn(`音声接続エラー (server: ${this.serverId})`, err);
         });
 
         return connection;
     }
 
     /**
+     * 音声接続の切断を検知して復帰を試みる。
+     *
      * @param {VoiceConnection} connection
      * @param {{status: string}} newState
      * @returns {Promise<void>}
@@ -188,34 +231,36 @@ class DiscordVoiceChatModel {
             return;
         }
 
-        logger.warn(`Voice connection disconnected (server: ${this.serverId})`);
+        logger.warn(`音声接続が切断された (server: ${this.serverId})`);
 
         try {
+            // discord.js内部の自動復帰（Signalling/Connecting状態への遷移）を待つ
             await Promise.race([
                 entersState(connection, VoiceConnectionStatus.Signalling, VOICE_RECOVERY_WAIT_MS),
                 entersState(connection, VoiceConnectionStatus.Connecting, VOICE_RECOVERY_WAIT_MS),
             ]);
             if (connection !== this.connection) return;
 
-            logger.info(`Voice connection automatic recovery detected (server: ${this.serverId})`);
+            logger.info(`音声接続の自動復帰を検知 (server: ${this.serverId})`);
             await entersState(connection, VoiceConnectionStatus.Ready, VOICE_READY_WAIT_MS);
             if (connection !== this.connection) return;
 
-            logger.info(`Voice connection recovered to Ready (server: ${this.serverId})`);
+            logger.info(`音声接続がReady状態に復帰 (server: ${this.serverId})`);
         } catch {
             if (connection !== this.connection) return;
 
             try {
-                logger.info(`Voice connection rejoin requested (server: ${this.serverId})`);
+                // 自動復帰しなかった場合、手動でrejoinを試みる
+                logger.info(`音声接続のrejoinを試行 (server: ${this.serverId})`);
                 connection.rejoin();
                 await entersState(connection, VoiceConnectionStatus.Ready, VOICE_READY_WAIT_MS);
                 if (connection !== this.connection) return;
 
-                logger.info(`Voice connection rejoin succeeded (server: ${this.serverId})`);
+                logger.info(`音声接続のrejoinに成功 (server: ${this.serverId})`);
             } catch {
                 if (connection !== this.connection) return;
 
-                logger.error(`Voice connection recovery failed; destroying connection (server: ${this.serverId})`);
+                logger.error(`音声接続の復帰に失敗。接続を破棄する (server: ${this.serverId})`);
                 this.clearQueue();
                 this.destroyConnection(connection);
                 this.scheduleReconnect();
@@ -223,6 +268,9 @@ class DiscordVoiceChatModel {
         }
     }
 
+    /**
+     * VCから退出する
+     */
     leave() {
         this.cancelReconnect();
         this.voiceChannel = null;
@@ -232,7 +280,9 @@ class DiscordVoiceChatModel {
     }
 
     /**
-     * @param {Readable} stream
+     * 音声ストリームを待ち行列に追加する
+     *
+     * @param {Readable} stream 音声ストリーム。
      */
     push(stream) {
         this.cue.push(stream);
@@ -242,6 +292,8 @@ class DiscordVoiceChatModel {
     }
 
     /**
+     * 現在の接続を破棄してクリーンアップする
+     *
      * @param {VoiceConnection | null} connection
      * @private
      */
@@ -287,6 +339,8 @@ class DiscordVoiceChatModel {
     }
 
     /**
+     * 予約中の再接続をキャンセルする
+     *
      * @private
      */
     cancelReconnect() {
@@ -298,6 +352,8 @@ class DiscordVoiceChatModel {
     }
 
     /**
+     * rejoin失敗後の再接続を予約する
+     *
      * @private
      */
     scheduleReconnect() {
@@ -313,7 +369,7 @@ class DiscordVoiceChatModel {
         const delay = Math.min(RECONNECT_BASE_DELAY_MS * 2 ** this.reconnectAttempts, RECONNECT_MAX_DELAY_MS);
         this.reconnectAttempts++;
 
-        logger.info(`Voice connection reconnect scheduled (server: ${this.serverId}, delay: ${delay}ms)`);
+        logger.info(`音声接続の再接続を予約 (server: ${this.serverId}, delay: ${delay}ms)`);
         this.reconnectTimer = setTimeout(() => {
             this.reconnectTimer = null;
             this.reconnect();
@@ -324,6 +380,8 @@ class DiscordVoiceChatModel {
     }
 
     /**
+     * 最後に参加していた音声チャンネルへ新しい接続を作る
+     *
      * @returns {Promise<void>}
      * @private
      */
@@ -336,16 +394,16 @@ class DiscordVoiceChatModel {
         let connection = null;
         let shouldRetry = false;
         try {
-            logger.info(`Voice connection reconnecting (server: ${this.serverId})`);
+            logger.info(`音声接続の再接続を試行 (server: ${this.serverId})`);
             connection = this.connect(this.voiceChannel);
             await entersState(connection, VoiceConnectionStatus.Ready, VOICE_READY_WAIT_MS);
             if (connection !== this.connection) return;
 
             this.reconnectAttempts = 0;
-            logger.info(`Voice connection reconnected (server: ${this.serverId})`);
+            logger.info(`音声接続の再接続に成功 (server: ${this.serverId})`);
             this.play();
         } catch (e) {
-            logger.warn(`Voice connection reconnect failed (server: ${this.serverId})`, e);
+            logger.warn(`音声接続の再接続に失敗 (server: ${this.serverId})`, e);
             this.destroyConnection(connection);
             shouldRetry = this.voiceChannel !== null && this.connection === null;
         } finally {
@@ -358,6 +416,8 @@ class DiscordVoiceChatModel {
     }
 
     /**
+     * 再帰的再生
+     *
      * @private
      */
     play() {
