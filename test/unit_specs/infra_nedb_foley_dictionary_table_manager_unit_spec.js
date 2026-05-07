@@ -229,6 +229,23 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 callArgs[0].should.equal('http://example.com/shakin.mp3');
                 callArgs[1].should.deep.include({ maxContentLength: 1048576 });
             });
+
+            specify('file-type v22 の fileTypeFromBuffer API で MIME 判定できる', async () => {
+                fakeFileType = {
+                    fileTypeFromBuffer: sandbox.stub().resolves({ mime: 'audio/mpeg', ext: 'mp3' }),
+                };
+                const mgr = createManager();
+                const action = new FoleyCreateAction({
+                    id: 'act-file-type-v22',
+                    serverId: 'sv-file-type-v22',
+                    keyword: 'v22',
+                    url: 'http://example.com/v22.mp3',
+                });
+
+                await mgr.postFoleyCreate(action);
+
+                fakeFileType.fileTypeFromBuffer.calledOnceWith(DUMMY_AUDIO_BUF).should.be.true;
+            });
         });
 
         context('異常系', () => {

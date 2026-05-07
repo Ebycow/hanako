@@ -8,6 +8,15 @@ const prism = require('prism-media');
 const FileType = require('file-type');
 const Readable = require('stream').Readable;
 const errors = require('../../core/errors').promises;
+
+async function fileTypeFromBuffer(buffer) {
+    const detectFromBuffer = FileType.fileTypeFromBuffer || FileType.fromBuffer;
+    if (typeof detectFromBuffer !== 'function') {
+        return errors.unexpected('file-type-from-buffer-not-available');
+    }
+    return detectFromBuffer(buffer);
+}
+
 const AppSettings = require('../../core/app_settings');
 const IFoleyActionRepo = require('../../domain/repo/i_foley_action_repo');
 const IFoleyDictionaryRepo = require('../../domain/repo/i_foley_dictionary_repo');
@@ -282,7 +291,7 @@ class NedbFoleyDictionaryTableManager {
             }
         }
 
-        const fileType = await FileType.fromBuffer(response.data);
+        const fileType = await fileTypeFromBuffer(response.data);
         if (!fileType || !fileType.mime.startsWith('audio')) {
             const message = 'これサウンドファイルじゃなさそう :sob:';
             return errors.unexpected('foley-http-invalid-mine-type', message);
@@ -337,7 +346,7 @@ class NedbFoleyDictionaryTableManager {
                 continue;
             }
 
-            const fileType = await FileType.fromBuffer(response.data);
+            const fileType = await fileTypeFromBuffer(response.data);
             if (!fileType || !fileType.mime.startsWith('audio')) {
                 logger.warn(`音声ファイル以外をスキップ: ${item.keyword}`);
                 failedItems.push(`${item.keyword}: 音声ファイルではありません`);
