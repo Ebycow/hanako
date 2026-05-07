@@ -1,4 +1,4 @@
-﻿name: CD Deploy
+name: CD Deploy
 
 on:
   workflow_run:
