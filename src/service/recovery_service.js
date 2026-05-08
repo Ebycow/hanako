@@ -40,8 +40,8 @@ class RecoveryService {
 
         // 復帰処理を実行
         const promises = infos
-            .map(info => doRecoveryF.call(this, info))
-            .map(p => p.catch(e => logger.warn(`復帰処理中のエラー ${e}`)));
+            .map((info) => doRecoveryF.call(this, info))
+            .map((p) => p.catch((e) => logger.warn(`復帰処理中のエラー ${e}`)));
         await Promise.all(promises);
 
         // 復帰情報をすべて削除

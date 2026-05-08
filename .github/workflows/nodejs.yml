@@ -1,23 +1,109 @@
 name: Node.js CI
 
-on: [push]
+on:
+  push:
+    branches: [master, slashbros]
+  pull_request:
+    branches: [master]
 
 jobs:
-  build:
-
+  lint-and-test:
     runs-on: windows-latest
 
-    strategy:
-      matrix:
-        node-version: ['13.9.0']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.11.1'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Test with coverage
+        run: npm test
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+  production-smoke:
+    needs: lint-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/slashbros'
+    runs-on:
+      - self-hosted
+      - windows
+    environment: production
+    env:
+      HANAKO_NODE_EXE_PATH: ${{ vars.HANAKO_NODE_EXE_PATH }}
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - run: npm install
-    - run: npm test
-      env:
-        CI: true
+      - uses: actions/checkout@v4
+
+      - name: Validate production node path
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:HANAKO_NODE_EXE_PATH)) {
+            throw "Variable 'HANAKO_NODE_EXE_PATH' is required (repository or production environment variable)."
+          }
+          if (-not (Test-Path -LiteralPath $env:HANAKO_NODE_EXE_PATH)) {
+            throw "HANAKO_NODE_EXE_PATH was not found: $env:HANAKO_NODE_EXE_PATH"
+          }
+
+      - name: Install production dependencies
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        run: |
+          $nodeDir = Split-Path -Path $env:HANAKO_NODE_EXE_PATH -Parent
+          $npmCmd = Join-Path -Path $nodeDir -ChildPath "npm.cmd"
+          $env:Path = "$nodeDir;$env:Path"
+          if (-not (Test-Path -LiteralPath $npmCmd)) {
+            throw "npm.cmd was not found: $npmCmd"
+          }
+
+          & $npmCmd "ci" "--omit=dev" "--ignore-scripts=false"
+          if ($LASTEXITCODE -ne 0) {
+            throw "npm ci --omit=dev --ignore-scripts=false failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Rebuild @discordjs/opus from source
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        run: |
+          $nodeDir = Split-Path -Path $env:HANAKO_NODE_EXE_PATH -Parent
+          $npmCmd = Join-Path -Path $nodeDir -ChildPath "npm.cmd"
+          $env:Path = "$nodeDir;$env:Path"
+          & $npmCmd "rebuild" "@discordjs/opus" "--build-from-source" "--foreground-scripts" "--ignore-scripts=false" "--verbose"
+          if ($LASTEXITCODE -ne 0) {
+            throw "npm rebuild @discordjs/opus failed with exit code $LASTEXITCODE."
+          }
+
+          $opusCandidates = Get-ChildItem -LiteralPath ".\\node_modules\\@discordjs\\opus" -Recurse -File -Filter "opus.node" -ErrorAction SilentlyContinue
+          if ($opusCandidates) {
+            Write-Output "Found opus.node candidates after rebuild:"
+            $opusCandidates | Select-Object -ExpandProperty FullName
+          } else {
+            Write-Warning "No opus.node file was found after rebuild."
+          }
+
+      - name: Validate @discordjs/opus load
+        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        run: |
+          $nodeDir = Split-Path -Path $env:HANAKO_NODE_EXE_PATH -Parent
+          $npmCmd = Join-Path -Path $nodeDir -ChildPath "npm.cmd"
+          $env:Path = "$nodeDir;$env:Path"
+          $ignoreScripts = (& $npmCmd "config" "get" "ignore-scripts" | Out-String).Trim()
+          Write-Output "npm config ignore-scripts=$ignoreScripts"
+
+          Write-Output "portable node ABI: $(& $env:HANAKO_NODE_EXE_PATH -p "process.versions.modules")"
+          Write-Output "PATH node ABI: $(node -p "process.versions.modules")"
+
+          & $env:HANAKO_NODE_EXE_PATH "-e" "const { resolve } = require('node:path'); const { find } = require('@discordjs/node-pre-gyp'); process.stdout.write(find(resolve(process.cwd(),'node_modules','@discordjs','opus','package.json')));"
+          & $env:HANAKO_NODE_EXE_PATH "-e" "require('@discordjs/opus')"
+          if ($LASTEXITCODE -ne 0) {
+            throw "@discordjs/opus failed to load on the production Node runtime."
+          }

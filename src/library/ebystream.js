@@ -23,7 +23,7 @@ class EbyStream extends Readable {
         this._current = null;
 
         this._cue = streams.map(ensure);
-        this._cue.forEach(stream => this._attachErrorListener(stream));
+        this._cue.forEach((stream) => this._attachErrorListener(stream));
 
         this._next();
     }
@@ -94,7 +94,7 @@ class EbyStream extends Readable {
     _attachErrorListener(stream) {
         if (!stream) return;
 
-        const onError = err => {
+        const onError = (err) => {
             stream.removeListener('error', onError);
             this.destroy(err);
         };

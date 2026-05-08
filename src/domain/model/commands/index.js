@@ -8,6 +8,7 @@ module.exports = {
     seibai: require('./seibai_command'),
     limit: require('./limit_command'),
     speaker: require('./speaker_command'),
+    se_normalize: require('./se_normalize_command'),
     word_create: require('./word_create_command'),
     word_read: require('./word_read_command'),
     word_delete: require('./word_delete_command'),
@@ -18,7 +19,9 @@ module.exports = {
     silence_clear: require('./silence_clear_command'),
     foley_create: require('./foley_create_command'),
     foley_delete: require('./foley_delete_command'),
+    foley_rename: require('./foley_rename_command'),
     foley_read: require('./foley_read_command'),
+    foley_search: require('./foley_search_command'),
     help: require('./help_command'),
 };
 
@@ -34,6 +37,7 @@ module.exports = {
 /** @typedef {import('./seibai_command')} Seibai */
 /** @typedef {import('./limit_command')} Limit */
 /** @typedef {import('./speaker_command')} Speaker */
+/** @typedef {import('./se_normalize_command')} SeNormalize */
 /** @typedef {import('./word_create_command')} WordCreate */
 /** @typedef {import('./word_read_command')} WordRead */
 /** @typedef {import('./word_delete_command')} WordDelete */
@@ -44,11 +48,13 @@ module.exports = {
 /** @typedef {import('./silence_clear_command')} SilenceClear */
 /** @typedef {import('./foley_create_command')} FoleyCreate */
 /** @typedef {import('./foley_delete_command')} FoleyDelete */
+/** @typedef {import('./foley_rename_command')} FoleyRename */
 /** @typedef {import('./foley_read_command')} FoleyRead */
+/** @typedef {import('./foley_search_command')} FoleySearch */
 
 /**
  * コマンドモデル直和型
  *
  * @typedef CommandT
- * @type {Ask|Join|Leave|Seibai|Limit|Speaker|WordCreate|WordRead|WordDelete|SilenceCreate|SilenceRead|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|FoleyRead}
+ * @type {Ask|Join|Leave|Seibai|Limit|Speaker|SeNormalize|WordCreate|WordRead|WordDelete|SilenceCreate|SilenceRead|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|FoleyRename|FoleyRead|FoleySearch}
  */

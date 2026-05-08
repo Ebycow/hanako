@@ -71,14 +71,14 @@ class RecoverySupervisor {
             const actions = vss.map(toLeaveVoiceAction);
 
             // VC退出アクションを実行
-            const actionPs = actions.map(action => this.actionHandler.handle(action));
-            await Promise.all(actionPs.map(p => p.catch(e => logger.warn(`VC退出処理中にエラー ${e}`))));
+            const actionPs = actions.map((action) => this.actionHandler.handle(action));
+            await Promise.all(actionPs.map((p) => p.catch((e) => logger.warn(`VC退出処理中にエラー ${e}`))));
 
             // ボイスチャット情報を復帰情報に変換
             const infos = vss.map(toRecoveryInfo);
 
             // 復帰情報を保存
-            const promises = infos.map(info => this.recoveryInfoRepo.saveRecoveryInfo(info));
+            const promises = infos.map((info) => this.recoveryInfoRepo.saveRecoveryInfo(info));
             await Promise.all(promises);
 
             // 保存件数をログ出力

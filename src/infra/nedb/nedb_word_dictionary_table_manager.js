@@ -5,7 +5,7 @@ const uuid = require('uuidv4').uuid;
 const errors = require('../../core/errors').promises;
 const IWordActionRepo = require('../../domain/repo/i_word_action_repo');
 const IWordDictionaryRepo = require('../../domain/repo/i_word_dictionary_repo');
-const Datastore = require('nedb');
+const Datastore = require('@seald-io/nedb');
 const WordDictionary = require('../../domain/entity/word_dictionary');
 const WordDictionaryLine = require('../../domain/entity/word_dictionary_line');
 
@@ -47,7 +47,7 @@ function init() {
     // Nedbのロード
     dbInstance = new Datastore({ filename: './db/teach.db', autoload: true });
     dbInstance.loadDatabase();
-    dbInstance.persistence.setAutocompactionInterval(86400000);
+    dbInstance.setAutocompactionInterval(86400000);
 
     // キャッシュ領域の割当
     cache = new Map();
@@ -79,9 +79,9 @@ async function loadSharedData(serverId) {
                 let dict = doc.dict;
                 // <!-- 2020-03-23 マイグレーション処理
                 // TODO いずれ消す
-                if (dict.some(data => typeof data[2] === 'undefined')) {
+                if (dict.some((data) => typeof data[2] === 'undefined')) {
                     logger.info('マイグレーションを開始');
-                    dict = dict.map(data => {
+                    dict = dict.map((data) => {
                         if (typeof data[2] === 'undefined') {
                             data[2] = uuid();
                             logger.info(`migrate: ${data}`);
@@ -93,7 +93,7 @@ async function loadSharedData(serverId) {
                 // -->
                 resolve(dict);
             } else {
-                dbInstance.insert({ id: serverId, dict: [] }, err => {
+                dbInstance.insert({ id: serverId, dict: [] }, (err) => {
                     if (err) reject(err);
                     else resolve([]);
                 });
@@ -134,7 +134,9 @@ async function persistSharedData(serverId) {
 
     // 辞書データのスライスを永続化
     const promise = new Promise((resolve, reject) =>
-        dbInstance.update({ id: serverId }, { $set: { dict: records.slice() } }, err => (err ? reject(err) : resolve()))
+        dbInstance.update({ id: serverId }, { $set: { dict: records.slice() } }, (err) =>
+            err ? reject(err) : resolve()
+        )
     );
     await promise;
 
@@ -172,7 +174,7 @@ function createDict(records, serverId) {
     assert(typeof records === 'object' && Array.isArray(records));
     assert(typeof serverId === 'string');
 
-    const lines = records.map(record => createLine(record, serverId));
+    const lines = records.map((record) => createLine(record, serverId));
     return new WordDictionary({
         id: serverId,
         serverId,
@@ -223,7 +225,7 @@ class NedbWordDictionaryTableManager {
 
         const records = await loadSharedData(action.serverId);
 
-        if (records.some(record => action.from === record[0])) {
+        if (records.some((record) => action.from === record[0])) {
             return errors.disappointed(`word-already-exists ${action} ${records}`);
         }
 
@@ -242,7 +244,7 @@ class NedbWordDictionaryTableManager {
         assert(typeof action === 'object');
 
         const records = await loadSharedData(action.serverId);
-        const index = records.findIndex(record => action.wordId === record[2]);
+        const index = records.findIndex((record) => action.wordId === record[2]);
 
         if (index === -1) {
             return errors.disappointed(`word-not-found ${action} ${records}`);

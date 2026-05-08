@@ -51,15 +51,15 @@ class FoleyReader {
                 const newFoley = () => new FoleyAudio({ serverId: this.hanako.serverId, foleyId: line.id });
                 return plain.content
                     .split(line.keyword)
-                    .map(s => (s === '' ? new Noop() : new Plain({ content: s })))
-                    .map(v => [v])
+                    .map((s) => (s === '' ? new Noop() : new Plain({ content: s })))
+                    .map((v) => [v])
                     .reduceRight((rhs, lhs) => lhs.concat([newFoley()], rhs));
             } else {
                 return [plain];
             }
         };
 
-        return this.hanako.foleyDictionary.lines.reduce((acc, line) => acc.map(v => wrap(v, line)).flat(), [value]);
+        return this.hanako.foleyDictionary.lines.reduce((acc, line) => acc.map((v) => wrap(v, line)).flat(), [value]);
     }
 }
 

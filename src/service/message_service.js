@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const VoiceResponse = require('../domain/entity/responses/voice_response');
 const CommandParser = require('../domain/service/command_parser');
 const CommandInvoker = require('../domain/service/command_invoker');
+const InteractionParser = require('../domain/service/interaction_parser');
 const MessageReader = require('../domain/service/message_reader');
 const StreamFetcher = require('../domain/service/stream_fetcher');
 
@@ -18,13 +19,21 @@ const StreamFetcher = require('../domain/service/stream_fetcher');
 class MessageService {
     /**
      * @param {null} commandParser DomainService
+     * @param {null} interactionParser DomainService
      * @param {null} commandInvoker DomainService
      * @param {null} messageReader DomainService
      * @param {null} streamFetcher DomainService
      */
-    constructor(commandParser = null, commandInvoker = null, messageReader = null, streamFetcher = null) {
+    constructor(
+        commandParser = null,
+        commandInvoker = null,
+        interactionParser = null,
+        messageReader = null,
+        streamFetcher = null
+    ) {
         this.commandParser = commandParser || new CommandParser();
         this.commandInvoker = commandInvoker || new CommandInvoker();
+        this.interactionParser = interactionParser || new InteractionParser();
         this.messageReader = messageReader || new MessageReader();
         this.streamFetcher = streamFetcher || new StreamFetcher();
     }
@@ -44,6 +53,11 @@ class MessageService {
         if (dmessage.type === 'command') {
             // コマンドタイプのメッセージを処理
             const input = await this.commandParser.parse(hanako, dmessage);
+            const response = await this.commandInvoker.invoke(hanako, input);
+            return Promise.resolve(response);
+        } else if (dmessage.type === 'interaction') {
+            // インタラクションタイプのメッセージを処理
+            const input = await this.interactionParser.parse(hanako, dmessage);
             const response = await this.commandInvoker.invoke(hanako, input);
             return Promise.resolve(response);
         } else if (dmessage.type === 'read') {

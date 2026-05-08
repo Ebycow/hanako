@@ -58,6 +58,7 @@ class SpeakerCommand {
         const action = new SpeakerUpdateAction({
             id: input.id,
             serverId: input.serverId,
+            userId: input.userId,
             speaker: newSpeaker,
         });
         let onSuccess;

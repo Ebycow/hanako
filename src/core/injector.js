@@ -24,8 +24,8 @@ const Injector = {
      */
     configure(configs) {
         assert(typeof configs === 'object' && Array.isArray(configs));
-        assert(configs.every(config => typeof config.interface === 'string'));
-        assert(configs.every(config => typeof config.dependent === 'string'));
+        assert(configs.every((config) => typeof config.interface === 'string'));
+        assert(configs.every((config) => typeof config.dependent === 'string'));
 
         if (dependencies !== null) {
             throw new TypeError('You may not configure dependencies twice.');
@@ -42,7 +42,7 @@ const Injector = {
     register(inf, klass, args = []) {
         assert(typeof inf === 'function');
         assert(typeof klass === 'function');
-        assert(args.every(arg => typeof arg === 'function'));
+        assert(args.every((arg) => typeof arg === 'function'));
 
         if (resolvations.has(inf)) {
             const resolvation = resolvations.get(inf);
@@ -78,7 +78,7 @@ const Injector = {
         }
 
         const [C, args] = dependency;
-        const resolvedArgs = args.map(x => resolveSingleton(x) || Injector.resolve(x));
+        const resolvedArgs = args.map((x) => resolveSingleton(x) || Injector.resolve(x));
         return new C(...resolvedArgs);
     },
 

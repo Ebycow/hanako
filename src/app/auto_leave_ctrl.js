@@ -44,7 +44,7 @@ class AutoLeaveCtrl {
         const autoLeaveParam = {
             serverName: member.guild.name,
             voiceChannelName: channel.name,
-            voiceChannelMembersId: channel.members.map(m => m.id),
+            voiceChannelMembersId: channel.members.map((m) => m.id),
         };
         await this.autoLeaveService.serve(hanako, autoLeaveParam);
     }

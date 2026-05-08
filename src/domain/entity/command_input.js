@@ -21,7 +21,7 @@ class CommandInput {
         assert(typeof data.id === 'string');
         assert(typeof data.argc === 'number' && Number.isInteger(data.argc) && data.argc >= 0);
         assert(Array.isArray(data.argv) && data.argv.length === data.argc);
-        assert(data.argv.every(x => typeof x === 'string'));
+        assert(data.argv.every((x) => typeof x === 'string'));
         assert(typeof data.origin === 'object');
 
         Object.defineProperty(this, 'data', {
@@ -69,6 +69,15 @@ class CommandInput {
     }
 
     /**
+     * 送信元DiscordユーザーID
+     *
+     * @type {string}
+     */
+    get userId() {
+        return this.data.origin.userId;
+    }
+
+    /**
      * 送信元テキストチャンネルID
      *
      * @type {string}
@@ -93,6 +102,15 @@ class CommandInput {
      */
     get mentionedUsers() {
         return this.data.origin.mentionedUsers;
+    }
+
+    /**
+     * 元のDiscordメッセージの添付ファイル
+     *
+     * @type {Array<{name: string, url: string}>}
+     */
+    get attachments() {
+        return this.data.origin.attachments;
     }
 
     /**

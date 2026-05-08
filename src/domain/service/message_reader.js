@@ -29,7 +29,7 @@ class MessageReader {
         assert(dmessage.type === 'read');
 
         // Silence中のユーザーは読み上げない
-        if (hanako.silenceDictionary.lines.some(line => line.userId === dmessage.userId)) {
+        if (hanako.silenceDictionary.lines.some((line) => line.userId === dmessage.userId)) {
             logger.trace(`読み上げ停止中のユーザーなので読み上げを中止する ${dmessage}`);
             return errors.abort();
         }
@@ -44,7 +44,7 @@ class MessageReader {
         }
 
         // 各Readerによる読み上げ手続き変換を実行
-        const reado = new Reado(hanako);
+        const reado = new Reado(hanako, dmessage);
         const audios = reado.compose(text);
 
         if (audios.length === 0) {

@@ -32,7 +32,7 @@ class FoleyDictionary {
         assert(typeof data.id === 'string');
         assert(typeof data.serverId === 'string');
         assert(typeof data.lines === 'object' && Array.isArray(data.lines));
-        assert(data.lines.every(line => typeof line === 'object'));
+        assert(data.lines.every((line) => typeof line === 'object'));
 
         const lines = data.lines.slice();
         lines.sort(compare);

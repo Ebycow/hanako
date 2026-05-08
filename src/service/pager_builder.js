@@ -29,7 +29,7 @@ class PagerBuilder {
         const descriptor = args[0];
 
         // ディスクリプタからPageableを同定
-        const pageable = pageables.find(p => p.descriptor === descriptor);
+        const pageable = pageables.find((p) => p.descriptor === descriptor);
         if (!pageable) {
             return errors.unexpected(`対応するPageableがない ${descriptor} ${pagerText}`);
         }

@@ -23,7 +23,7 @@ describe('LeaveCommand', () => {
             id: 'mock-settings-id',
             serverId: 'mock-server-id',
             maxCount: 0,
-            speaker: 'default',
+            speaker: { userId: 'default', name: 'default' },
         };
     }
 
@@ -69,7 +69,7 @@ describe('LeaveCommand', () => {
 
         specify('namesは静的に文字列の配列を返す', () => {
             LeaveCommand.names.should.be.an('array').that.is.not.empty;
-            LeaveCommand.names.forEach(name => name.should.be.a('string'));
+            LeaveCommand.names.forEach((name) => name.should.be.a('string'));
         });
 
         specify('processメソッドを持つ', () => {

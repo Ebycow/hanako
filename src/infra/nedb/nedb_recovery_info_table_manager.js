@@ -2,7 +2,7 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const uuid = require('uuidv4').uuid;
-const Datastore = require('nedb');
+const Datastore = require('@seald-io/nedb');
 const RecoveryInfo = require('../../domain/entity/recovery_info');
 const IRecoveryInfoRepo = require('../../domain/repo/i_recovery_info_repo');
 
@@ -35,7 +35,7 @@ function init() {
     // Nedbのロード
     dbInstance = new Datastore({ filename: './db/recovery.db', autoload: true });
     dbInstance.loadDatabase();
-    dbInstance.persistence.setAutocompactionInterval(86400000);
+    dbInstance.setAutocompactionInterval(86400000);
 
     logger.trace('モジュールが初期化された');
 }
@@ -97,7 +97,7 @@ class NedbRecoveryInfoTableManager {
 
         const newRecord = toRecord(info);
         return new Promise((resolve, reject) =>
-            dbInstance.insert(newRecord, err => {
+            dbInstance.insert(newRecord, (err) => {
                 if (err) {
                     reject(err);
                 } else {

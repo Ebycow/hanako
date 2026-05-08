@@ -20,6 +20,7 @@ const DiscordMessage = require('../domain/entity/discord_message');
  * @property {string} serverName
  * @property {?string} voiceChannelId
  * @property {Map<string, string>} mentionedUsers
+ * @property {Array<{name: string, url: string}>} attachments
  */
 
 /**
@@ -46,6 +47,7 @@ class MessageBuilder {
         assert(typeof param.serverName === 'string');
         assert(typeof param.voiceChannelId === 'string' || param.voiceChannelId === null);
         assert(typeof param.mentionedUsers === 'object');
+        assert(Array.isArray(param.attachments || []));
 
         const data = Object.assign({}, param);
 
@@ -61,6 +63,7 @@ class MessageBuilder {
             userId: data.userId,
             voiceChannelId: data.voiceChannelId,
             mentionedUsers: data.mentionedUsers,
+            attachments: data.attachments || [],
         });
 
         return Promise.resolve(dmessage);
@@ -77,7 +80,7 @@ class MessageBuilder {
  */
 async function inferMessageTypeF(hanako, data) {
     // 花子がメンションされているかどうかの真偽値
-    const isHanakoMentioned = Array.from(data.mentionedUsers.values()).some(id => id === hanako.userId);
+    const isHanakoMentioned = Array.from(data.mentionedUsers.values()).some((id) => id === hanako.userId);
 
     // 花子がメンションされているか、コマンドプリフィクスを持つなら暫定的にコマンド
     if (isHanakoMentioned || hanako.hasCommandPrefix(data.content)) {

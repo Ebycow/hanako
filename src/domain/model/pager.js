@@ -32,8 +32,8 @@ class Pager {
     constructor(pageable, currentIndex = 1) {
         assert(typeof pageable === 'object');
         assert(typeof pageable.lines === 'object' && Array.isArray(pageable.lines));
-        assert(pageable.lines.every(liner => typeof liner === 'object'));
-        assert(pageable.lines.every(liner => typeof liner.line === 'string'));
+        assert(pageable.lines.every((liner) => typeof liner === 'object'));
+        assert(pageable.lines.every((liner) => typeof liner.line === 'string'));
         assert(typeof pageable.linesPerPage === 'number' && Number.isInteger(pageable.linesPerPage));
         assert(pageable.linesPerPage >= 1);
         assert(typeof pageable.descriptor === 'string');
@@ -93,7 +93,7 @@ class Pager {
      * @returns {string}
      */
     show() {
-        const lines = this.lineables().map(v => v.line);
+        const lines = this.lineables().map((v) => v.line);
         const s1 = `${this.descriptor} ${this.currentIndex} / ${this.lastIndex} page`;
         const s2 = '─────────────────────';
         const sL = '─────────────────────';

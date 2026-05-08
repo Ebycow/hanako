@@ -23,7 +23,7 @@ class Commando {
      */
     constructor(hanako) {
         const classes = Array.from(Object.values(commands));
-        this.resolvers = classes.map(K => name => (K.names.includes(name) ? new K(hanako) : null));
+        this.resolvers = classes.map((K) => (name) => (K.names.includes(name) ? new K(hanako) : null));
     }
 
     /**

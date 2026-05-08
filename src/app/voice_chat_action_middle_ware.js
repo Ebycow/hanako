@@ -30,7 +30,7 @@ class VoiceChatActionMiddleWare {
     async transform(oldState, newState) {
         // 花子が参加していないVCのイベントは無視
         const channel = oldState.channel || newState.channel;
-        if (!channel.members.some(m => m.id === this.client.user.id)) {
+        if (!channel.members.some((m) => m.id === this.client.user.id)) {
             return errors.abort();
         }
 
