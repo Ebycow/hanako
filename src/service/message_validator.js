@@ -5,6 +5,9 @@ const errors = require('../core/errors').promises;
 
 const { ChannelType } = require('discord.js');
 
+/** 花子が処理するチャンネル種別 */
+const SUPPORTED_CHANNEL_TYPES = [ChannelType.GuildText, ChannelType.DM, ChannelType.GuildVoice];
+
 /**
  * @typedef MessageValidatorData
  * @type {object}
@@ -29,12 +32,12 @@ class MessageValidator {
         assert(typeof data.isBot === 'boolean');
         assert(typeof data.content === 'string');
         assert(typeof data.userName === 'string');
-        assert(
-            data.channelType === ChannelType.GuildText ||
-                data.channelType === ChannelType.DM ||
-                data.channelType === ChannelType.GuildVoice
-        );
 
+        if (!SUPPORTED_CHANNEL_TYPES.includes(data.channelType)) {
+            // スレッド・フォーラム・アナウンス等は対象外なので無視
+            logger.trace(`対象外のチャンネル種別なので無視した (channelType: ${data.channelType})`);
+            return errors.abort();
+        }
         if (data.isBot) {
             // Botは常に無視
             logger.trace('Botのメッセージなので無視した');
