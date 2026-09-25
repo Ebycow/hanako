@@ -97,7 +97,7 @@
 # Dependencies
 
 ## Node.js Runtime
-* Node.js 24.11.1
+* Node.js 24.21.0
 * npm (latest compatible version)
 
 ## System Dependencies
@@ -124,7 +124,7 @@
 
 # Install
 ## 0.前提条件
-* **Node.js 24.11.1** — [Volta](https://volta.sh/)を使用している場合、`package.json`の設定により自動的にバージョンが固定されます
+* **Node.js 24.21.0** — [Volta](https://volta.sh/)を使用している場合、`package.json`の設定により自動的にバージョンが固定されます
 * **Windows x64** — prebuiltバイナリを同梱しているため、そのまま動作します
 
 ## 1.BOTの作成
@@ -196,7 +196,7 @@ npm run debug
 ## 技術スタック
 | カテゴリ | 技術 |
 |----------|------|
-| Runtime | Node.js 24.11.1 |
+| Runtime | Node.js 24.21.0 |
 | Discord | discord.js 14, @discordjs/voice, opusscript |
 | Database | NeDB (組み込みドキュメントDB) |
 | Audio | prism-media, ffmpeg-static, node-libsamplerate |
