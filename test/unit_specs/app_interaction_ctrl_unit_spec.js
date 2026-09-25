@@ -2,7 +2,23 @@ const should = require('chai').should();
 const sinon = require('sinon');
 const proxyquire = require('proxyquire').noCallThru();
 const ChatResponse = require('../../src/domain/entity/responses/chat_response');
+const EbyDisappointedError = require('../../src/core/errors/eby_disappointed_error');
 const { MessageFlags } = require('discord.js');
+
+/**
+ * Promiseが失敗したときのエラーを取り出す（成功したらテスト失敗）
+ *
+ * @param {Promise<any>} promise
+ * @returns {Promise<any>}
+ */
+async function captureRejection(promise) {
+    try {
+        await promise;
+    } catch (e) {
+        return e;
+    }
+    throw new Error('rejected されるはずが resolved された');
+}
 
 describe('InteractionCtrl', () => {
     let sandbox;
@@ -69,7 +85,11 @@ describe('InteractionCtrl', () => {
                         channel: null,
                     },
                 },
+                isChatInputCommand: () => true,
+                inCachedGuild: () => true,
                 reply: sandbox.stub().resolves(),
+                deferReply: sandbox.stub().resolves(),
+                editReply: sandbox.stub().resolves(),
                 deleteReply: sandbox.stub().resolves(),
             },
             overrides
@@ -163,8 +183,68 @@ describe('InteractionCtrl', () => {
 
         responseHandle.callCount.should.equal(2);
         responseHandle.secondCall.args[0].should.equal(serviceResponse);
+        interaction.editReply.calledOnce.should.be.true;
+        interaction.editReply.firstCall.args[0].should.have.string('実行しました');
+    });
+
+    specify('処理より先に実行者だけに見える形で応答を保留する（3秒制限対策）', async () => {
+        const ctrl = new InteractionCtrl({});
+        const interaction = interactionBlueprint();
+        serviceServe.callsFake(async () => {
+            // 処理が始まる時点で応答の保留が済んでいる
+            interaction.deferReply.calledOnce.should.be.true;
+            return { type: 'silent' };
+        });
+
+        await ctrl.onInteraction(interaction);
+
+        interaction.deferReply.firstCall.args[0].should.have.property('flags', MessageFlags.Ephemeral);
+        interaction.reply.called.should.be.false;
+    });
+
+    specify('処理に失敗したら失敗を応答し、エラーは上位に伝える', async () => {
+        const ctrl = new InteractionCtrl({});
+        const interaction = interactionBlueprint();
+        const error = new Error('boom');
+        serviceServe.rejects(error);
+
+        (await captureRejection(ctrl.onInteraction(interaction))).should.equal(error);
+
+        interaction.editReply.firstCall.args[0].should.have.string('失敗しました');
+    });
+
+    specify('説明付きの EbyDisappointedError なら理由も応答に含める', async () => {
+        const ctrl = new InteractionCtrl({});
+        const interaction = interactionBlueprint();
+        const error = new EbyDisappointedError('missing-text-permissions', '権限がないみたい');
+        responseHandle.onSecondCall().rejects(error);
+
+        (await captureRejection(ctrl.onInteraction(interaction))).should.equal(error);
+
+        interaction.editReply.firstCall.args[0].should.have.string('権限がないみたい');
+    });
+
+    specify('スラッシュコマンド以外のインタラクションは何もせず中断する', async () => {
+        const ctrl = new InteractionCtrl({});
+        const interaction = interactionBlueprint({ isChatInputCommand: () => false });
+
+        const err = await captureRejection(ctrl.onInteraction(interaction));
+
+        err.type.should.equal('abort');
+        interaction.deferReply.called.should.be.false;
+        hanakoLoad.called.should.be.false;
+    });
+
+    specify('サーバー外（DM等）からの実行はその旨を応答して処理しない', async () => {
+        const ctrl = new InteractionCtrl({});
+        const interaction = interactionBlueprint({ inCachedGuild: () => false, guild: null });
+
+        await ctrl.onInteraction(interaction);
+
         interaction.reply.calledOnce.should.be.true;
         interaction.reply.firstCall.args[0].should.have.property('flags', MessageFlags.Ephemeral);
+        interaction.deferReply.called.should.be.false;
+        hanakoLoad.called.should.be.false;
     });
 
     specify('不明なスラッシュコマンド名は同名のテキストコマンド名にフォールバックする', async () => {

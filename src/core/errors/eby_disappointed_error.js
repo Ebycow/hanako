@@ -32,6 +32,12 @@ class EbyDisappointedError extends Error {
             Error.captureStackTrace(this, this.constructor);
         }
         this.reason = reason || 'error';
+        /**
+         * 利用者向けの説明文がmessageに指定されているか
+         *
+         * @type {boolean}
+         */
+        this.explained = !!this.message;
         this.message = this.message ? this.message : `[${this.constructor.name}] ${this.reason}`;
     }
 }
