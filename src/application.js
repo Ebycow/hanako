@@ -25,6 +25,11 @@ function handleUncaughtError(err) {
         // === EbyAbortError
         return Promise.resolve();
     }
+    if (err.eby && err.type === 'disappointed') {
+        // === EbyDisappointedError（権限不足など、利用者側の状況で処理を続けられなかった）
+        logger.warn('処理を中断した。', err);
+        return Promise.resolve();
+    }
 
     logger.error('予期しないエラーが発生。', err);
     return Promise.resolve();

@@ -47,7 +47,8 @@ class JoinCommand {
             textChannelId: input.channelId,
         });
         const onSuccess = input.newChatResponse(`<#${input.channelId}>に参加したよ、よろしくね`);
-        return new ActionResponse({ id: input.id, action, onSuccess });
+        const onFailure = input.newChatResponse('ボイスチャンネルに参加できなかったよ', 'error');
+        return new ActionResponse({ id: input.id, action, onSuccess, onFailure });
     }
 }
 

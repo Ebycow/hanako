@@ -68,7 +68,10 @@ describe('JoinCommand', () => {
                 res.onSuccess.code.should.equal('simple');
                 res.onSuccess.channelId.should.equal(mockTextChannelId);
                 res.onSuccess.content.should.have.string(mockTextChannelId);
-                res.onFailure.type.should.equal('silent');
+                // 参加できなかった理由（権限不足など）をチャンネルで伝える
+                res.onFailure.type.should.equal('chat');
+                res.onFailure.code.should.equal('error');
+                res.onFailure.channelId.should.equal(mockTextChannelId);
             });
         });
 
