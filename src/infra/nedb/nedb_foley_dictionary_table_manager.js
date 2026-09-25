@@ -17,6 +17,66 @@ async function fileTypeFromBuffer(buffer) {
     return detectFromBuffer(buffer);
 }
 
+/** SE音源ダウンロード1回あたりの制限時間（ミリ秒） */
+const FOLEY_DOWNLOAD_TIMEOUT_MS = 30000;
+
+/** SE音源ダウンロードの最大試行回数 */
+const FOLEY_DOWNLOAD_MAX_ATTEMPTS = 3;
+
+/**
+ * リトライで回復しうるダウンロードエラーかどうか
+ * （制限時間切れ・接続断・サーバー側エラー。容量超過や 4xx は対象外）
+ *
+ * @param {any} err
+ * @returns {boolean}
+ */
+function isRetryableDownloadError(err) {
+    if (err.code === 'ERR_CANCELED' || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') return true;
+    if (err.code === 'ECONNABORTED' && !String(err.message).startsWith('maxContentLength')) return true;
+    return Boolean(err.response && err.response.status >= 500);
+}
+
+/**
+ * SE音源をダウンロードする。
+ * Discord CDN が不調だと応答が数分〜十数分止まることがあるため、
+ * 1回ごとに全体の制限時間を設け、回復しうるエラーは数回リトライする。
+ *
+ * @param {string} url
+ * @param {number} maxContentLength
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+async function downloadFoley(url, maxContentLength) {
+    for (let attempt = 1; ; attempt++) {
+        try {
+            return await axios.get(url, {
+                responseType: 'arraybuffer',
+                maxContentLength,
+                // axios の timeout はソケット無通信時間しか見ないため、全体の期限は signal で設ける
+                signal: AbortSignal.timeout(FOLEY_DOWNLOAD_TIMEOUT_MS),
+            });
+        } catch (err) {
+            if (attempt < FOLEY_DOWNLOAD_MAX_ATTEMPTS && isRetryableDownloadError(err)) {
+                logger.warn(
+                    `SE音源のダウンロードに失敗。リトライします (${attempt}/${FOLEY_DOWNLOAD_MAX_ATTEMPTS})`,
+                    err
+                );
+                continue;
+            }
+            throw err;
+        }
+    }
+}
+
+/**
+ * ダウンロードが制限時間切れで失敗したかどうか
+ *
+ * @param {any} err
+ * @returns {boolean}
+ */
+function isDownloadTimeout(err) {
+    return err.code === 'ERR_CANCELED' || err.code === 'ETIMEDOUT';
+}
+
 const AppSettings = require('../../core/app_settings');
 const IFoleyActionRepo = require('../../domain/repo/i_foley_action_repo');
 const IFoleyDictionaryRepo = require('../../domain/repo/i_foley_dictionary_repo');
@@ -272,10 +332,7 @@ class NedbFoleyDictionaryTableManager {
 
         let response;
         try {
-            response = await axios.get(action.url, {
-                responseType: 'arraybuffer',
-                maxContentLength: this.appSettings.foleyMaxDownloadByteSize,
-            });
+            response = await downloadFoley(action.url, this.appSettings.foleyMaxDownloadByteSize);
         } catch (err) {
             // AXIOS null やめて
             // cf. https://github.com/axios/axios/blob/v0.19.1/lib/adapters/http.js#L219-L220
@@ -286,6 +343,10 @@ class NedbFoleyDictionaryTableManager {
             } else if (err.response && err.response.status >= 400) {
                 const message = 'URLのファイルが見つからないにゃ :sob:';
                 return errors.unexpected('foley-http-file-not-found', message);
+            } else if (isDownloadTimeout(err)) {
+                const message =
+                    'ファイルのダウンロードに時間がかかりすぎたにゃ… 少し時間をおいてもう一度試してね :sob:';
+                return errors.unexpected('foley-http-timeout', message);
             } else {
                 return Promise.reject(err);
             }
@@ -306,6 +367,11 @@ class NedbFoleyDictionaryTableManager {
             //       先着一名様以外はここで不整合エラーになる
             await this.objectStorageRepo.saveFile(action.serverId, objectKey, 'pcm', stream);
         } catch (err) {
+            // ダウンロード待ちの間に同じキーワードが別の登録で先に登録された
+            if (records.some((record) => action.keyword === record[0])) {
+                const message = 'すでに登録されてるみたい... :sob:';
+                return errors.disappointed(`keyword-already-exists ${action}`, message);
+            }
             return Promise.reject(err);
         }
 
@@ -336,13 +402,13 @@ class NedbFoleyDictionaryTableManager {
 
             let response;
             try {
-                response = await axios.get(item.url, {
-                    responseType: 'arraybuffer',
-                    maxContentLength: this.appSettings.foleyMaxDownloadByteSize,
-                });
+                response = await downloadFoley(item.url, this.appSettings.foleyMaxDownloadByteSize);
             } catch (err) {
                 logger.warn(`ファイルダウンロード失敗をスキップ: ${item.keyword} - ${err.message}`);
-                failedItems.push(`${item.keyword}: ダウンロードに失敗しました`);
+                const reason = isDownloadTimeout(err)
+                    ? 'ダウンロードがタイムアウトしました'
+                    : 'ダウンロードに失敗しました';
+                failedItems.push(`${item.keyword}: ${reason}`);
                 continue;
             }
 
@@ -365,7 +431,9 @@ class NedbFoleyDictionaryTableManager {
                 logger.info(`SE追加成功: ${item.keyword}`);
             } catch (err) {
                 logger.warn(`ファイル保存失敗をスキップ: ${item.keyword} - ${err.message}`);
-                failedItems.push(`${item.keyword}: 保存に失敗しました`);
+                // ダウンロード待ちの間に同じキーワードが別の登録で先に登録された
+                const alreadyExists = records.some((record) => item.keyword === record[0]);
+                failedItems.push(`${item.keyword}: ${alreadyExists ? 'すでに登録済みです' : '保存に失敗しました'}`);
                 continue;
             }
         }

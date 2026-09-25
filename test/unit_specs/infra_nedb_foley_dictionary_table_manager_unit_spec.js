@@ -365,6 +365,119 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 }
             });
         });
+
+        context('ダウンロードの遅延・失敗（Discord CDN 不調時）', () => {
+            /** 制限時間切れで axios が投げるエラーと同じ code を持つエラー */
+            function canceledError() {
+                return Object.assign(new Error('canceled'), { code: 'ERR_CANCELED' });
+            }
+
+            specify('ダウンロード全体の制限時間を signal で渡す', async () => {
+                const mgr = createManager();
+                const action = new FoleyCreateAction({
+                    id: 'act-sig',
+                    serverId: 'sv-sig',
+                    keyword: 'シグナル',
+                    url: 'http://example.com/signal.mp3',
+                });
+                await mgr.postFoleyCreate(action);
+
+                fakeAxios.get.firstCall.args[1].signal.should.be.an.instanceOf(AbortSignal);
+            });
+
+            specify('制限時間切れはリトライして成功すれば登録される', async () => {
+                const mgr = createManager();
+                fakeAxios.get.onFirstCall().rejects(canceledError());
+                fakeAxios.get.onSecondCall().resolves({ data: DUMMY_AUDIO_BUF });
+
+                const action = new FoleyCreateAction({
+                    id: 'act-retry',
+                    serverId: 'sv-retry',
+                    keyword: 'リトライ',
+                    url: 'http://example.com/retry.mp3',
+                });
+                await mgr.postFoleyCreate(action);
+
+                fakeAxios.get.calledTwice.should.be.true;
+                const dict = await mgr.loadFoleyDictionary('sv-retry');
+                dict.lines.map((l) => l.keyword).should.deep.equal(['リトライ']);
+            });
+
+            specify('制限時間切れが続けば3回で諦め、タイムアウトとして伝える', async () => {
+                const mgr = createManager();
+                fakeAxios.get.rejects(canceledError());
+
+                const action = new FoleyCreateAction({
+                    id: 'act-timeout',
+                    serverId: 'sv-timeout',
+                    keyword: 'タイムアウト',
+                    url: 'http://example.com/timeout.mp3',
+                });
+                try {
+                    await mgr.postFoleyCreate(action);
+                    should.fail('should have rejected');
+                } catch (err) {
+                    err.type.should.equal('unexpected');
+                    err.message.should.include('時間がかかりすぎた');
+                }
+                fakeAxios.get.callCount.should.equal(3);
+            });
+
+            specify('HTTP 4xx はリトライしない', async () => {
+                const mgr = createManager();
+                fakeAxios.get.rejects(Object.assign(new Error('Request failed'), { response: { status: 404 } }));
+
+                const action = new FoleyCreateAction({
+                    id: 'act-404-noretry',
+                    serverId: 'sv-404-noretry',
+                    keyword: 'ナイ',
+                    url: 'http://example.com/none.mp3',
+                });
+                try {
+                    await mgr.postFoleyCreate(action);
+                    should.fail('should have rejected');
+                } catch (err) {
+                    err.type.should.equal('unexpected');
+                }
+                fakeAxios.get.calledOnce.should.be.true;
+            });
+
+            specify('ダウンロード待ちの間に同じキーワードが先に登録されたら「すでに登録」として伝える', async () => {
+                const mgr = createManager();
+
+                // 1回目の登録はダウンロードが止まり、その間に再投稿された2回目が先に完了する
+                let releaseSlowDownload;
+                fakeAxios.get.onFirstCall().returns(
+                    new Promise((resolve) => {
+                        releaseSlowDownload = () => resolve({ data: DUMMY_AUDIO_BUF });
+                    })
+                );
+                fakeAxios.get.onSecondCall().resolves({ data: DUMMY_AUDIO_BUF });
+                objectStorageRepo.saveFile.onSecondCall().rejects(new Error('すでにキーが存在しています。'));
+
+                const newAction = (id) =>
+                    new FoleyCreateAction({
+                        id,
+                        serverId: 'sv-race',
+                        keyword: 'DSstartup',
+                        url: 'http://example.com/ds.mp3',
+                    });
+
+                const slow = mgr.postFoleyCreate(newAction('act-slow'));
+                await mgr.postFoleyCreate(newAction('act-fast'));
+                releaseSlowDownload();
+
+                try {
+                    await slow;
+                    should.fail('should have rejected');
+                } catch (err) {
+                    err.type.should.equal('disappointed');
+                    err.message.should.include('すでに登録されてる');
+                }
+                const dict = await mgr.loadFoleyDictionary('sv-race');
+                dict.lines.should.have.lengthOf(1);
+            });
+        });
     });
 
     // ================================================================
@@ -417,6 +530,64 @@ describe('NedbFoleyDictionaryTableManager', () => {
             const dict = await mgr.loadFoleyDictionary('sv-partial');
             dict.lines.should.have.lengthOf(1);
             dict.lines[0].keyword.should.equal('OK音');
+        });
+
+        specify('制限時間切れ・先を越された登録は理由を分けて伝える', async () => {
+            const mgr = createManager();
+
+            // 「先に登録済み」のアイテム用: ダウンロードが止まっている間に別の登録が完了する
+            let releaseSlowDownload;
+            fakeAxios.get.callsFake((url) => {
+                if (url.endsWith('timeout.mp3')) {
+                    return Promise.reject(Object.assign(new Error('canceled'), { code: 'ERR_CANCELED' }));
+                }
+                if (url.endsWith('slow.mp3')) {
+                    return new Promise((resolve) => {
+                        releaseSlowDownload = () => resolve({ data: DUMMY_AUDIO_BUF });
+                    });
+                }
+                return Promise.resolve({ data: DUMMY_AUDIO_BUF });
+            });
+            objectStorageRepo.saveFile.callsFake(async (_seg, objectKey) => {
+                if (
+                    objectKey === Buffer.from('PS1startup').toString('base64') &&
+                    objectStorageRepo.saveFile.callCount > 1
+                ) {
+                    throw new Error('すでにキーが存在しています。');
+                }
+            });
+
+            const slow = mgr.postFoleyCreateMultiple(
+                new FoleyCreateMultipleAction({
+                    id: 'act-m-slow',
+                    serverId: 'sv-m-reason',
+                    items: [
+                        { keyword: 'タイムアウト音', url: 'http://example.com/timeout.mp3' },
+                        { keyword: 'PS1startup', url: 'http://example.com/slow.mp3' },
+                    ],
+                })
+            );
+            // タイムアウト音のリトライが終わって PS1startup のダウンロードで止まるのを待つ
+            while (!releaseSlowDownload) await new Promise((r) => setImmediate(r));
+
+            await mgr.postFoleyCreate(
+                new FoleyCreateAction({
+                    id: 'act-m-fast',
+                    serverId: 'sv-m-reason',
+                    keyword: 'PS1startup',
+                    url: 'http://example.com/ps1.mp3',
+                })
+            );
+            releaseSlowDownload();
+
+            try {
+                await slow;
+                should.fail('should have rejected');
+            } catch (err) {
+                err.message.should.include('タイムアウト音: ダウンロードがタイムアウトしました');
+                err.message.should.include('PS1startup: すでに登録済みです');
+                err.message.should.not.include('保存に失敗しました');
+            }
         });
 
         specify('全件失敗 → unexpected', async () => {
