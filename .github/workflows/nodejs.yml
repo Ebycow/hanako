@@ -8,7 +8,9 @@ on:
 
 jobs:
   lint-and-test:
-    runs-on: windows-latest
+    # windows-latest は VS 2026 イメージに移行済みで、npm 同梱の node-gyp が VS 2026 を認識できず
+    # @discordjs/opus のビルドに失敗するため、VS 2022 入りのイメージに固定する
+    runs-on: windows-2025
 
     steps:
       - uses: actions/checkout@v4
