@@ -77,9 +77,9 @@ class Application {
 
         // コントローラの登録
         this.bind('clientReady', ReadyCtrl);
+        this.bind('clientReady', StatusChangeCtrl);
         this.bind('interactionCreate', InteractionCtrl);
         this.bind('messageCreate', MessageCtrl, [MessageSanitizeMiddleWare]);
-        this.bind('messageCreate', StatusChangeCtrl, [MessageSanitizeMiddleWare]);
         this.bind('messageReactionAdd', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
         this.bind('messageReactionRemove', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
         this.bind('voiceStateUpdate', AutoLeaveCtrl, [VoiceChatActionMiddleWare]);

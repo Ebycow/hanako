@@ -30,6 +30,13 @@ const { ChannelType, PermissionFlagsBits } = require('discord.js');
 let cache;
 
 /**
+ * 起動してから再生キューに追加した音声の数
+ *
+ * @type {number}
+ */
+let readCount = 0;
+
+/**
  * モジュールの初回呼び出しフラグ
  *
  * @type {boolean}
@@ -122,6 +129,15 @@ class DiscordVoiceQueueManager {
         // 接続していないものを除外
         vcModels = vcModels.filter((vc) => vc.connection !== null);
         return Promise.resolve(vcModels.map(toVoiceStatus));
+    }
+
+    /**
+     * (impl) IVoiceStatusRepo
+     *
+     * @returns {Promise<number>}
+     */
+    async loadReadCount() {
+        return Promise.resolve(readCount);
     }
 
     /**
@@ -266,6 +282,7 @@ class DiscordVoiceQueueManager {
 
         // キューに追加
         vc.push(voice.stream);
+        readCount++;
 
         return Promise.resolve();
     }

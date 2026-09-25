@@ -21,6 +21,13 @@ class IVoiceStatusRepo extends Interface {
      * @returns {Promise<Array<VoiceStatus>>} すべての有効なVoiceStatusの配列
      */
     async loadAllVoiceStatus() {}
+
+    /**
+     * 起動してから読み上げ（再生キューに追加）した回数を読み出し
+     *
+     * @returns {Promise<number>} 読み上げ回数
+     */
+    async loadReadCount() {}
 }
 
 module.exports = IVoiceStatusRepo;
