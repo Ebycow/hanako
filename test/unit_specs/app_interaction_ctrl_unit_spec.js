@@ -213,6 +213,16 @@ describe('InteractionCtrl', () => {
         interaction.editReply.firstCall.args[0].should.have.string('失敗しました');
     });
 
+    specify('アクションが失敗して onFailure が処理されたら失敗を応答する', async () => {
+        const ctrl = new InteractionCtrl({});
+        const interaction = interactionBlueprint();
+        responseHandle.onSecondCall().resolves(false);
+
+        await ctrl.onInteraction(interaction);
+
+        interaction.editReply.firstCall.args[0].should.have.string('失敗しました');
+    });
+
     specify('説明付きの EbyDisappointedError なら理由も応答に含める', async () => {
         const ctrl = new InteractionCtrl({});
         const interaction = interactionBlueprint();

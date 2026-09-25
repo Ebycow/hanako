@@ -60,7 +60,11 @@ class InteractionCtrl {
 
         let result = 'コマンドを実行しました！😸';
         try {
-            await processInteractionF.call(this, interaction);
+            const succeeded = await processInteractionF.call(this, interaction);
+            if (!succeeded) {
+                // アクションの失敗理由は onFailure としてチャンネルに投稿済み
+                result = 'コマンドの実行に失敗しました･･･😿\n理由はチャンネルへの投稿を見てね';
+            }
         } catch (error) {
             result = 'コマンドの実行に失敗しました･･･😿';
             if (error.eby && error.type === 'disappointed' && error.explained) {
@@ -80,7 +84,7 @@ class InteractionCtrl {
  *
  * @this {InteractionCtrl}
  * @param {discord.ChatInputCommandInteraction} interaction 受信したスラッシュコマンド
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} アクションが失敗したときは false
  */
 async function processInteractionF(interaction) {
     // 読み上げ花子モデルを取得
@@ -121,7 +125,8 @@ async function processInteractionF(interaction) {
     const response = await this.service.serve(hanako, entity);
 
     // レスポンスハンドラにレスポンス処理をさせて終了
-    await this.responseHandler.handle(response);
+    const succeeded = await this.responseHandler.handle(response);
+    return succeeded !== false;
 }
 
 function resolveTextCommandNameF(slashCommandName) {
