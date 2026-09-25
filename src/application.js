@@ -52,6 +52,9 @@ class Application {
                 GatewayIntentBits.DirectMessageReactions,
                 GatewayIntentBits.GuildVoiceStates,
             ],
+            // 利用者の入力を含む投稿で @everyone・ロール・ユーザーへの通知が飛ばないよう、メンションはすべて無効化する
+            // （メンション表記自体は名前として表示される）
+            allowedMentions: { parse: [], repliedUser: false },
         });
     }
 
