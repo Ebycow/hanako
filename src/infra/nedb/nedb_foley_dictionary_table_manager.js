@@ -8,6 +8,7 @@ const prism = require('prism-media');
 const FileType = require('file-type');
 const Readable = require('stream').Readable;
 const errors = require('../../core/errors').promises;
+const { publicOnlyRequestConfig, isForbiddenAddressError } = require('../http/public_address_guard');
 
 async function fileTypeFromBuffer(buffer) {
     const detectFromBuffer = FileType.fileTypeFromBuffer || FileType.fromBuffer;
@@ -49,6 +50,8 @@ async function downloadFoley(url, maxContentLength) {
     for (let attempt = 1; ; attempt++) {
         try {
             return await axios.get(url, {
+                // 利用者が指定したURLなので、内部ネットワークへは接続させない
+                ...publicOnlyRequestConfig(url),
                 responseType: 'arraybuffer',
                 maxContentLength,
                 // axios の timeout はソケット無通信時間しか見ないため、全体の期限は signal で設ける
@@ -336,7 +339,10 @@ class NedbFoleyDictionaryTableManager {
         } catch (err) {
             // AXIOS null やめて
             // cf. https://github.com/axios/axios/blob/v0.19.1/lib/adapters/http.js#L219-L220
-            if (err.message.startsWith('maxContentLength size of ')) {
+            if (isForbiddenAddressError(err)) {
+                const message = 'そのURLからは取得できないにゃ :sob:';
+                return errors.unexpected('foley-http-forbidden-address', message);
+            } else if (err.message.startsWith('maxContentLength size of ')) {
                 const maxSize = prettyBytes(this.appSettings.foleyMaxDownloadByteSize).replace(/\s/, '');
                 const message = `${maxSize}以上のデータは大きすぎて入らないにゃ :sob:`;
                 return errors.unexpected('foley-http-data-too-large', message);
@@ -405,9 +411,11 @@ class NedbFoleyDictionaryTableManager {
                 response = await downloadFoley(item.url, this.appSettings.foleyMaxDownloadByteSize);
             } catch (err) {
                 logger.warn(`ファイルダウンロード失敗をスキップ: ${item.keyword} - ${err.message}`);
-                const reason = isDownloadTimeout(err)
-                    ? 'ダウンロードがタイムアウトしました'
-                    : 'ダウンロードに失敗しました';
+                const reason = isForbiddenAddressError(err)
+                    ? 'そのURLからは取得できません'
+                    : isDownloadTimeout(err)
+                      ? 'ダウンロードがタイムアウトしました'
+                      : 'ダウンロードに失敗しました';
                 failedItems.push(`${item.keyword}: ${reason}`);
                 continue;
             }
