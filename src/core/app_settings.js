@@ -123,7 +123,7 @@ class AppSettings {
     }
 
     /**
-     * スラッシュコマンドを適用するGuildId
+     * 以前ギルド単位でスラッシュコマンドを登録していたGuildId（任意、旧コマンドの削除に使う）
      *
      * @type {string}
      */

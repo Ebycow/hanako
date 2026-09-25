@@ -8,8 +8,9 @@ settings:
   # Discord Bot のCLIENT_ID (必ず app-config.yml でオーバーライドしてください)
   discord_client_id: '<YOUR DISCORD CLIENT_ID HERE>'
 
-  # スラッシュコマンドを適用するGUILD_ID (必ず app-config.yml でオーバーライドしてください)
-  discord_guild_id: '<YOUR DISCORD GUILD_ID HERE>'
+  # （任意）以前ギルド単位でスラッシュコマンドを登録していたGUILD_ID
+  # スラッシュコマンドはグローバル登録される。ここに指定したギルドの旧コマンドは deploy-commands.js 実行時に削除される
+  discord_guild_id: ''
 
   # Discord Bot のコマンドプリフィックス
   default_command_prefix: '>'

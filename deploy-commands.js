@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, Routes } = require('discord.js');
+const { SlashCommandBuilder, Routes, InteractionContextType, ApplicationIntegrationType } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const AppSettings = require('./src/core/app_settings');
 
@@ -86,6 +86,26 @@ const commands = [
 
 const rest = new REST({ version: '10' }).setToken(appSettings.discordBotToken);
 
-rest.put(Routes.applicationGuildCommands(appSettings.discordClientId, appSettings.discordGuildId), { body: commands })
-    .then(() => console.log('スラッシュコマンドの登録に成功しました'))
-    .catch(console.error);
+// サーバー内でのみ使えるコマンドとして登録する（DMやユーザーインストールからは呼ばせない）
+const body = commands.map((command) => ({
+    ...command,
+    contexts: [InteractionContextType.Guild],
+    integration_types: [ApplicationIntegrationType.GuildInstall],
+}));
+
+async function deploy() {
+    await rest.put(Routes.applicationCommands(appSettings.discordClientId), { body });
+    console.log('スラッシュコマンドのグローバル登録に成功しました');
+
+    // 以前ギルド単位で登録したコマンドが残っていると、グローバル登録分と二重に表示されるため削除する
+    const guildId = appSettings.discordGuildId;
+    if (/^\d+$/.test(guildId)) {
+        await rest.put(Routes.applicationGuildCommands(appSettings.discordClientId, guildId), { body: [] });
+        console.log(`ギルド(${guildId})に登録されていたスラッシュコマンドを削除しました`);
+    }
+}
+
+deploy().catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+});

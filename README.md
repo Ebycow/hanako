@@ -172,12 +172,14 @@ hanakoディレクトリの`app-config-default.yml`をコピーし、`app-config
   # Discord Bot のCLIENT_ID (必ず app-config.yml でオーバーライドしてください)
   discord_client_id: '<YOUR DISCORD CLIENT_ID HERE>'
 
-  # スラッシュコマンドを適用するGUILD_ID (必ず app-config.yml でオーバーライドしてください)
-  discord_guild_id: '<YOUR DISCORD GUILD_ID HERE>'
+  # （任意）以前ギルド単位でスラッシュコマンドを登録していたGUILD_ID
+  discord_guild_id: ''
 ```
 
 ## 4.スラッシュコマンドの登録
 初回起動前、またはスラッシュコマンドの定義を更新した際に実行します
+スラッシュコマンドはグローバル登録され、Botを導入したすべてのサーバーで使えます（サーバー内でのみ利用可能で、DMからは使えません）
+`discord_guild_id` を指定している場合は、そのギルドに以前登録したスラッシュコマンドを削除して二重表示を防ぎます
 ```
 node deploy-commands.js
 ```
