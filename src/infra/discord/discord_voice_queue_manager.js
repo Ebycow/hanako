@@ -187,7 +187,12 @@ class DiscordVoiceQueueManager {
             return errors.disappointed(`missing-voice-permissions ${action}`, message);
         }
         if (!voiceChannel.joinable) {
-            // 権限は足りていて参加できない ⇔ 人数制限に達している
+            // 権限は足りていて参加できないのは、花子がタイムアウト中か人数制限に達しているとき
+            // Note: joinable は管理者権限があればタイムアウト中でも true になるため、joinable が false のときだけ判定する
+            if (voiceChannel.guild.members.me.isCommunicationDisabled()) {
+                const message = 'はなこがタイムアウト中だからボイスチャンネルに入れないよ :sob:';
+                return errors.disappointed(`bot-is-timed-out ${action}`, message);
+            }
             const message = `<#${voiceChannel.id}> が満員で入れないよ :sob:`;
             return errors.disappointed(`voice-channel-is-full ${action}`, message);
         }
