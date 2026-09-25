@@ -31,7 +31,9 @@ class CommandInvoker {
         // 引数に対応するコマンドを取得
         const [command, input] = commando.resolve(commandInput);
         if (!command) {
-            logger.info(`コマンドが見当たらない ${input}`);
+            // Note: 利用者は「>」+ 文章で投稿して読み上げを回避する使い方をしている。
+            //       未知のコマンドは読み上げにフォールバックせず黙って abort することで、この用途が成り立つ。
+            logger.trace(`コマンドが見当たらない ${input}`);
             return errors.abort();
         }
 

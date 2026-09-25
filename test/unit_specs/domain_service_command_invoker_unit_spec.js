@@ -43,6 +43,19 @@ describe('CommandInvoker', () => {
                     e.should.be.instanceOf(EbyAbortError);
                 }
             });
+
+            specify('プリフィクス付きの普通の文章はabortする（「>」で読み上げを回避する用途）', async () => {
+                const invoker = new CommandInvoker();
+                const hanako = basicHanako();
+                // ">今日は眠い ねる" のような投稿がパースされた後の形
+                const input = commandInputBlueprint({ argc: 2, argv: ['今日は眠い', 'ねる'] });
+                try {
+                    await invoker.invoke(hanako, input);
+                    should.fail('should have rejected');
+                } catch (e) {
+                    e.should.be.instanceOf(EbyAbortError);
+                }
+            });
         });
     });
 });
