@@ -225,64 +225,11 @@ function Install-RuntimeDependencies {
     }
 }
 
-function Test-OpusLoad {
-    & $NodeExePath "-e" "try { require('@discordjs/opus'); process.exit(0); } catch (e) { process.exit(1); }"
-    return ($LASTEXITCODE -eq 0)
-}
-
-function Write-OpusDiagnostics {
-    $nodeAbi = (& $NodeExePath "-p" "process.versions.modules" | Out-String).Trim()
-    $nodeNapi = (& $NodeExePath "-p" "process.versions.napi" | Out-String).Trim()
-    Write-Warning "Node ABI=$nodeAbi N-API=$nodeNapi"
-
-    $ignoreScripts = (& $npmCmd "config" "get" "ignore-scripts" | Out-String).Trim()
-    Write-Warning "npm config ignore-scripts=$ignoreScripts"
-
-    $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
-    $clCmd = Get-Command cl.exe -ErrorAction SilentlyContinue
-    Write-Warning "python available=$([bool]$pythonCmd) cl.exe available=$([bool]$clCmd)"
-
-    $expectedBinary = (& $NodeExePath "-e" "const { resolve } = require('node:path'); const { find } = require('@discordjs/node-pre-gyp'); process.stdout.write(find(resolve(process.cwd(),'node_modules','@discordjs','opus','package.json')));" 2>$null | Out-String).Trim()
-    if (-not [string]::IsNullOrWhiteSpace($expectedBinary)) {
-        Write-Warning "Expected @discordjs/opus binary path: $expectedBinary"
-        if (-not (Test-Path -LiteralPath $expectedBinary)) {
-            Write-Warning "The expected binary path does not exist."
-        }
-    }
-
-    $prebuildDir = Join-Path $AppDir "node_modules\\@discordjs\\opus\\prebuild"
-    if (Test-Path -LiteralPath $prebuildDir) {
-        Write-Step "Listing @discordjs/opus prebuild files for diagnostics."
-        Get-ChildItem -LiteralPath $prebuildDir -Recurse -File | Select-Object FullName
-    }
-    else {
-        Write-Warning "@discordjs/opus prebuild directory does not exist: $prebuildDir"
-    }
-}
-
 function Assert-NativeDependencies {
     Write-Step "Validating native runtime dependencies."
-    if (Test-OpusLoad) {
-        return
-    }
-
-    Write-Warning "@discordjs/opus failed to load after npm ci. Running explicit rebuild for diagnosis."
-    & $npmCmd "rebuild" "@discordjs/opus" "--build-from-source" "--foreground-scripts" "--ignore-scripts=false" "--verbose"
-    $rebuildExitCode = $LASTEXITCODE
-    if ($rebuildExitCode -ne 0) {
-        Write-OpusDiagnostics
-        throw "@discordjs/opus rebuild failed with exit code $rebuildExitCode. Build prerequisites (Python/Visual C++ Build Tools) may be missing for this Node runtime."
-    }
-
-    $opusCandidates = Get-ChildItem -LiteralPath (Join-Path $AppDir "node_modules\\@discordjs\\opus") -Recurse -File -Filter "opus.node" -ErrorAction SilentlyContinue
-    if ($opusCandidates) {
-        Write-Step "Found opus.node candidates after rebuild:"
-        $opusCandidates | Select-Object FullName
-    }
-
-    if (-not (Test-OpusLoad)) {
-        Write-OpusDiagnostics
-        throw "@discordjs/opus is installed but opus.node is still missing after rebuild."
+    & $NodeExePath "-e" "const prism = require('prism-media'); new prism.opus.Encoder({ rate: 48000, channels: 2, frameSize: 960 }); require('node-libsamplerate'); console.log('opus module: ' + prism.opus.Encoder.type);"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Native runtime dependencies failed to load on this Node runtime."
     }
 }
 

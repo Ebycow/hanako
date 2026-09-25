@@ -8,9 +8,7 @@ on:
 
 jobs:
   lint-and-test:
-    # windows-latest / windows-2025 は VS 2026 イメージに移行済みで、npm 同梱の node-gyp が VS 2026 を認識できず
-    # @discordjs/opus のビルドに失敗するため、VS 2022 入りのイメージに固定する
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -73,39 +71,10 @@ jobs:
             throw "npm ci --omit=dev --ignore-scripts=false failed with exit code $LASTEXITCODE."
           }
 
-      - name: Rebuild @discordjs/opus from source
+      - name: Validate native runtime dependencies
         shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
         run: |
-          $nodeDir = Split-Path -Path $env:HANAKO_NODE_EXE_PATH -Parent
-          $npmCmd = Join-Path -Path $nodeDir -ChildPath "npm.cmd"
-          $env:Path = "$nodeDir;$env:Path"
-          & $npmCmd "rebuild" "@discordjs/opus" "--build-from-source" "--foreground-scripts" "--ignore-scripts=false" "--verbose"
+          & $env:HANAKO_NODE_EXE_PATH "-e" "const prism = require('prism-media'); new prism.opus.Encoder({ rate: 48000, channels: 2, frameSize: 960 }); require('node-libsamplerate'); console.log('opus module: ' + prism.opus.Encoder.type);"
           if ($LASTEXITCODE -ne 0) {
-            throw "npm rebuild @discordjs/opus failed with exit code $LASTEXITCODE."
-          }
-
-          $opusCandidates = Get-ChildItem -LiteralPath ".\\node_modules\\@discordjs\\opus" -Recurse -File -Filter "opus.node" -ErrorAction SilentlyContinue
-          if ($opusCandidates) {
-            Write-Output "Found opus.node candidates after rebuild:"
-            $opusCandidates | Select-Object -ExpandProperty FullName
-          } else {
-            Write-Warning "No opus.node file was found after rebuild."
-          }
-
-      - name: Validate @discordjs/opus load
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: |
-          $nodeDir = Split-Path -Path $env:HANAKO_NODE_EXE_PATH -Parent
-          $npmCmd = Join-Path -Path $nodeDir -ChildPath "npm.cmd"
-          $env:Path = "$nodeDir;$env:Path"
-          $ignoreScripts = (& $npmCmd "config" "get" "ignore-scripts" | Out-String).Trim()
-          Write-Output "npm config ignore-scripts=$ignoreScripts"
-
-          Write-Output "portable node ABI: $(& $env:HANAKO_NODE_EXE_PATH -p "process.versions.modules")"
-          Write-Output "PATH node ABI: $(node -p "process.versions.modules")"
-
-          & $env:HANAKO_NODE_EXE_PATH "-e" "const { resolve } = require('node:path'); const { find } = require('@discordjs/node-pre-gyp'); process.stdout.write(find(resolve(process.cwd(),'node_modules','@discordjs','opus','package.json')));"
-          & $env:HANAKO_NODE_EXE_PATH "-e" "require('@discordjs/opus')"
-          if ($LASTEXITCODE -ne 0) {
-            throw "@discordjs/opus failed to load on the production Node runtime."
+            throw "Native runtime dependencies failed to load on the production Node runtime."
           }

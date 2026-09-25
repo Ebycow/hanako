@@ -197,7 +197,7 @@ npm run debug
 | カテゴリ | 技術 |
 |----------|------|
 | Runtime | Node.js 24.11.1 |
-| Discord | discord.js 14, @discordjs/voice, @discordjs/opus |
+| Discord | discord.js 14, @discordjs/voice, opusscript |
 | Database | NeDB (組み込みドキュメントDB) |
 | Audio | prism-media, ffmpeg-static, node-libsamplerate |
 | Logging | log4js (ファイルローテーション付き) |
