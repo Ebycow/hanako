@@ -1,6 +1,12 @@
 const should = require('chai').should();
 const WordDictionaryFormatter = require('../../src/domain/model/formatters/word_dictionary_formatter');
-const { basicHanako, wordDictionaryLineBlueprint, WordDictionary } = require('../helpers/blueprints');
+const {
+    basicHanako,
+    wordDictionaryLineBlueprint,
+    foleyDictionaryLineBlueprint,
+    WordDictionary,
+    FoleyDictionary,
+} = require('../helpers/blueprints');
 
 /************************************************************************
  * WordDictionaryFormatterクラス単体スペック
@@ -36,6 +42,42 @@ describe('WordDictionaryFormatter', () => {
                 const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line1, line2] });
                 const fmt = new WordDictionaryFormatter(basicHanako({ wordDictionary: wd }));
                 fmt.format('花子は元気です').should.equal('はなこはげんきです');
+            });
+
+            specify('登録済みSE名の中では辞書の単語を置換しない', () => {
+                const wordLine = wordDictionaryLineBlueprint({ from: 'CPU', to: 'シーピーユー' });
+                const wordDictionary = new WordDictionary({
+                    id: 'wd',
+                    serverId: 'mock-server-id',
+                    lines: [wordLine],
+                });
+                const foleyLine = foleyDictionaryLineBlueprint({ keyword: 'CPU警告音' });
+                const foleyDictionary = new FoleyDictionary({
+                    id: 'fd',
+                    serverId: 'mock-server-id',
+                    lines: [foleyLine],
+                });
+                const fmt = new WordDictionaryFormatter(basicHanako({ wordDictionary, foleyDictionary }));
+
+                fmt.format('CPUの次にCPU警告音を流す').should.equal('シーピーユーの次にCPU警告音を流す');
+            });
+
+            specify('教育辞書とSEが完全に重複する場合はSE名を優先する', () => {
+                const wordLine = wordDictionaryLineBlueprint({ from: 'SE開始', to: 'エスイー開始' });
+                const wordDictionary = new WordDictionary({
+                    id: 'wd',
+                    serverId: 'mock-server-id',
+                    lines: [wordLine],
+                });
+                const foleyLine = foleyDictionaryLineBlueprint({ keyword: 'SE開始' });
+                const foleyDictionary = new FoleyDictionary({
+                    id: 'fd',
+                    serverId: 'mock-server-id',
+                    lines: [foleyLine],
+                });
+                const fmt = new WordDictionaryFormatter(basicHanako({ wordDictionary, foleyDictionary }));
+
+                fmt.format('SE開始').should.equal('SE開始');
             });
 
             specify('一致しない場合はそのまま返す', () => {

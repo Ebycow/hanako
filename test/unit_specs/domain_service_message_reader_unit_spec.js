@@ -5,7 +5,11 @@ const {
     basicHanako,
     dmessageBlueprint,
     silenceDictionaryLineBlueprint,
+    wordDictionaryLineBlueprint,
+    foleyDictionaryLineBlueprint,
     SilenceDictionary,
+    WordDictionary,
+    FoleyDictionary,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -44,6 +48,30 @@ describe('MessageReader', () => {
                     audio.type.should.not.equal('plain');
                     audio.type.should.not.equal('noop');
                 });
+            });
+
+            specify('SE名の外側だけを教育辞書で置換してSEを再生する', async () => {
+                const reader = new MessageReader();
+                const wordLine = wordDictionaryLineBlueprint({ from: 'CPU', to: 'シーピーユー' });
+                const wordDictionary = new WordDictionary({
+                    id: 'wd',
+                    serverId: 'mock-server-id',
+                    lines: [wordLine],
+                });
+                const foleyLine = foleyDictionaryLineBlueprint({ id: 'alert-se', keyword: 'CPU警告音' });
+                const foleyDictionary = new FoleyDictionary({
+                    id: 'fd',
+                    serverId: 'mock-server-id',
+                    lines: [foleyLine],
+                });
+                const hanako = readerHanako({ wordDictionary, foleyDictionary });
+                const dm = dmessageBlueprint({ type: 'read', content: 'CPU CPU警告音' });
+
+                const audios = await reader.read(hanako, dm);
+
+                audios.map((audio) => audio.type).should.deep.equal(['voiceroid', 'foley']);
+                audios[0].content.should.equal('シーピーユー ');
+                audios[1].foleyId.should.equal('alert-se');
             });
         });
 

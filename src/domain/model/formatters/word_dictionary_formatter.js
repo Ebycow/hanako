@@ -2,6 +2,50 @@ const assert = require('assert').strict;
 const utils = require('../../../core/utils');
 
 /** @typedef {import('../../model/hanako')} Hanako */
+/** @typedef {{content: string, isFoley: boolean}} TextSegment */
+
+/**
+ * 登録済みSE名に一致する範囲を辞書置換から保護する
+ * FoleyDictionaryは長いキーワード順に並んでいるため、重なる場合は長いSE名を優先する。
+ *
+ * @param {string} text
+ * @param {import('../../entity/foley_dictionary_line')[]} foleyLines
+ * @returns {TextSegment[]}
+ */
+function splitByFoleyKeywords(text, foleyLines) {
+    return foleyLines.reduce(
+        (segments, line) =>
+            segments.flatMap((segment) => {
+                if (segment.isFoley || !segment.content.includes(line.keyword)) {
+                    return [segment];
+                }
+
+                const parts = segment.content.split(line.keyword);
+                return parts.flatMap((content, index) => {
+                    const result = [];
+                    if (content.length > 0) {
+                        result.push({ content, isFoley: false });
+                    }
+                    if (index < parts.length - 1) {
+                        result.push({ content: line.keyword, isFoley: true });
+                    }
+                    return result;
+                });
+            }),
+        [{ content: text, isFoley: false }]
+    );
+}
+
+/**
+ * 教育辞書による置換を実行する
+ *
+ * @param {string} text
+ * @param {import('../../entity/word_dictionary_line')[]} wordLines
+ * @returns {string}
+ */
+function replaceWords(text, wordLines) {
+    return wordLines.reduce((str, line) => str.split(line.from).join(line.to), text);
+}
 
 /**
  * ドメインモデル
@@ -41,10 +85,13 @@ class WordDictionaryFormatter {
             return text;
         }
 
-        // 辞書置換を実行
-        const lines = this.hanako.wordDictionary.lines;
-        const result = lines.reduce((str, line) => str.split(line.from).join(line.to), text);
-        return result;
+        const wordLines = this.hanako.wordDictionary.lines;
+        const foleyLines = this.hanako.foleyDictionary.lines;
+
+        // SE名に一致した部分を保護し、それ以外の文章だけに辞書置換を適用する
+        return splitByFoleyKeywords(text, foleyLines)
+            .map((segment) => (segment.isFoley ? segment.content : replaceWords(segment.content, wordLines)))
+            .join('');
     }
 }
 
