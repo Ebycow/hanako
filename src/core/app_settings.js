@@ -2,8 +2,26 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const fs = require('fs');
-const camelCase = require('camel-case').camelCase;
 const YAML = require('yaml');
+
+/**
+ * 名前をキャメルケースに変換
+ *
+ * @param {string} name 変換する名前 (例: discord_bot_token)
+ * @returns {string} 変換された名前 (例: discordBotToken)
+ */
+function camelCase(name) {
+    return name
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+        .split(/[^A-Za-z0-9]+/)
+        .filter((word) => word.length > 0)
+        .map((word, i) => {
+            const lower = word.toLowerCase();
+            return i === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join('');
+}
 
 /**
  * オブジェクトキーをキャメルケースに固定
