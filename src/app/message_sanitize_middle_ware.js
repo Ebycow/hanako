@@ -1,9 +1,20 @@
-const emoji = require('node-emoji');
+const emojiData = require('emojibase-data/ja/compact.json');
 
 /** @typedef {import('discord.js').Message} discord.Message */
 
 const tagRe = /<(a?:.+?:\d+)?(@!?\d+)?(#\d+)?(@!?&\d+)?>/g;
 const emojiRe = /:(.+):/;
+const unicodeEmojiRe = /\p{RGI_Emoji}/gv;
+
+// 異体字セレクタを除去して、表示形式の違いを同一視する
+const removeVariationSelectors = (text) => text.replace(/[︎️]/g, '');
+// 肌の色の修飾子を除去して、肌の色違いを元の絵文字と同一視する
+const removeSkinTones = (text) => text.replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '');
+
+// 絵文字 → Unicode公式(CLDR)の日本語名
+const emojiNames = new Map(
+    emojiData.map((e) => [removeVariationSelectors(e.unicode), e.label.replace(/\s*:\s*/g, ' ').trim()])
+);
 
 /**
  * ディスコードの内部タグ表現を標準表示形式に置換
@@ -46,13 +57,18 @@ function replaceDiscordTags(message, text) {
 }
 
 /**
- * Unicodeコードポイントで表現される絵文字を":英名:"に変換
+ * Unicodeコードポイントで表現される絵文字を":日本語名:"に変換
+ * 肌の色の違いは読まず、元の絵文字と同じ名前にする
  *
  * @param {string} text
  * @returns {string}
  */
 function replaceUnicodeEmojis(text) {
-    return emoji.replace(text, (emoji) => `:${emoji.key}:`);
+    return text.replace(unicodeEmojiRe, (emoji) => {
+        const key = removeVariationSelectors(emoji);
+        const name = emojiNames.get(key) || emojiNames.get(removeSkinTones(key));
+        return name ? `:${name}:` : emoji;
+    });
 }
 
 /**

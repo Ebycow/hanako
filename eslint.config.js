@@ -9,7 +9,7 @@ module.exports = [
     {
         files: ['**/*.js'],
         languageOptions: {
-            ecmaVersion: 2020,
+            ecmaVersion: 2024,
             sourceType: 'commonjs',
             globals: {
                 require: 'readonly',
