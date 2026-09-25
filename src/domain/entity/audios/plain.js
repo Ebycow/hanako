@@ -54,7 +54,7 @@ class Plain {
     }
 
     toString() {
-        return `Plain(id=${this.id}, content=${this.content})`;
+        return `Plain(id=${this.id}, contentLength=${this.content.length})`;
     }
 }
 

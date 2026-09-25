@@ -74,7 +74,7 @@ class InteractionCtrl {
         try {
             await this.responseHandler.handle(executionLog);
         } catch (error) {
-            logger.warn(`スラッシュコマンド実行ログの投稿に失敗しました: ${content}`, error);
+            logger.warn(`スラッシュコマンド実行ログの投稿に失敗しました (interaction: ${interaction.id})`, error);
         }
 
         const response = await this.service.serve(hanako, entity);

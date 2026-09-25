@@ -231,7 +231,7 @@ class NedbSilenceDictionaryTableManager {
         const records = await loadSharedData(action.serverId);
 
         if (records.some((record) => action.userId === record[0])) {
-            return errors.disappointed(`silence-already-exists ${action} ${records}`);
+            return errors.disappointed(`silence-already-exists ${action}`);
         }
 
         records.push([action.userId, new Date(), uuid()]);
@@ -252,7 +252,7 @@ class NedbSilenceDictionaryTableManager {
         const index = records.findIndex((record) => action.silenceId === record[2]);
 
         if (index === -1) {
-            return errors.disappointed(`silence-not-found ${action} ${records}`);
+            return errors.disappointed(`silence-not-found ${action}`);
         }
 
         records.splice(index, 1);

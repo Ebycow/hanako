@@ -71,7 +71,7 @@ class FoleyCreateAction {
     }
 
     toString() {
-        return `FoleyCreateAction(id=${this.id}, serverId=${this.serverId}, keyword=${this.keyword}, url=${this.url})`;
+        return `FoleyCreateAction(id=${this.id}, serverId=${this.serverId}, keyword=${this.keyword})`;
     }
 }
 

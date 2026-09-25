@@ -73,7 +73,7 @@ class FoleyDictionaryLine {
     }
 
     toString() {
-        return `FoleyDictionaryLine(id=${this.id}, dictId=${this.dictId}, keyword=${this.keyword}, url=${this.url}, line=${this.line})`;
+        return `FoleyDictionaryLine(id=${this.id}, dictId=${this.dictId}, keyword=${this.keyword}, line=${this.line})`;
     }
 }
 

@@ -84,7 +84,7 @@ async function loadSharedData(serverId) {
                     dict = dict.map((data) => {
                         if (typeof data[2] === 'undefined') {
                             data[2] = uuid();
-                            logger.info(`migrate: ${data}`);
+                            logger.info(`migrate: id=${data[2]}`);
                         }
                         return data;
                     });
@@ -226,7 +226,7 @@ class NedbWordDictionaryTableManager {
         const records = await loadSharedData(action.serverId);
 
         if (records.some((record) => action.from === record[0])) {
-            return errors.disappointed(`word-already-exists ${action} ${records}`);
+            return errors.disappointed(`word-already-exists ${action}`);
         }
 
         records.push([action.from, action.to, uuid()]);
@@ -247,7 +247,7 @@ class NedbWordDictionaryTableManager {
         const index = records.findIndex((record) => action.wordId === record[2]);
 
         if (index === -1) {
-            return errors.disappointed(`word-not-found ${action} ${records}`);
+            return errors.disappointed(`word-not-found ${action}`);
         }
 
         records.splice(index, 1);

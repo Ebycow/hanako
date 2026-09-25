@@ -67,7 +67,7 @@ class VoiceroidAudio {
     }
 
     toString() {
-        return `VoiceroidAudio(id=${this.id}, content=${this.content}, speaker=${this.speaker})`;
+        return `VoiceroidAudio(id=${this.id}, contentLength=${this.content.length}, speaker=${this.speaker})`;
     }
 }
 

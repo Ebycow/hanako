@@ -75,7 +75,7 @@ class WordDictionaryLine {
     }
 
     toString() {
-        return `WordDictionaryLine(id=${this.id}, dictId=${this.dictId}, from=${this.from}, to=${this.to}, line=${this.line})`;
+        return `WordDictionaryLine(id=${this.id}, dictId=${this.dictId})`;
     }
 }
 

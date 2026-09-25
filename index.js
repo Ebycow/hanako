@@ -1,5 +1,5 @@
 // Log4jsを設定
-require('log4js').configure('./log4js-config.json');
+require('./src/core/logging').configure('./log4js-config.json');
 
 const AppConfig = require('./src/core/app_config');
 const AppSettings = require('./src/core/app_settings');

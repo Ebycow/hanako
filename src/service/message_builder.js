@@ -84,16 +84,16 @@ async function inferMessageTypeF(hanako, data) {
 
     // 花子がメンションされているか、コマンドプリフィクスを持つなら暫定的にコマンド
     if (isHanakoMentioned || hanako.hasCommandPrefix(data.content)) {
-        logger.trace(`command: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
+        logger.trace(`command: server=${data.serverId} channel=${data.channelId} user=${data.userId}`);
         return Promise.resolve('command');
     }
     // それ以外で、読み上げ対象のチャンネルなら読み上げ
     if (hanako.isReadingChannel(data.channelId)) {
-        logger.trace(`read: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
+        logger.trace(`read: server=${data.serverId} channel=${data.channelId} user=${data.userId}`);
         return Promise.resolve('read');
     }
     // どちらでもなければ無視
-    logger.trace(`pass: ${data.serverName} #${data.channelName} [${data.userName}] ${data.content}`);
+    logger.trace(`pass: server=${data.serverId} channel=${data.channelId} user=${data.userId}`);
     return errors.abort();
 }
 

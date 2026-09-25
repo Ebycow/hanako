@@ -126,7 +126,7 @@ class FoleyCreateCommand {
         const errors = [];
 
         for (const attachment of attachments) {
-            logger.info(`添付ファイル情報: name=${attachment.name}, url=${attachment.url}`);
+            logger.info(`添付ファイル情報: name=${attachment.name}`);
             const keyword = attachment.name.replace(/\.[^/.]+$/, ''); // 拡張子を除去
             const url = attachment.url;
 

@@ -106,7 +106,7 @@ async function loadSharedData(serverId) {
                     dict = dict.map((data) => {
                         if (typeof data[2] === 'undefined') {
                             data[2] = uuid();
-                            logger.info(`migrate: ${data}`);
+                            logger.info(`migrate: id=${data[2]}`);
                         }
                         return data;
                     });
@@ -267,7 +267,7 @@ class NedbFoleyDictionaryTableManager {
 
         if (records.some((record) => action.keyword === record[0])) {
             const message = 'すでに登録されてるみたい... :sob:';
-            return errors.disappointed(`keyword-already-exists ${action} ${records}`, message);
+            return errors.disappointed(`keyword-already-exists ${action}`, message);
         }
 
         let response;
@@ -403,7 +403,7 @@ class NedbFoleyDictionaryTableManager {
 
         if (index === -1) {
             const message = 'すでに削除されてるみたい... :sob:';
-            return errors.disappointed(`foley-not-found ${action} ${records}`, message);
+            return errors.disappointed(`foley-not-found ${action}`, message);
         }
 
         const objectKey = Buffer.from(records[index][0]).toString('base64');
@@ -514,7 +514,7 @@ class NedbFoleyDictionaryTableManager {
         const record = records.find((record) => audio.foleyId === record[2]);
 
         if (!record) {
-            return errors.disappointed(`foley-not-found ${audio} ${records}`);
+            return errors.disappointed(`foley-not-found ${audio}`);
         }
 
         const objectKey = Buffer.from(record[0]).toString('base64');

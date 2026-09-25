@@ -151,7 +151,7 @@ class CommandInput {
 
     toString() {
         const mentionedUsersJson = JSON.stringify(Object.fromEntries(this.mentionedUsers.entries()));
-        return `CommandInput(id=${this.id}, argc=${this.argc}, argv=${this.argv}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId}, mentionedUsers=${mentionedUsersJson})`;
+        return `CommandInput(id=${this.id}, argc=${this.argc}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId}, mentionedUsers=${mentionedUsersJson})`;
     }
 }
 

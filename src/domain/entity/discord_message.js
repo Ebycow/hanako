@@ -121,7 +121,7 @@ class DiscordMessage {
 
     toString() {
         const mentionedUsersJson = JSON.stringify(Object.fromEntries(this.mentionedUsers.entries()));
-        return `DiscordMessage(id=${this.id}, type=${this.type}, serverId=${this.serverId}, channelId=${this.channelId}, userId=${this.userId}, voiceChannelId=${this.voiceChannelId}, mentionedUsers=${mentionedUsersJson} content=${this.content})`;
+        return `DiscordMessage(id=${this.id}, type=${this.type}, serverId=${this.serverId}, channelId=${this.channelId}, userId=${this.userId}, voiceChannelId=${this.voiceChannelId}, mentionedUsers=${mentionedUsersJson}, contentLength=${this.content.length})`;
     }
 }
 

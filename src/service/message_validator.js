@@ -37,17 +37,17 @@ class MessageValidator {
 
         if (data.isBot) {
             // Botは常に無視
-            logger.trace(`${data.userName}はBotなので無視した`);
+            logger.trace('Botのメッセージなので無視した');
             return errors.abort();
         }
         if (data.content === '') {
             // 空のメッセージは無視（ファイル添付時の挙動）
-            logger.trace(`${data.userName}の空のメッセージを無視した`);
+            logger.trace('空のメッセージを無視した');
             return errors.abort();
         }
         if (data.channelType === ChannelType.DM) {
             // DMは無視
-            logger.trace(`${data.userName}からのDMを無視した "${data.content}"`);
+            logger.trace('DMを無視した');
             return errors.abort();
         }
 

@@ -61,7 +61,7 @@ class FoleyCreateMultipleAction {
     }
 
     toString() {
-        const itemsStr = this.items.map((item) => `${item.keyword}:${item.url}`).join(',');
+        const itemsStr = this.items.map((item) => item.keyword).join(',');
         return `FoleyCreateMultipleAction(id=${this.id}, serverId=${this.serverId}, items=[${itemsStr}])`;
     }
 }
