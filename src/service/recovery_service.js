@@ -1,6 +1,6 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
-const uuid = require('uuidv4').uuid;
+const uuid = require('crypto').randomUUID;
 const Injector = require('../core/injector');
 const JoinVoiceAction = require('../domain/entity/actions/join_voice_action');
 const ChatResponse = require('../domain/entity/responses/chat_response');
