@@ -9,7 +9,7 @@
             "filename": "log/app.log",
             "pattern": "yyyy-MM-dd",
             "keepFileExt": true,
-            "numBackups": 14,
+            "numBackups": 99999,
             "layout": { "type": "hanako" }
         },
         "errorFile": {
@@ -17,7 +17,7 @@
             "filename": "log/errors.log",
             "pattern": "yyyy-MM-dd",
             "keepFileExt": true,
-            "numBackups": 60,
+            "numBackups": 99999,
             "layout": { "type": "hanako" }
         },
         "errors": {
