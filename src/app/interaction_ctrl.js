@@ -60,12 +60,13 @@ class InteractionCtrl {
         // Note: 公開範囲は保留した時点で決まり、後から変えられない
         await interaction.deferReply(ephemeral ? { flags: MessageFlags.Ephemeral } : {});
 
+        const target = InteractionResponder.commandReplyTarget(interaction, ephemeral);
         try {
             const response = await processInteractionF.call(this, interaction);
-            await this.responder.respond(interaction, response, ephemeral);
+            await this.responder.respond(target, response);
         } catch (error) {
             await this.responder
-                .replyFailure(interaction, error, ephemeral)
+                .replyFailure(target, error)
                 .catch((e) => logger.warn('インタラクションの応答に失敗', e));
             throw error;
         }

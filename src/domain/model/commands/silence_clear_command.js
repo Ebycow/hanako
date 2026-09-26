@@ -76,10 +76,11 @@ class SilenceClearCommand {
         }
 
         if (!input.args.force) {
-            return input.newChatResponse(
-                '**ほんとうにけすのですか？ こうかいしませんね？**\n読み上げ停止中のユーザーを全て解除する場合はコマンドに `--force` を付けてください。例:`@hanako 大赦 --force`',
-                'force'
-            );
+            const how =
+                input.source === 'slash'
+                    ? '読み上げ停止中のユーザーを全て解除する場合は「実行する」を押してください。'
+                    : '読み上げ停止中のユーザーを全て解除する場合はコマンドに `--force` を付けてください。例:`@hanako 大赦 --force`';
+            return input.newChatResponse('**ほんとうにけすのですか？ こうかいしませんね？**\n' + how, 'force');
         }
 
         // 沈黙初期化アクションを作成

@@ -41,6 +41,9 @@ describe('InteractionCtrl', () => {
         }
 
         class InteractionResponderStub {
+            static commandReplyTarget(interaction, ephemeral) {
+                return { interaction, ephemeral };
+            }
             async respond(...args) {
                 return respond(...args);
             }
@@ -216,9 +219,8 @@ describe('InteractionCtrl', () => {
         await ctrl.onInteraction(interaction);
 
         respond.calledOnce.should.be.true;
-        respond.firstCall.args[0].should.equal(interaction);
+        respond.firstCall.args[0].should.deep.equal({ interaction, ephemeral: false });
         respond.firstCall.args[1].should.equal(serviceResponse);
-        respond.firstCall.args[2].should.equal(false);
     });
 
     specify('皆に関係するコマンドは処理より先に公開で応答を保留する（3秒制限対策）', async () => {
@@ -243,7 +245,7 @@ describe('InteractionCtrl', () => {
         await ctrl.onInteraction(interaction);
 
         interaction.deferReply.firstCall.args[0].should.have.property('flags', MessageFlags.Ephemeral);
-        respond.firstCall.args[2].should.equal(true);
+        respond.firstCall.args[0].ephemeral.should.equal(true);
     });
 
     specify('処理に失敗したら失敗を応答し、エラーは上位に伝える', async () => {

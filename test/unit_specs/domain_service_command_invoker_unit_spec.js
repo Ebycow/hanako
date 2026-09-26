@@ -1,7 +1,14 @@
 const should = require('chai').should();
 const CommandInvoker = require('../../src/domain/service/command_invoker');
 const EbyAbortError = require('../../src/core/errors/eby_abort_error');
-const { basicHanako, commandInputBlueprint } = require('../helpers/blueprints');
+const {
+    basicHanako,
+    commandInputBlueprint,
+    silenceDictionaryLineBlueprint,
+    wordDictionaryLineBlueprint,
+    SilenceDictionary,
+    WordDictionary,
+} = require('../helpers/blueprints');
 
 /************************************************************************
  * CommandInvokerクラス単体スペック
@@ -88,6 +95,39 @@ describe('CommandInvoker', () => {
                 const input = slashInput('se-search', { keyword: 'ドン' });
                 const response = await invoker.invoke(basicHanako(), input);
                 response.type.should.equal('chat');
+            });
+
+            specify('破壊的なコマンドは確認を返し、確定済みなら実行する', async () => {
+                const invoker = new CommandInvoker();
+                const hanako = basicHanako({
+                    silenceDictionary: new SilenceDictionary({
+                        id: 'sd',
+                        serverId: 'mock-server-id',
+                        lines: [silenceDictionaryLineBlueprint()],
+                    }),
+                });
+
+                const confirm = await invoker.invoke(hanako, slashInput('blacklist-clear', {}));
+                confirm.code.should.equal('force');
+                confirm.content.should.have.string('「実行する」を押して');
+                confirm.content.should.not.have.string('--force');
+
+                const done = await invoker.invoke(hanako, slashInput('blacklist-clear', { force: true }));
+                done.type.should.equal('action');
+            });
+
+            specify('辞書の全消去もスラッシュコマンドで実行できる', async () => {
+                const invoker = new CommandInvoker();
+                const hanako = basicHanako({
+                    wordDictionary: new WordDictionary({
+                        id: 'wd',
+                        serverId: 'mock-server-id',
+                        lines: [wordDictionaryLineBlueprint()],
+                    }),
+                });
+
+                const done = await invoker.invoke(hanako, slashInput('dictionary-clear', { force: true }));
+                done.type.should.equal('action');
             });
 
             specify('未知のスラッシュコマンドはabortする', async () => {

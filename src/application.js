@@ -7,6 +7,7 @@ const AppConfig = require('./core/app_config');
 const AppSettings = require('./core/app_settings');
 const InteractionCtrl = require('./app/interaction_ctrl');
 const PagerButtonCtrl = require('./app/pager_button_ctrl');
+const ConfirmButtonCtrl = require('./app/confirm_button_ctrl');
 const MessageCtrl = require('./app/message_ctrl');
 const ReadyCtrl = require('./app/ready_ctrl');
 const PagerReactionCtrl = require('./app/pager_reaction_ctrl');
@@ -81,6 +82,7 @@ class Application {
         this.bind('clientReady', StatusChangeCtrl);
         this.bind('interactionCreate', InteractionCtrl);
         this.bind('interactionCreate', PagerButtonCtrl);
+        this.bind('interactionCreate', ConfirmButtonCtrl);
         this.bind('messageCreate', MessageCtrl, [MessageSanitizeMiddleWare]);
         this.bind('messageReactionAdd', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
         this.bind('messageReactionRemove', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);

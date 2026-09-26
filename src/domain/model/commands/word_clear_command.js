@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const WordClearAction = require('../../entity/actions/word_clear_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -25,6 +26,20 @@ class WordClearCommand {
      */
     static get names() {
         return ['白紙', 'alldelete', 'wbook-alldel'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     * Note: テキストの --force の代わりに、確認ボタンで確定する
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'dictionary-clear',
+            description: '教育した単語をすべて忘却します',
+            options: [],
+        };
     }
 
     /**
@@ -62,10 +77,11 @@ class WordClearCommand {
         }
 
         if (!input.args.force) {
-            return input.newChatResponse(
-                '**ほんとうにけすのですか？ こうかいしませんね？**\nすべての単語を削除する場合はコマンドに `--force` を付けてください。例:`@hanako 白紙 --force`',
-                'force'
-            );
+            const how =
+                input.source === 'slash'
+                    ? 'すべての単語を削除する場合は「実行する」を押してください。'
+                    : 'すべての単語を削除する場合はコマンドに `--force` を付けてください。例:`@hanako 白紙 --force`';
+            return input.newChatResponse('**ほんとうにけすのですか？ こうかいしませんね？**\n' + how, 'force');
         }
 
         // 教育単語初期化アクションを作成
