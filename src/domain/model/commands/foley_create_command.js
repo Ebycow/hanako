@@ -30,6 +30,40 @@ class FoleyCreateCommand {
     }
 
     /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {keyword: ?string, url: ?string, attachments: Array<{name: string, url: string}>}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        const attachments = input.attachments || [];
+        const error = (message) => ({ response: input.newChatResponse(message, 'error') });
+
+        if (attachments.length > 0) {
+            // @hanako se-add だけで、添付した複数ファイルをまとめて登録
+            if (input.argc === 0) {
+                return { args: { keyword: null, url: null, attachments } };
+            }
+            // @hanako se-add SEの名前 の形式で、添付ファイルを1つ登録
+            if (input.argc === 1) {
+                if (attachments.length > 1) {
+                    return error('SE名を指定する場合は添付ファイルは1つにしてください :sob:');
+                }
+                return { args: { keyword: input.argv[0], url: null, attachments } };
+            }
+            return error('ファイル添付時は引数は0個または1個（SE名）にしてください :sob:');
+        }
+
+        // URL指定方式
+        if (input.argc !== 2) {
+            return error(
+                'コマンドの形式が間違っています :sob: 例:`@hanako 音声教育 ﾀﾋﾟｵｶｳﾒｽ https://upload.ebycow.com/dirty-of-loudness.mp3`'
+            );
+        }
+        return { args: { keyword: input.argv[0], url: input.argv[1], attachments: [] } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -46,39 +80,23 @@ class FoleyCreateCommand {
         assert(typeof input === 'object');
         logger.info(`SE追加コマンドを受理 ${input}`);
 
-        // 添付ファイルがある場合の処理
-        const attachments = input.attachments || [];
-        const hasAttachment = attachments.length > 0;
+        const keyword = input.args.keyword || null;
+        const attachments = input.args.attachments || [];
 
-        let keyword, url;
-
-        if (hasAttachment) {
-            // ファイル添付がある場合
-            if (input.argc === 0) {
-                // @hanako se-add だけで、複数ファイルに対応
-                return this.processMultipleAttachments(input, attachments);
-            } else if (input.argc === 1) {
-                // @hanako se-add SEの名前 の形式で、添付ファイルをURLとして使用（単一ファイルのみ）
-                if (attachments.length > 1) {
-                    return input.newChatResponse('SE名を指定する場合は添付ファイルは1つにしてください :sob:', 'error');
-                }
-                keyword = input.argv[0];
-                url = attachments[0].url;
-            } else {
-                return input.newChatResponse('ファイル添付時は引数は0個または1個（SE名）にしてください :sob:', 'error');
-            }
-        } else {
-            // 従来のURL指定方式
-            if (input.argc !== 2) {
-                return input.newChatResponse(
-                    'コマンドの形式が間違っています :sob: 例:`@hanako 音声教育 ﾀﾋﾟｵｶｳﾒｽ https://upload.ebycow.com/dirty-of-loudness.mp3`',
-                    'error'
-                );
-            }
-
-            keyword = input.argv[0];
-            url = input.argv[1];
+        // キーワードを指定せずファイルだけを添付したときは、ファイル名をキーワードにしてまとめて登録
+        if (keyword === null) {
+            return this.processMultipleAttachments(input, attachments);
         }
+
+        // 音声はURLか添付ファイルのどちらか一方で受け取る
+        if (input.args.url && attachments.length > 0) {
+            return input.newChatResponse('URLと添付ファイルはどちらか一方だけ指定してね :sob:', 'error');
+        }
+        if (!input.args.url && attachments.length !== 1) {
+            return input.newChatResponse('音声ファイルのURLか添付ファイルを1つ指定してね :sob:', 'error');
+        }
+        const hasAttachment = !input.args.url;
+        const url = hasAttachment ? attachments[0].url : input.args.url;
 
         // 単一ファイルのバリデーション
         const validationError = this.validateKeywordAndUrl(keyword, url, !hasAttachment);

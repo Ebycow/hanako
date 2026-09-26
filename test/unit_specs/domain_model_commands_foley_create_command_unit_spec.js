@@ -212,5 +212,35 @@ describe('FoleyCreateCommand', () => {
                 res.code.should.equal('error');
             });
         });
+
+        context('名前付きの引数（スラッシュコマンド）', () => {
+            specify('添付ファイル1つとキーワードで登録できる', () => {
+                const input = commandInputBlueprint().withArgs({
+                    keyword: 'ドンッ',
+                    attachments: [{ name: 'don.mp3', url: 'https://cdn.discordapp.com/don.mp3' }],
+                });
+                const res = new FoleyCreate(basicHanako()).process(input);
+                res.type.should.equal('action');
+                res.action.url.should.equal('https://cdn.discordapp.com/don.mp3');
+            });
+
+            specify('URLと添付ファイルを両方指定するとエラー', () => {
+                const input = commandInputBlueprint().withArgs({
+                    keyword: 'ドンッ',
+                    url: 'https://example.com/don.mp3',
+                    attachments: [{ name: 'don.mp3', url: 'https://cdn.discordapp.com/don.mp3' }],
+                });
+                const res = new FoleyCreate(basicHanako()).process(input);
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('URLも添付ファイルもないとエラー', () => {
+                const input = commandInputBlueprint().withArgs({ keyword: 'ドンッ' });
+                const res = new FoleyCreate(basicHanako()).process(input);
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+        });
     });
 });

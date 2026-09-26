@@ -29,6 +29,24 @@ class FoleyRenameCommand {
     }
 
     /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {old_keyword: string, new_keyword: string}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        if (input.argc !== 2) {
+            return {
+                response: input.newChatResponse(
+                    'コマンドの形式が間違っています :sob: 例:`@hanako 音声名置換 from to`',
+                    'error'
+                ),
+            };
+        }
+        return { args: { old_keyword: input.argv[0], new_keyword: input.argv[1] } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -45,16 +63,7 @@ class FoleyRenameCommand {
         assert(typeof input === 'object');
         logger.info(`SE名置き換えコマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        if (input.argc !== 2) {
-            return input.newChatResponse(
-                'コマンドの形式が間違っています :sob: 例:`@hanako 音声名置換 from to`',
-                'error'
-            );
-        }
-
-        const keywordFrom = input.argv[0];
-        const keywordTo = input.argv[1];
+        const { old_keyword: keywordFrom, new_keyword: keywordTo } = input.args;
 
         // 存在チェック
         const exs = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keywordFrom);

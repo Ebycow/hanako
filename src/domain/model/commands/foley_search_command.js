@@ -123,6 +123,21 @@ class FoleySearchCommand {
     }
 
     /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {keyword: string}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        if (input.argc === 0) {
+            return {
+                response: input.newChatResponse('検索するSE名を入力してね！ 例: `@hanako se? タピオカ`', 'error'),
+            };
+        }
+        return { args: { keyword: input.argv.join(' ') } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -139,11 +154,7 @@ class FoleySearchCommand {
         assert(typeof input === 'object');
         logger.info(`SE検索コマンドを受理 ${input}`);
 
-        if (input.argc === 0) {
-            return input.newChatResponse('検索するSE名を入力してね！ 例: `@hanako se? タピオカ`', 'error');
-        }
-
-        const query = normalize(input.argv.join(' ').trim());
+        const query = normalize(input.args.keyword.trim());
 
         if (this.hanako.foleyDictionary.lines.length === 0) {
             return input.newChatResponse(
