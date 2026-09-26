@@ -5,9 +5,12 @@ const PagerBuilder = require('../service/pager_builder');
 const PagerService = require('../service/pager_service');
 const { pagerDirectionOf } = require('../service/pager_buttons');
 const errors = require('../core/errors').promises;
+const { MessageFlags } = require('discord.js');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Interaction} discord.Interaction */
+
+const FAILED_MESSAGE = 'ページを送れませんでした･･･😿\nもう一度一覧を表示してから試してね';
 
 /**
  * PagerButtonコントローラ
@@ -39,17 +42,27 @@ class PagerButtonCtrl {
             return errors.abort();
         }
 
-        // 読み上げ花子モデルを取得
-        const hanako = await this.hanakoLoader.load(interaction.guild.id);
+        try {
+            // 読み上げ花子モデルを取得
+            const hanako = await this.hanakoLoader.load(interaction.guild.id);
 
-        // メッセージ内容からPagerを生成
-        const pager = await this.pagerBuilder.build(hanako, interaction.message.content);
+            // メッセージ内容からPagerを生成
+            const pager = await this.pagerBuilder.build(hanako, interaction.message.content);
 
-        // Pagerサービスを実行して次のテキストを取得
-        const nextContent = await this.pagerService.serve(pager, direction);
+            // Pagerサービスを実行して次のテキストを取得
+            const nextContent = await this.pagerService.serve(pager, direction);
 
-        // ボタンを押したメッセージを次のページに書き換えて終了
-        await interaction.update({ content: nextContent });
+            // ボタンを押したメッセージを次のページに書き換えて終了
+            await interaction.update({ content: nextContent });
+        } catch (error) {
+            // 応答しないとDiscordには「インタラクションに失敗しました」としか出ないため、押した人にだけ理由を伝える
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction
+                    .reply({ content: FAILED_MESSAGE, flags: MessageFlags.Ephemeral })
+                    .catch((e) => logger.warn('インタラクションの応答に失敗', e));
+            }
+            throw error;
+        }
     }
 }
 

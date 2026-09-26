@@ -1,6 +1,7 @@
 require('chai').should();
 const sinon = require('sinon');
 const proxyquire = require('proxyquire').noCallThru();
+const { MessageFlags } = require('discord.js');
 
 /************************************************************************
  * PagerButtonCtrlクラス単体スペック
@@ -49,6 +50,9 @@ describe('PagerButtonCtrl', () => {
             guild: { id: 'guild-id' },
             message: { content: 'Dictionary 1 / 2 page' },
             update: sinon.stub().resolves(),
+            reply: sinon.stub().resolves(),
+            replied: false,
+            deferred: false,
         };
     }
 
@@ -60,6 +64,33 @@ describe('PagerButtonCtrl', () => {
         pagerBuild.firstCall.args[1].should.equal('Dictionary 1 / 2 page');
         pagerServe.firstCall.args[1].should.equal('forward');
         interaction.update.calledOnceWith({ content: '次のページ' }).should.be.true;
+    });
+
+    specify('ページを送れなかったら押した人にだけ失敗を伝え、エラーは上位に伝える', async () => {
+        const error = new Error('no pageable');
+        pagerBuild.rejects(error);
+        const interaction = buttonInteraction('hanako:pager:forward');
+
+        const err = await new PagerButtonCtrl({}).onPagerButton(interaction).catch((e) => e);
+
+        err.should.equal(error);
+        interaction.update.called.should.be.false;
+        interaction.reply.calledOnce.should.be.true;
+        interaction.reply.firstCall.args[0].flags.should.equal(MessageFlags.Ephemeral);
+    });
+
+    specify('応答済みのあとに失敗したときは重ねて返信しない', async () => {
+        const error = new Error('after update');
+        const interaction = buttonInteraction('hanako:pager:forward');
+        interaction.update = sinon.stub().callsFake(async () => {
+            interaction.replied = true;
+            throw error;
+        });
+
+        const err = await new PagerButtonCtrl({}).onPagerButton(interaction).catch((e) => e);
+
+        err.should.equal(error);
+        interaction.reply.called.should.be.false;
     });
 
     specify('ページ送り以外のボタンは中断する', async () => {
