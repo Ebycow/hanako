@@ -100,6 +100,17 @@ describe('StreamFetcher', () => {
                     e.message.should.equal('unreachable');
                 }
             });
+
+            specify('再生待ちで読み手がいない間に取得が失敗してもuncaughtExceptionにならない', async () => {
+                vrStreamRepo.getVoiceroidStream.rejects(new Error('Request failed with status code 500'));
+
+                const stream = await fetcher.fetch([{ type: 'voiceroid', content: 'テスト', speaker: 'kiritan' }]);
+                // 読み手を付けずに待つ（キューで再生待ちの状態）。errorリスナーが無ければここで例外になる
+                await new Promise((resolve) => stream.once('close', resolve));
+
+                stream.destroyed.should.be.true;
+                stream.errored.message.should.equal('Request failed with status code 500');
+            });
         });
     });
 });

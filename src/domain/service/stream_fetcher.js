@@ -1,3 +1,5 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const Injector = require('../../core/injector');
 const IVoiceroidStreamRepo = require('../repo/i_voiceroid_stream_repo');
@@ -49,9 +51,11 @@ class StreamFetcher {
             }
         });
 
-        // 待機
         // EbyStreamを使ってひとつなぎのStreamとして返却
         const stream = new EbyStream(streamFactories);
+        // 取得は返却後に進むため、再生待ちの間に失敗しても uncaughtException にならないよう常に受けておく
+        // （再生中の失敗は AudioPlayer の error でも拾われ、次の音声へ進む）
+        stream.on('error', (err) => logger.warn('音声ストリームの取得に失敗', err));
         return Promise.resolve(stream);
     }
 }

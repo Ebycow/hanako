@@ -95,6 +95,8 @@ class EbyStream extends Readable {
             return;
         }
         const promise = Promise.resolve(candidate()).then(ensure);
+        // 失敗は _next で拾うが、それまでは処理が付かないため unhandledRejection にならないよう印を付けておく
+        promise.catch(() => {});
         this._pending = { stream: null, promise };
     }
 

@@ -96,5 +96,38 @@ describe('EbyStream', () => {
             stream.destroy();
             childDestroyed.should.be.true;
         });
+
+        specify('再生中に先読みの取得が失敗してもunhandledRejectionにならずerrorとして伝搬する', async () => {
+            const unhandled = [];
+            const onUnhandled = (err) => unhandled.push(err);
+            process.on('unhandledRejection', onUnhandled);
+            try {
+                const slow = new Readable({
+                    read() {
+                        setTimeout(() => {
+                            this.push(Buffer.from('aaa'));
+                            this.push(null);
+                        }, 50);
+                    },
+                });
+                const stream = new EbyStream([
+                    async () => slow,
+                    async () => {
+                        throw new Error('prefetch-error');
+                    },
+                ]);
+
+                const err = await consumeStream(stream).then(
+                    () => should.fail('should have errored'),
+                    (e) => e
+                );
+                err.message.should.equal('prefetch-error');
+                // unhandledRejection はマイクロタスク処理後に判定されるため、1ティック待ってから確認する
+                await new Promise((resolve) => setImmediate(resolve));
+                unhandled.should.be.empty;
+            } finally {
+                process.removeListener('unhandledRejection', onUnhandled);
+            }
+        });
     });
 });
