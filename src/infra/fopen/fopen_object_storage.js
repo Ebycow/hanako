@@ -1,6 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const fs = require('fs');
+const { pipeline } = require('stream/promises');
 const uuid = require('crypto').randomUUID;
 const errors = require('../../core/errors').types;
 const Datastore = require('@seald-io/nedb');
@@ -132,12 +133,13 @@ class FopenObjectStorage {
         await fs.promises.mkdir(dirPath, { recursive: true });
 
         // 2. ファイル書き込み（UUID名なので衝突しない）
-        await new Promise((resolve, reject) => {
-            const writable = fs.createWriteStream(filePath);
-            dataStream.pipe(writable);
-            writable.on('finish', () => resolve());
-            writable.on('error', (err) => reject(err));
-        });
+        //    Note: 入力側のエラーも捕捉できるよう pipeline を使う。失敗時は書きかけのファイルを消す
+        try {
+            await pipeline(dataStream, fs.createWriteStream(filePath));
+        } catch (err) {
+            await fs.promises.unlink(filePath).catch(() => {});
+            throw err;
+        }
 
         // 3. DBレコード挿入（_key ユニーク制約で重複を原子的に排除）
         //    失敗時は孤児ファイルを削除してからエラーを伝搬

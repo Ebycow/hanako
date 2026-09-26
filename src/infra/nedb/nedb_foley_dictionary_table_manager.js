@@ -6,7 +6,7 @@ const prettyBytes = require('pretty-bytes');
 const axios = require('axios').default;
 const prism = require('prism-media');
 const FileType = require('file-type');
-const Readable = require('stream').Readable;
+const { Readable, Transform } = require('stream');
 const errors = require('../../core/errors').promises;
 const { publicOnlyRequestConfig, isForbiddenAddressError } = require('../http/public_address_guard');
 
@@ -16,6 +16,54 @@ async function fileTypeFromBuffer(buffer) {
         return errors.unexpected('file-type-from-buffer-not-available');
     }
     return detectFromBuffer(buffer);
+}
+
+/**
+ * FFmpegが入力を読み切る前に終了したときに、残りの入力を書き込もうとして出るエラーかどうか
+ * （Windowsでは EOF、それ以外では EPIPE になる）
+ *
+ * @param {any} err
+ * @returns {boolean}
+ */
+function isClosedPipeError(err) {
+    return err.code === 'EOF' || err.code === 'EPIPE' || err.code === 'ERR_STREAM_DESTROYED';
+}
+
+/**
+ * ダウンロードした音声をFFmpegでPCMに変換するストリームを作る
+ *
+ * FFmpegは -fs の出力上限に達したときや、変換できない音声だったときに入力を読み切らずに終了する。
+ * そのとき残りの入力の書き込みがエラーになるが、これを放置すると捕捉されない例外でプロセスが落ちる。
+ * 書き込み側のこのエラーは無視し、変換結果が空かどうかで成否を判断する（空なら 'foley-ffmpeg-empty-output'）。
+ *
+ * @param {Buffer} data ダウンロードした音声
+ * @param {string[]} args FFmpegの引数
+ * @returns {Readable} PCMのストリーム
+ */
+function toPcmStream(data, args) {
+    const ffmpeg = new prism.FFmpeg({ args });
+
+    let outputSize = 0;
+    const output = new Transform({
+        transform(chunk, _encoding, callback) {
+            outputSize += chunk.length;
+            callback(null, chunk);
+        },
+        flush(callback) {
+            callback(outputSize === 0 ? new Error('foley-ffmpeg-empty-output') : null);
+        },
+    });
+
+    ffmpeg.on('error', (err) => {
+        if (isClosedPipeError(err)) {
+            logger.info(`FFmpegが入力を読み切る前に終了した (code=${err.code})`);
+            return;
+        }
+        output.destroy(err);
+    });
+
+    Readable.from(data, { objectMode: false }).pipe(ffmpeg).pipe(output);
+    return output;
 }
 
 /** SE音源ダウンロード1回あたりの制限時間（ミリ秒） */
@@ -365,9 +413,7 @@ class NedbFoleyDictionaryTableManager {
         }
 
         try {
-            const args = this.ffmpegOptions.slice();
-            const ffmpeg = new prism.FFmpeg({ args });
-            const stream = Readable.from(response.data, { objectMode: false }).pipe(ffmpeg);
+            const stream = toPcmStream(response.data, this.ffmpegOptions.slice());
             const objectKey = Buffer.from(action.keyword).toString('base64');
             // Note: 辞書登録を遅延できるのはsaveFileが同じKeyのレコード挿入を受け付けないため
             //       先着一名様以外はここで不整合エラーになる
@@ -377,6 +423,10 @@ class NedbFoleyDictionaryTableManager {
             if (records.some((record) => action.keyword === record[0])) {
                 const message = 'すでに登録されてるみたい... :sob:';
                 return errors.disappointed(`keyword-already-exists ${action}`, message);
+            }
+            if (err.message === 'foley-ffmpeg-empty-output') {
+                const message = 'この音声ファイルは変換できなかったにゃ… mp3 か wav で試してみてね :sob:';
+                return errors.unexpected('foley-ffmpeg-empty-output', message);
             }
             return Promise.reject(err);
         }
@@ -428,9 +478,7 @@ class NedbFoleyDictionaryTableManager {
             }
 
             try {
-                const args = this.ffmpegOptions.slice();
-                const ffmpeg = new prism.FFmpeg({ args });
-                const stream = Readable.from(response.data, { objectMode: false }).pipe(ffmpeg);
+                const stream = toPcmStream(response.data, this.ffmpegOptions.slice());
                 const objectKey = Buffer.from(item.keyword).toString('base64');
                 await this.objectStorageRepo.saveFile(action.serverId, objectKey, 'pcm', stream);
 
@@ -441,7 +489,12 @@ class NedbFoleyDictionaryTableManager {
                 logger.warn(`ファイル保存失敗をスキップ: ${item.keyword} - ${err.message}`);
                 // ダウンロード待ちの間に同じキーワードが別の登録で先に登録された
                 const alreadyExists = records.some((record) => item.keyword === record[0]);
-                failedItems.push(`${item.keyword}: ${alreadyExists ? 'すでに登録済みです' : '保存に失敗しました'}`);
+                const reason = alreadyExists
+                    ? 'すでに登録済みです'
+                    : err.message === 'foley-ffmpeg-empty-output'
+                      ? '音声を変換できませんでした'
+                      : '保存に失敗しました';
+                failedItems.push(`${item.keyword}: ${reason}`);
                 continue;
             }
         }
