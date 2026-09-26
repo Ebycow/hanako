@@ -1,4 +1,5 @@
-require('chai').should();
+const should = require('chai').should();
+const { PermissionFlagsBits } = require('discord.js');
 const commands = require('../../src/domain/model/commands');
 const { toSlashCommandJSON, buildSlashCommandsJSON } = require('../../src/service/slash_command_builder');
 
@@ -30,6 +31,22 @@ describe('slash_command_builder', () => {
         specify('スラッシュ定義を持つコマンドをすべて変換する', () => {
             const expected = Object.values(commands).filter((K) => K.slash).length;
             buildSlashCommandsJSON().should.have.lengthOf(expected);
+        });
+
+        specify('必要な権限を使える人の初期値にする', () => {
+            const byName = Object.fromEntries(buildSlashCommandsJSON().map((json) => [json.name, json]));
+            const manageGuild = String(PermissionFlagsBits.ManageGuild);
+            const moderateMembers = String(PermissionFlagsBits.ModerateMembers);
+
+            ['limit', 'dictionary-clear', 'blacklist-clear'].forEach((name) =>
+                byName[name].default_member_permissions.should.equal(manageGuild)
+            );
+            ['blacklist-add', 'blacklist-remove', 'blacklist-show'].forEach((name) =>
+                byName[name].default_member_permissions.should.equal(moderateMembers)
+            );
+            ['ask', 'plz', 'teach', 'se-add', 'se-normalize', 'speaker'].forEach((name) =>
+                should.not.exist(byName[name].default_member_permissions)
+            );
         });
 
         specify('スラッシュコマンド名は重複しない', () => {

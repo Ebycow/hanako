@@ -19,6 +19,7 @@ class DiscordMessage {
      * @param {Map<string, string>} data.mentionedUsers メンションされているユーザーの表示名とユーザーIDの辞書配列
      * @param {Array<{name: string, url: string}>} data.attachments 添付ファイルの配列
      * @param {object} [data.commandArgs] スラッシュコマンドのオプションから作った名前付きの引数（interactionのみ）
+     * @param {string[]} [data.memberPermissions] 送信者が持っている花子の権限名（commandのみ。テキストで実行されたコマンドの権限確認に使う）
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -31,6 +32,7 @@ class DiscordMessage {
         assert(typeof data.mentionedUsers === 'object');
         assert(Array.isArray(data.attachments || []));
         assert(typeof data.commandArgs === 'undefined' || typeof data.commandArgs === 'object');
+        assert(typeof data.memberPermissions === 'undefined' || Array.isArray(data.memberPermissions));
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -128,6 +130,15 @@ class DiscordMessage {
      */
     get commandArgs() {
         return this.data.commandArgs || {};
+    }
+
+    /**
+     * 送信者が持っている花子の権限名
+     *
+     * @type {string[]}
+     */
+    get memberPermissions() {
+        return (this.data.memberPermissions || []).slice();
     }
 
     toString() {

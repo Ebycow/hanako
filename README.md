@@ -13,29 +13,35 @@
 また、スラッシュコマンド（/コマンド名）も利用可能です。スラッシュコマンドでは引数が明確に指定され、説明が表示されます。
 ## コマンド一覧
 
-| 機能               | コマンド                                    | 例                                                     |
-|--------------------|---------------------------------------------|--------------------------------------------------------|
-| VC参加             | お願い plz summon s                         | @hanako お願い                                         |
-| VC離脱             | さようなら bye b                            | @hanako bye                                            |
-| 文字数制限         | 制限 limit readlimit                        | @hanako limit 20                                       |
-| 教育（辞書機能）   | 教育 teach mk wbook-add                     | @hanako 教育 HIKAKIN ヒカキン                          |
-| 忘却（辞書機能）   | 忘却 forget rm wbook-delete                 | @hanako 忘却 SEIKIN                                    |
-| 辞書全削除         | 白紙 alldelete wbook-alldel                 | @hanako alldelete                                      |
-| 辞書一覧           | 辞書 dictionary dic wbook-list              | @hanako dictionary                                     |
-| 読上の中止         | 成敗 seibai stop                            | @hanako seibai                                         |
-| SEの追加           | 音声教育 se-add                             | @hanako se-add （泣く） https://...(音声ファイルのURL) |
-| SEの削除           | 音声忘却 se-delete se-del                   | @hanako se-del :seikin-osusume:                        |
-| SEの一覧           | 音声辞書 音声一覧 se-dictionary se-dic se-list | @hanako se-list                                     |
-| SEの検索           | se?                                         | @hanako se? 泣                                         |
-| SEの名前変更       | 音声名置換 se-rename                        | @hanako se-rename （泣く） （号泣）                    |
-| SE正規化           | SE正規化 se-normalize senorm                | @hanako se-normalize 80                                |
-| ブラックリスト追加 | 沈黙 blacklist-add                          | @hanako blacklist-add @seikin                          |
-| ブラックリスト除外 | 恩赦 blacklist-remove                       | @hanako blacklist-remove @hikakin                      |
-| ブラックリスト一覧 | 名簿 blacklist-show                         | @hanako blacklist-show                                 |
-| ブラックリスト全削除 | 大赦 blacklist-clear                      | @hanako blacklist-clear                                |
-| 読み上げキャラ変更 | キャラクター変更 speaker                    | @hanako speaker kiritan                                |
-| ヘルプ             | 使い方 help                                 | @hanako help                                           |
-| 質問               | 質問 ask                                    | @hanako ask 今日は晴れ？                               |
+| 機能 | コマンド | スラッシュコマンド | 必要な権限 | 例 |
+|---|---|---|---|---|
+| VC参加 | お願い plz summon s | /plz | - | @hanako お願い |
+| VC離脱 | さようなら bye b | /bye | - | @hanako bye |
+| 文字数制限 | 制限 limit readlimit | /limit | サーバー管理 | @hanako limit 20 |
+| 教育（辞書機能） | 教育 teach mk wbook-add | /teach | - | @hanako 教育 HIKAKIN ヒカキン |
+| 忘却（辞書機能） | 忘却 forget rm wbook-delete | /forget | - | @hanako 忘却 SEIKIN |
+| 辞書全削除 | 白紙 alldelete wbook-alldel | /dictionary-clear | サーバー管理 | @hanako alldelete --force |
+| 辞書一覧 | 辞書 dictionary dic wbook-list | /dictionary | - | @hanako dictionary |
+| 読上の中止 | 成敗 seibai stop | /seibai | - | @hanako seibai |
+| SEの追加 | 音声教育 se-add | /se-add | - | @hanako se-add （泣く） https://...(音声ファイルのURL) |
+| SEの削除 | 音声忘却 se-delete se-del | /se-del | - | @hanako se-del :seikin-osusume: |
+| SEの一覧 | 音声辞書 音声一覧 se-dictionary se-dic se-list | /se-list | - | @hanako se-list |
+| SEの検索 | se? | /se-search | - | @hanako se? 泣 |
+| SEの名前変更 | 音声名置換 se-rename | /se-rename | - | @hanako se-rename （泣く） （号泣） |
+| SE正規化 | SE正規化 se-normalize senorm | /se-normalize | - | @hanako se-normalize 80 |
+| ブラックリスト追加 | 沈黙 blacklist-add | /blacklist-add | メンバーをタイムアウト | @hanako blacklist-add @seikin |
+| ブラックリスト除外 | 恩赦 blacklist-remove | /blacklist-remove | メンバーをタイムアウト | @hanako blacklist-remove @hikakin |
+| ブラックリスト一覧 | 名簿 blacklist-show | /blacklist-show | メンバーをタイムアウト | @hanako blacklist-show |
+| ブラックリスト全削除 | 大赦 blacklist-clear | /blacklist-clear | サーバー管理 | @hanako blacklist-clear --force |
+| 読み上げキャラ変更 | キャラクター変更 speaker | /speaker | - | @hanako speaker kiritan |
+| ヘルプ | 使い方 help | /help | - | @hanako help |
+| 質問 | 質問 ask | /ask | - | @hanako ask 今日は晴れ？ |
+
+### コマンドを使える人
+「必要な権限」が `-` のコマンドは誰でも使えます。それ以外は、その権限（または管理者権限）を持つ人だけが使えます。
+
+* スラッシュコマンドでは、これは使える人の初期値です。サーバー管理者は「サーバー設定 → 連携サービス → はなこ」から、コマンドごとに使えるロール・メンバー・チャンネルを変更できます（例: ブラックリストを全員が使えるようにする）
+* テキスト（`@hanako` や `>`）で実行したときは、この表の権限を持っているかで判断します。連携サービスでの変更はテキストには反映されません
 
 ## ボイスチャットへの参加、退出
 参加させたいボイスチャットに参加し、読み上げたいテキストチャンネルに`@hanako plz` と発言(または、`summon` `s`)

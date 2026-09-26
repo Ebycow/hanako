@@ -5,6 +5,7 @@ const MessageBuilder = require('../service/message_builder');
 const MessageService = require('../service/message_service');
 const ResponseHandler = require('../service/response_handler');
 const HanakoLoader = require('../service/hanako_loader');
+const { memberPermissionNames } = require('../service/member_permissions');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Message} discord.Message */
@@ -64,6 +65,7 @@ class MessageCtrl {
                 name: attachment.title || attachment.name, // titleがあればそれを優先、なければname
                 url: attachment.url,
             })),
+            memberPermissions: memberPermissionNames(message.member),
         };
         const entity = await this.builder.build(hanako, builderParam);
 

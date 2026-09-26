@@ -1,8 +1,10 @@
 const { SlashCommandBuilder } = require('discord.js');
 const commands = require('../domain/model/commands');
+const { permissionFlagOf } = require('./member_permissions');
 
 /** @typedef {import('../domain/model/commands').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../domain/model/commands').SlashCommandOption} SlashCommandOption */
+/** @typedef {import('../domain/model/commands').PermissionName} PermissionName */
 
 /**
  * (private) オプション定義をビルダーに追加する
@@ -39,10 +41,15 @@ function addOptionF(builder, def) {
  * スラッシュコマンドの定義をDiscordに登録するJSONに変換する
  *
  * @param {SlashCommandDefinition} def スラッシュコマンドの定義
+ * @param {?PermissionName} [requiredPermission=null] 実行に必要な権限（誰でも使えるならnull）
  * @returns {object} Discordに登録するJSON
  */
-function toSlashCommandJSON(def) {
+function toSlashCommandJSON(def, requiredPermission = null) {
     const builder = new SlashCommandBuilder().setName(def.name).setDescription(def.description);
+    if (requiredPermission) {
+        // 使える人の初期値。サーバー管理者は連携サービスの設定でロールやメンバーごとに変えられる
+        builder.setDefaultMemberPermissions(permissionFlagOf(requiredPermission));
+    }
     def.options.forEach((option) => addOptionF(builder, option));
     return builder.toJSON();
 }
@@ -55,7 +62,7 @@ function toSlashCommandJSON(def) {
 function buildSlashCommandsJSON() {
     return Object.values(commands)
         .filter((K) => K.slash)
-        .map((K) => toSlashCommandJSON(K.slash));
+        .map((K) => toSlashCommandJSON(K.slash, K.requiredPermission || null));
 }
 
 module.exports = { toSlashCommandJSON, buildSlashCommandsJSON };

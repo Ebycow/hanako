@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const WordClearAction = require('../../entity/actions/word_clear_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').PermissionName} PermissionName */
 /** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
@@ -26,6 +27,15 @@ class WordClearCommand {
      */
     static get names() {
         return ['白紙', 'alldelete', 'wbook-alldel'];
+    }
+
+    /**
+     * 実行に必要な権限（スラッシュコマンドの初期値と、テキストで実行されたときの確認に使う）
+     *
+     * @type {PermissionName}
+     */
+    static get requiredPermission() {
+        return 'manageGuild';
     }
 
     /**

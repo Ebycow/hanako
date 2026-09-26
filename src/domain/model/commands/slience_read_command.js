@@ -3,6 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const Pager = require('../pager');
 
+/** @typedef {import('./index').PermissionName} PermissionName */
 /** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
@@ -25,6 +26,15 @@ class SilenceReadCommand {
      */
     static get names() {
         return ['名簿', 'blacklist-show'];
+    }
+
+    /**
+     * 実行に必要な権限（スラッシュコマンドの初期値と、テキストで実行されたときの確認に使う）
+     *
+     * @type {PermissionName}
+     */
+    static get requiredPermission() {
+        return 'moderateMembers';
     }
 
     /**

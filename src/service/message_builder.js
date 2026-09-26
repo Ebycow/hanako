@@ -21,6 +21,7 @@ const DiscordMessage = require('../domain/entity/discord_message');
  * @property {?string} voiceChannelId
  * @property {Map<string, string>} mentionedUsers
  * @property {Array<{name: string, url: string}>} attachments
+ * @property {string[]} memberPermissions 送信者が持っている花子の権限名
  */
 
 /**
@@ -48,6 +49,7 @@ class MessageBuilder {
         assert(typeof param.voiceChannelId === 'string' || param.voiceChannelId === null);
         assert(typeof param.mentionedUsers === 'object');
         assert(Array.isArray(param.attachments || []));
+        assert(Array.isArray(param.memberPermissions || []));
 
         const data = Object.assign({}, param);
 
@@ -64,6 +66,7 @@ class MessageBuilder {
             voiceChannelId: data.voiceChannelId,
             mentionedUsers: data.mentionedUsers,
             attachments: data.attachments || [],
+            memberPermissions: data.memberPermissions || [],
         });
 
         return Promise.resolve(dmessage);

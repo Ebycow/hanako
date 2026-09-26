@@ -60,6 +60,19 @@ module.exports = {
  */
 
 /**
+ * コマンドの実行に必要な権限の名前
+ * - manageGuild: サーバー管理
+ * - moderateMembers: メンバーをタイムアウト（モデレーター）
+ *
+ * コマンドクラスの static requiredPermission に書く。書かないコマンドは誰でも実行できる。
+ * スラッシュコマンドでは登録時の初期値（サーバー管理者が連携サービスの設定で変えられる）になり、
+ * テキストで実行されたときはこちらで実行者の権限を確認する。
+ *
+ * @typedef PermissionName
+ * @type {'manageGuild'|'moderateMembers'}
+ */
+
+/**
  * スラッシュコマンドのオプション定義
  *
  * @typedef SlashCommandOption

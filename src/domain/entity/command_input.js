@@ -137,6 +137,15 @@ class CommandInput {
     }
 
     /**
+     * 送信者が持っている花子の権限名
+     *
+     * @type {string[]}
+     */
+    get memberPermissions() {
+        return this.data.origin.memberPermissions;
+    }
+
+    /**
      * 元のDiscordメッセージの添付ファイル
      *
      * @type {Array<{name: string, url: string}>}

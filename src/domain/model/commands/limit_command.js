@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const MaxCountUpdateAction = require('../../entity/actions/max_count_update_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').PermissionName} PermissionName */
 /** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
@@ -26,6 +27,15 @@ class LimitCommand {
      */
     static get names() {
         return ['制限', 'limit', 'readlimit'];
+    }
+
+    /**
+     * 実行に必要な権限（スラッシュコマンドの初期値と、テキストで実行されたときの確認に使う）
+     *
+     * @type {PermissionName}
+     */
+    static get requiredPermission() {
+        return 'manageGuild';
     }
 
     /**

@@ -4,6 +4,12 @@ const assert = require('assert').strict;
 const errors = require('../../core/errors').promises;
 const Commando = require('../model/commando');
 
+// 権限名とDiscordの画面での呼び方
+const PERMISSION_LABELS = Object.freeze({
+    manageGuild: 'サーバー管理',
+    moderateMembers: 'メンバーをタイムアウト',
+});
+
 /** @typedef {import('../entity/command_input')} CommandInput */
 /** @typedef {import('../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../model/hanako')} Hanako */
@@ -28,7 +34,6 @@ class CommandInvoker {
         // コマンドーモデルを構築
         const commando = new Commando(hanako);
 
-        // TODO: 実行者の権限チェックが未実装（誰でも全コマンドを実行できる）。テキスト/スラッシュ両方に効く方式を要検討
         // コマンドを実行
         const response =
             commandInput.source === 'slash'
@@ -57,9 +62,23 @@ function invokeTextF(commando, commandInput) {
         return errors.abort();
     }
 
+    // 実行に必要な権限を確認する
+    // Note: スラッシュコマンドはDiscordが登録時の初期値（または管理者が連携サービスで変えた設定）で弾くが、
+    //       テキストには届かないので、同じ初期値の権限をこちらで確認する。
+    //       連携サービスでの上書きは反映されないため、管理者が初期値より広げた場合はテキストの方が厳しく、
+    //       狭めた場合（特定のロールやチャンネルに限定など）はテキストの方が緩くなる。
+    //       連携サービスの設定をそのまま効かせたいサーバーは、テキストコマンドを無効にする。
+    const K = command.constructor;
+    if (K.requiredPermission && !input.memberPermissions.includes(K.requiredPermission)) {
+        logger.info(`権限がないためコマンドを実行しない ${input}`);
+        const label = PERMISSION_LABELS[K.requiredPermission];
+        return Promise.resolve(
+            input.newChatResponse(`このコマンドは「${label}」の権限を持っている人だけが使えるよ :lock:`, 'error')
+        );
+    }
+
     // テキストの引数を名前付きの引数に変換（形式が間違っていればその案内を返す）
     // Note: 引数を取らないコマンドは parseText を持たない
-    const K = command.constructor;
     const parsed = typeof K.parseText === 'function' ? K.parseText(input) : { args: {} };
     if (parsed.response) {
         return Promise.resolve(parsed.response);

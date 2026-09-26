@@ -32,9 +32,65 @@ describe('CommandInvoker', () => {
             specify('引数付きコマンドを実行できる', async () => {
                 const invoker = new CommandInvoker();
                 const hanako = basicHanako();
-                const input = commandInputBlueprint({ argc: 2, argv: ['limit', '100'] });
+                const input = commandInputBlueprint(
+                    { argc: 2, argv: ['limit', '100'] },
+                    { memberPermissions: ['manageGuild'] }
+                );
                 const response = await invoker.invoke(hanako, input);
                 response.type.should.equal('action');
+            });
+        });
+
+        context('テキストで実行されたときの権限', () => {
+            specify('必要な権限がないと実行せずに案内する', async () => {
+                const invoker = new CommandInvoker();
+                const input = commandInputBlueprint({ argc: 2, argv: ['limit', '100'] }, { memberPermissions: [] });
+                const response = await invoker.invoke(basicHanako(), input);
+                response.type.should.equal('chat');
+                response.code.should.equal('error');
+                response.content.should.have.string('サーバー管理');
+            });
+
+            specify('別の権限を持っていても、必要な権限がなければ実行しない', async () => {
+                const invoker = new CommandInvoker();
+                const input = commandInputBlueprint(
+                    { argc: 2, argv: ['blacklist-add', '@bob'] },
+                    { memberPermissions: ['manageGuild'], mentionedUsers: new Map([['bob', 'bob-id']]) }
+                );
+                const response = await invoker.invoke(basicHanako(), input);
+                response.code.should.equal('error');
+                response.content.should.have.string('メンバーをタイムアウト');
+            });
+
+            specify('必要な権限があれば実行する', async () => {
+                const invoker = new CommandInvoker();
+                const input = commandInputBlueprint(
+                    { argc: 2, argv: ['blacklist-add', '@bob'] },
+                    { memberPermissions: ['moderateMembers'], mentionedUsers: new Map([['bob', 'bob-id']]) }
+                );
+                const response = await invoker.invoke(basicHanako(), input);
+                response.type.should.equal('action');
+            });
+
+            specify('権限の要らないコマンドは誰でも実行できる', async () => {
+                const invoker = new CommandInvoker();
+                const input = commandInputBlueprint(
+                    { argc: 3, argv: ['teach', '花子', 'はなこ'] },
+                    { memberPermissions: [] }
+                );
+                const response = await invoker.invoke(basicHanako(), input);
+                response.type.should.equal('action');
+            });
+
+            specify('権限がなくても「>」+ 文章の読み上げ回避はこれまでどおり黙って中断する', async () => {
+                const invoker = new CommandInvoker();
+                const input = commandInputBlueprint({ argc: 1, argv: ['今日は眠い'] }, { memberPermissions: [] });
+                try {
+                    await invoker.invoke(basicHanako(), input);
+                    should.fail('should have rejected');
+                } catch (e) {
+                    e.should.be.instanceOf(EbyAbortError);
+                }
             });
         });
 
