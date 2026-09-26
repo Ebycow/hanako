@@ -59,8 +59,9 @@ class WordReadCommand {
         logger.info(`教育単語一覧コマンドを受理 ${input}`);
 
         if (this.hanako.wordDictionary.lines.length === 0) {
+            const example = input.usage('@hanako 教育 雷 いかずち', '/teach from:雷 to:いかずち');
             return input.newChatResponse(
-                '辞書にはまだなにも登録されていません。\n教育コマンドを使って単語と読み方を登録できます！ 例:`@hanako 教育 雷 いかずち`',
+                `辞書にはまだなにも登録されていません。\n教育コマンドを使って単語と読み方を登録できます！ 例:\`${example}\``,
                 'error'
             );
         }

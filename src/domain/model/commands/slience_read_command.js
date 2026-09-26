@@ -59,8 +59,9 @@ class SilenceReadCommand {
         logger.info(`沈黙ユーザーの一覧コマンドを受理 ${input}`);
 
         if (this.hanako.silenceDictionary.lines.length === 0) {
+            const example = input.usage('@hanako 沈黙 @Ebycow', '/blacklist-add user:@Ebycow');
             return input.newChatResponse(
-                '読み上げ停止中のユーザーはいません。\n沈黙コマンドを使うと個別に読み上げを停止できます。 例:`@hanako 沈黙 @Ebycow`',
+                `読み上げ停止中のユーザーはいません。\n沈黙コマンドを使うと個別に読み上げを停止できます。 例:\`${example}\``,
                 'error'
             );
         }

@@ -90,7 +90,7 @@ class SpeakerCommand {
             onSuccess = input.newChatResponse('読み上げるキャラクターをデフォルトに戻しました :beginner:');
         } else {
             onSuccess = input.newChatResponse(
-                `読み上げるキャラクターを${newSpeaker}に変更しました。元に戻す場合は@hanako キャラクター変更 default を入力します :microphone:`
+                `読み上げるキャラクターを${newSpeaker}に変更しました。元に戻す場合は${input.usage('@hanako キャラクター変更 default', '/speaker name:default')} を入力します :microphone:`
             );
         }
         return new ActionResponse({ id: input.id, action, onSuccess });

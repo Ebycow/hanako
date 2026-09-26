@@ -149,7 +149,7 @@ class FoleyCreateCommand {
             url,
         });
         const onSuccess = input.newChatResponse(
-            `登録しました！ 『${keyword}』 :bulb:\n取り消す場合は: @hanako se-del ${keyword}`
+            `登録しました！ 『${keyword}』 :bulb:\n取り消す場合は: ${input.usage(`@hanako se-del ${keyword}`, `/se-del keyword:${keyword}`)}`
         );
         const onFailure = input.newChatResponse('SE登録中にエラーが発生しました :sob:', 'error');
         return new ActionResponse({ id: input.id, action, onSuccess, onFailure });

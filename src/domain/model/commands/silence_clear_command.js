@@ -69,17 +69,18 @@ class SilenceClearCommand {
         logger.info(`沈黙ユーザー初期化コマンドを受理 ${input}`);
 
         if (this.hanako.silenceDictionary.lines.length === 0) {
+            const example = input.usage('@hanako 沈黙 @Ebycow', '/blacklist-add user:@Ebycow');
             return input.newChatResponse(
-                '読み上げ停止中のユーザーはいません。\n沈黙コマンドを使うと個別に読み上げを停止できます。 例:`@hanako 沈黙 @Ebycow`',
+                `読み上げ停止中のユーザーはいません。\n沈黙コマンドを使うと個別に読み上げを停止できます。 例:\`${example}\``,
                 'error'
             );
         }
 
         if (!input.args.force) {
-            const how =
-                input.source === 'slash'
-                    ? '読み上げ停止中のユーザーを全て解除する場合は「実行する」を押してください。'
-                    : '読み上げ停止中のユーザーを全て解除する場合はコマンドに `--force` を付けてください。例:`@hanako 大赦 --force`';
+            const how = input.usage(
+                '読み上げ停止中のユーザーを全て解除する場合はコマンドに `--force` を付けてください。例:`@hanako 大赦 --force`',
+                '読み上げ停止中のユーザーを全て解除する場合は「実行する」を押してください。'
+            );
             return input.newChatResponse('**ほんとうにけすのですか？ こうかいしませんね？**\n' + how, 'force');
         }
 

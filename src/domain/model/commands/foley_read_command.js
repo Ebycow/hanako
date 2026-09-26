@@ -59,8 +59,12 @@ class FoleyReadCommand {
         logger.info(`SE一覧コマンドを受理 ${input}`);
 
         if (this.hanako.foleyDictionary.lines.length === 0) {
+            const example = input.usage(
+                '@hanako 音声教育 ﾀﾋﾟｵｶｳﾒｽ https://upload.ebycow.com/dirty-of-loudness.mp3',
+                '/se-add keyword:ﾀﾋﾟｵｶｳﾒｽ url:https://upload.ebycow.com/dirty-of-loudness.mp3'
+            );
             return input.newChatResponse(
-                '音声辞書にはまだなにも登録されていません。\n音声教育コマンドを使ってキーワードとSEを登録できます！ 例:`@hanako 音声教育 ﾀﾋﾟｵｶｳﾒｽ https://upload.ebycow.com/dirty-of-loudness.mp3`',
+                `音声辞書にはまだなにも登録されていません。\n音声教育コマンドを使ってキーワードとSEを登録できます！ 例:\`${example}\``,
                 'error'
             );
         }

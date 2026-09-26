@@ -80,6 +80,18 @@ class CommandInput {
     }
 
     /**
+     * 入力元に合わせたコマンドの書き方を返す
+     * 案内や例に、テキスト投稿とスラッシュコマンドのどちらの書き方を見せるか選ぶために使う
+     *
+     * @param {string} text テキスト投稿での書き方 例: '@hanako 教育 雷 いかずち'
+     * @param {string} slash スラッシュコマンドでの書き方 例: '/teach from:雷 to:いかずち'
+     * @returns {string} 入力元に合わせた書き方
+     */
+    usage(text, slash) {
+        return this.source === 'slash' ? slash : text;
+    }
+
+    /**
      * 送信元DiscordサーバーID
      *
      * @type {string}

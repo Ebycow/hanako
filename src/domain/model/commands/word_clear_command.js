@@ -70,17 +70,18 @@ class WordClearCommand {
         logger.info(`教育単語初期化コマンドを受理 ${input}`);
 
         if (this.hanako.wordDictionary.lines.length === 0) {
+            const example = input.usage('@hanako 教育 雷 いかずち', '/teach from:雷 to:いかずち');
             return input.newChatResponse(
-                '辞書にはまだなにも登録されていません。\n教育コマンドを使って単語と読み方を登録できます！ 例:`@hanako 教育 雷 いかずち`',
+                `辞書にはまだなにも登録されていません。\n教育コマンドを使って単語と読み方を登録できます！ 例:\`${example}\``,
                 'error'
             );
         }
 
         if (!input.args.force) {
-            const how =
-                input.source === 'slash'
-                    ? 'すべての単語を削除する場合は「実行する」を押してください。'
-                    : 'すべての単語を削除する場合はコマンドに `--force` を付けてください。例:`@hanako 白紙 --force`';
+            const how = input.usage(
+                'すべての単語を削除する場合はコマンドに `--force` を付けてください。例:`@hanako 白紙 --force`',
+                'すべての単語を削除する場合は「実行する」を押してください。'
+            );
             return input.newChatResponse('**ほんとうにけすのですか？ こうかいしませんね？**\n' + how, 'force');
         }
 

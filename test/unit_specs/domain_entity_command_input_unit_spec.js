@@ -107,6 +107,11 @@ describe('CommandInput', () => {
             input.args.should.deep.equal({});
         });
 
+        specify('usageは入力元に合わせた書き方を返す', () => {
+            commandInputBlueprint({}, { type: 'command' }).usage('@hanako help', '/help').should.equal('@hanako help');
+            commandInputBlueprint({}, { type: 'interaction' }).usage('@hanako help', '/help').should.equal('/help');
+        });
+
         specify('consumeしてもargsは引き継がれる', () => {
             const input = commandInputBlueprint({ argc: 2, argv: ['a', 'b'], args: { x: 1 } });
             input.consume().args.should.deep.equal({ x: 1 });
