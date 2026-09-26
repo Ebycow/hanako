@@ -63,6 +63,12 @@ const Injector = {
     resolve(inf) {
         assert(typeof inf === 'function');
 
+        // シングルトン登録された型（AppSettings等）はそのインスタンスを返す
+        const singleton = resolveSingleton(inf);
+        if (singleton) {
+            return singleton;
+        }
+
         if (!resolvations.has(inf)) {
             throw new TypeError(`No implementation found for ${inf.name}.`);
         }
