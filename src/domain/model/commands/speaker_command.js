@@ -28,6 +28,24 @@ class SpeakerCommand {
     }
 
     /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {name: string}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        if (input.argc !== 1) {
+            return {
+                response: input.newChatResponse(
+                    'コマンドの形式が間違っています :sob: 例:`@hanako キャラクター変更 default`',
+                    'error'
+                ),
+            };
+        }
+        return { args: { name: input.argv[0] } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -44,15 +62,7 @@ class SpeakerCommand {
         assert(typeof input === 'object');
         logger.info(`キャラクター変更コマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        if (input.argc !== 1) {
-            return input.newChatResponse(
-                'コマンドの形式が間違っています :sob: 例:`@hanako キャラクター変更 default`',
-                'error'
-            );
-        }
-
-        const newSpeaker = input.argv[0];
+        const newSpeaker = input.args.name;
 
         // キャラクター変更アクションを作成
         const action = new SpeakerUpdateAction({
