@@ -3,12 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const errors = require('../../core/errors').promises;
 const Commando = require('../model/commando');
-
-// 権限名とDiscordの画面での呼び方
-const PERMISSION_LABELS = Object.freeze({
-    manageGuild: 'サーバー管理',
-    moderateMembers: 'メンバーをタイムアウト',
-});
+const PERMISSION_LABELS = require('../model/permission_labels');
 
 /** @typedef {import('../entity/command_input')} CommandInput */
 /** @typedef {import('../entity/responses').ResponseT} ResponseT */

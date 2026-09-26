@@ -1,7 +1,11 @@
 const should = require('chai').should();
 const { PermissionFlagsBits } = require('discord.js');
 const commands = require('../../src/domain/model/commands');
-const { toSlashCommandJSON, buildSlashCommandsJSON } = require('../../src/service/slash_command_builder');
+const {
+    toSlashCommandJSON,
+    buildSlashCommandsJSON,
+    summarizeSlashCommands,
+} = require('../../src/service/slash_command_builder');
 
 /************************************************************************
  * slash_command_builder単体スペック
@@ -52,6 +56,16 @@ describe('slash_command_builder', () => {
         specify('スラッシュコマンド名は重複しない', () => {
             const names = buildSlashCommandsJSON().map((json) => json.name);
             new Set(names).size.should.equal(names.length);
+        });
+    });
+
+    describe('#summarizeSlashCommands', () => {
+        specify('使える人・返信の公開範囲・省略可能なオプションを表にする', () => {
+            const byName = Object.fromEntries(summarizeSlashCommands().map((row) => [row['コマンド'], row]));
+            byName['/limit']['使える人の初期値'].should.equal('サーバー管理');
+            byName['/teach']['使える人の初期値'].should.equal('全員');
+            byName['/dictionary']['返信'].should.equal('本人のみ');
+            byName['/se-add']['オプション'].should.equal('keyword url? file?');
         });
     });
 });

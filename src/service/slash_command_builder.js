@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const commands = require('../domain/model/commands');
 const { permissionFlagOf } = require('./member_permissions');
+const PERMISSION_LABELS = require('../domain/model/permission_labels');
 
 /** @typedef {import('../domain/model/commands').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../domain/model/commands').SlashCommandOption} SlashCommandOption */
@@ -65,4 +66,21 @@ function buildSlashCommandsJSON() {
         .map((K) => toSlashCommandJSON(K.slash, K.requiredPermission || null));
 }
 
-module.exports = { toSlashCommandJSON, buildSlashCommandsJSON };
+/**
+ * スラッシュコマンドの一覧を確認用の表にする（deploy-commands.js で表示する）
+ *
+ * @returns {Array<object>} 1コマンド1行の表
+ */
+function summarizeSlashCommands() {
+    return Object.values(commands)
+        .filter((K) => K.slash)
+        .map((K) => ({
+            コマンド: '/' + K.slash.name,
+            使える人の初期値: K.requiredPermission ? PERMISSION_LABELS[K.requiredPermission] : '全員',
+            返信: K.slash.ephemeral ? '本人のみ' : '公開',
+            テキスト: K.names.length > 0 ? K.names[0] : '（なし）',
+            オプション: K.slash.options.map((o) => (o.required ? o.name : `${o.name}?`)).join(' '),
+        }));
+}
+
+module.exports = { toSlashCommandJSON, buildSlashCommandsJSON, summarizeSlashCommands };

@@ -201,6 +201,7 @@ hanakoディレクトリの`app-config-default.yml`をコピーし、`app-config
 ```
 node deploy-commands.js
 ```
+登録する内容（コマンドごとの使える人の初期値など）が表で表示されます。登録せずに表だけ確認したいときは `node deploy-commands.js --dry-run` を実行します
 
 ## 5.起動
 ```
