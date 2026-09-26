@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const WordDeleteAction = require('../../entity/actions/word_delete_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -25,6 +26,19 @@ class WordDeleteCommand {
      */
     static get names() {
         return ['忘却', 'forget', 'rm', 'wbook-delete'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'forget',
+            description: '教育した単語を忘却します',
+            options: [{ type: 'string', name: 'from', description: '忘却する単語', required: true }],
+        };
     }
 
     /**

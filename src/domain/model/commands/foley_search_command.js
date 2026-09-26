@@ -99,6 +99,7 @@ function compareLexicalMatches(a, b) {
     return a.type - b.type || a.extraLength - b.extraLength || a.matchPosition - b.matchPosition || a.index - b.index;
 }
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -120,6 +121,19 @@ class FoleySearchCommand {
      */
     static get names() {
         return ['se?'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'se-search',
+            description: 'SEをキーワードで検索します',
+            options: [{ type: 'string', name: 'keyword', description: '検索キーワード', required: true }],
+        };
     }
 
     /**

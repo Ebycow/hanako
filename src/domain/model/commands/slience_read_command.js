@@ -3,6 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const Pager = require('../pager');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -24,6 +25,19 @@ class SilenceReadCommand {
      */
     static get names() {
         return ['名簿', 'blacklist-show'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'blacklist-show',
+            description: 'ブラックリストの一覧を表示します',
+            options: [],
+        };
     }
 
     /**

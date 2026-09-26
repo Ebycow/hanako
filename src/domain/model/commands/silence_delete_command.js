@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const SilenceDeleteAction = require('../../entity/actions/silence_delete_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -25,6 +26,19 @@ class SilenceDeleteCommand {
      */
     static get names() {
         return ['恩赦', 'blacklist-remove'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'blacklist-remove',
+            description: 'ユーザーをブラックリストから除外します',
+            options: [{ type: 'user', name: 'user', description: 'ミュート解除するユーザー', required: true }],
+        };
     }
 
     /**

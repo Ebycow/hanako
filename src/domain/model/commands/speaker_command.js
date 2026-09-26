@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const SpeakerUpdateAction = require('../../entity/actions/speaker_update_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../hanako')} Hanako */
@@ -25,6 +26,19 @@ class SpeakerCommand {
      */
     static get names() {
         return ['キャラクター変更', 'speaker'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'speaker',
+            description: '読み上げキャラクターを変更します',
+            options: [{ type: 'string', name: 'name', description: 'キャラクター名', required: true }],
+        };
     }
 
     /**

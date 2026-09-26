@@ -5,6 +5,7 @@ const utils = require('../../../core/utils');
 const FoleyRenameAction = require('../../entity/actions/foley_rename_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -26,6 +27,22 @@ class FoleyRenameCommand {
      */
     static get names() {
         return ['音声名置換', 'se-rename'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'se-rename',
+            description: 'SEのキーワードを変更します',
+            options: [
+                { type: 'string', name: 'old_keyword', description: '現在のキーワード', required: true },
+                { type: 'string', name: 'new_keyword', description: '新しいキーワード', required: true },
+            ],
+        };
     }
 
     /**

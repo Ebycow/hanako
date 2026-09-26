@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const SeNormalizeUpdateAction = require('../../entity/actions/se_normalize_update_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -25,6 +26,21 @@ class SeNormalizeCommand {
      */
     static get names() {
         return ['SE正規化', 'se-normalize', 'senorm'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'se-normalize',
+            description: 'SEの音量を正規化するレベルを設定します（0〜100、0で無効化）',
+            options: [
+                { type: 'integer', name: 'level', description: '正規化レベル（0〜100、デフォルト50）', required: true },
+            ],
+        };
     }
 
     /**

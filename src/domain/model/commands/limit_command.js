@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const MaxCountUpdateAction = require('../../entity/actions/max_count_update_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -25,6 +26,19 @@ class LimitCommand {
      */
     static get names() {
         return ['制限', 'limit', 'readlimit'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'limit',
+            description: '読み上げる文字数の上限を設定します',
+            options: [{ type: 'integer', name: 'number', description: '文字数の上限（例: 30）', required: true }],
+        };
     }
 
     /**

@@ -5,6 +5,7 @@ const FoleyDeleteAction = require('../../entity/actions/foley_delete_action');
 const FoleyDeleteMultipleAction = require('../../entity/actions/foley_delete_multiple_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -26,6 +27,19 @@ class FoleyDeleteCommand {
      */
     static get names() {
         return ['音声忘却', 'se-delete', 'se-del'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'se-del',
+            description: 'SEを削除します',
+            options: [{ type: 'string', name: 'keyword', description: '削除するSEのキーワード', required: true }],
+        };
     }
 
     /**

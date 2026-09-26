@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const SeibaiAction = require('../../entity/actions/seibai_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -25,6 +26,19 @@ class SeibaiCommand {
      */
     static get names() {
         return ['成敗', 'seibai', 'stop'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'seibai',
+            description: '現在読み上げ中の音声を中断します',
+            options: [],
+        };
     }
 
     /**

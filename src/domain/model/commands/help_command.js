@@ -2,6 +2,7 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 
@@ -22,6 +23,19 @@ class HelpCommand {
      */
     static get names() {
         return ['使い方', 'help'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'help',
+            description: 'コマンド一覧と使い方を表示します',
+            options: [],
+        };
     }
 
     /**

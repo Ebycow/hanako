@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const WordCreateAction = require('../../entity/actions/word_create_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -25,6 +26,22 @@ class WordCreateCommand {
      */
     static get names() {
         return ['教育', 'teach', 'mk', 'wbook-add'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'teach',
+            description: '単語の読み替えを教育します',
+            options: [
+                { type: 'string', name: 'from', description: '置換前の単語', required: true },
+                { type: 'string', name: 'to', description: '置換後の単語', required: true },
+            ],
+        };
     }
 
     /**

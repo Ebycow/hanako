@@ -6,6 +6,7 @@ const FoleyCreateAction = require('../../entity/actions/foley_create_action');
 const FoleyCreateMultipleAction = require('../../entity/actions/foley_create_multiple_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -27,6 +28,22 @@ class FoleyCreateCommand {
      */
     static get names() {
         return ['音声教育', 'se-add'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'se-add',
+            description: 'SE（効果音）を追加します',
+            options: [
+                { type: 'string', name: 'keyword', description: 'SEを呼び出すキーワード', required: true },
+                { type: 'string', name: 'url', description: '音声ファイルのURL（.wav, .mp3）', required: true },
+            ],
+        };
     }
 
     /**

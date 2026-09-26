@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const SilenceCreateAction = require('../../entity/actions/silence_create_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -25,6 +26,19 @@ class SilenceCreateCommand {
      */
     static get names() {
         return ['沈黙', 'blacklist-add'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'blacklist-add',
+            description: 'ユーザーをブラックリストに追加します',
+            options: [{ type: 'user', name: 'user', description: 'ミュートするユーザー', required: true }],
+        };
     }
 
     /**

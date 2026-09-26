@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const JoinVoiceAction = require('../../entity/actions/join_voice_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 
@@ -24,6 +25,19 @@ class JoinCommand {
      */
     static get names() {
         return ['お願い', 'plz', 'summon', 's'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'plz',
+            description: 'はなこがボイスチャットを読み上げてくれます',
+            options: [],
+        };
     }
 
     /**

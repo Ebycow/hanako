@@ -58,3 +58,29 @@ module.exports = {
  * @typedef CommandT
  * @type {Ask|Join|Leave|Seibai|Limit|Speaker|SeNormalize|WordCreate|WordRead|WordDelete|SilenceCreate|SilenceRead|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|FoleyRename|FoleyRead|FoleySearch}
  */
+
+/**
+ * スラッシュコマンドのオプション定義
+ *
+ * @typedef SlashCommandOption
+ * @type {object}
+ *
+ * @property {'string'|'integer'|'boolean'|'user'|'attachment'} type オプションの型
+ * @property {string} name オプション名（コマンドの名前付き引数の名前になる）
+ * @property {string} description 説明
+ * @property {boolean} required 必須かどうか
+ * @property {number} [minValue] 最小値（integerのみ）
+ * @property {number} [maxValue] 最大値（integerのみ）
+ */
+
+/**
+ * スラッシュコマンドの定義
+ * Discordに依存しないよう、登録時と実行時にアプリケーション層で変換して使う
+ *
+ * @typedef SlashCommandDefinition
+ * @type {object}
+ *
+ * @property {string} name コマンド名
+ * @property {string} description 説明
+ * @property {SlashCommandOption[]} options オプション
+ */

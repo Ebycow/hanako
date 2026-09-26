@@ -3,6 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const Pager = require('../pager');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -24,6 +25,19 @@ class WordReadCommand {
      */
     static get names() {
         return ['辞書', 'dictionary', 'dic', 'wbook-list'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'dictionary',
+            description: '教育済みの単語一覧を表示します',
+            options: [],
+        };
     }
 
     /**
