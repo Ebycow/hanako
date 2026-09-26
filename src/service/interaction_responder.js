@@ -3,6 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const { MessageFlags } = require('discord.js');
 const ActionHandler = require('../domain/service/action_handler');
+const { pagerButtonRow } = require('./pager_buttons');
 
 /** @typedef {import('discord.js').ChatInputCommandInteraction} discord.ChatInputCommandInteraction */
 /** @typedef {import('../domain/entity/responses').ResponseT} ResponseT */
@@ -102,6 +103,10 @@ async function replyChatF(interaction, chat, ephemeral) {
     if (chat.code === 'error') {
         await this.replyError(interaction, chat.content, ephemeral);
         return false;
+    }
+    if (chat.code === 'pager') {
+        await interaction.editReply({ content: chat.content, components: [pagerButtonRow()] });
+        return true;
     }
     await interaction.editReply(chat.content);
     return true;

@@ -66,6 +66,16 @@ describe('InteractionResponder', () => {
             });
         });
 
+        context('ChatResponse（ページャー）', () => {
+            specify('ページ送りボタンを付けて返信する', async () => {
+                await responder.respond(interaction, chat('Dictionary 1 / 2 page', 'pager'), true);
+                const payload = interaction.editReply.firstCall.args[0];
+                payload.content.should.equal('Dictionary 1 / 2 page');
+                const buttons = payload.components[0].toJSON().components;
+                buttons.map((b) => b.custom_id).should.deep.equal(['hanako:pager:backward', 'hanako:pager:forward']);
+            });
+        });
+
         context('SilentResponse', () => {
             specify('実行したことだけを返信する', async () => {
                 await responder.respond(interaction, new SilentResponse(), false);

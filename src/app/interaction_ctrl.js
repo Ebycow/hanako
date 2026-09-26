@@ -38,7 +38,7 @@ class InteractionCtrl {
      */
     async onInteraction(interaction) {
         // バリデーション
-        // ボタン・オートコンプリート等もこのイベントに届くが、花子が扱うのはスラッシュコマンドだけ
+        // ボタン等もこのイベントに届くが、このコントローラが扱うのはスラッシュコマンドだけ（ページ送りボタンは PagerButtonCtrl）
         if (!interaction.isChatInputCommand()) {
             logger.trace(`スラッシュコマンド以外のインタラクションなので無視した (type: ${interaction.type})`);
             return errors.abort();
