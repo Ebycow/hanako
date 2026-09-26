@@ -79,6 +79,8 @@ class ActionHandler {
             return this.settingsActionRepo.postSpeakerUpdate(action);
         } else if (type === 'se_normalize_update') {
             return this.settingsActionRepo.postSeNormalizeUpdate(action);
+        } else if (type === 'text_commands_update') {
+            return this.settingsActionRepo.postTextCommandsUpdate(action);
         } else {
             throw new Error('unreachable');
         }

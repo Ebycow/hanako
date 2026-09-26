@@ -3,6 +3,7 @@ const Interface = require('../../core/interface');
 /** @typedef {import('../entity/actions/max_count_update_action')} MaxCountUpdateAction */
 /** @typedef {import('../entity/actions/speaker_update_action')} SpeakerUpdateAction */
 /** @typedef {import('../entity/actions/se_normalize_update_action')} SeNormalizeUpdateAction */
+/** @typedef {import('../entity/actions/text_commands_update_action')} TextCommandsUpdateAction */
 
 /**
  * 読み上げ花子設定関連アクションのリポジトリ
@@ -31,6 +32,14 @@ class ISettingsActionRepo extends Interface {
      * @returns {Promise<void>}
      */
     async postSeNormalizeUpdate(action) {}
+
+    /**
+     * テキストコマンドの有効・無効の更新アクションを投稿
+     *
+     * @param {TextCommandsUpdateAction} action テキストコマンドの有効・無効の更新アクション
+     * @returns {Promise<void>}
+     */
+    async postTextCommandsUpdate(action) {}
 }
 
 module.exports = ISettingsActionRepo;

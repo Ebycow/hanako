@@ -13,6 +13,7 @@ const Datastore = require('@seald-io/nedb');
 /** @typedef {import('../../domain/entity/actions/max_count_update_action')} MaxCountUpdateAction */
 /** @typedef {import('../../domain/entity/actions/speaker_update_action')} SpeakerUpdateAction */
 /** @typedef {import('../../domain/entity/actions/se_normalize_update_action')} SeNormalizeUpdateAction */
+/** @typedef {import('../../domain/entity/actions/text_commands_update_action')} TextCommandsUpdateAction */
 
 /** @typedef {string} ServerID サーバーID */
 
@@ -212,6 +213,7 @@ function toSettings(record) {
         maxCount: record.maxCount,
         speaker: record.speaker,
         seNormalize: record.seNormalize,
+        textCommands: record.textCommands,
     });
 }
 
@@ -305,6 +307,25 @@ class NedbSettingsTableManager {
         // 永続化
         await persistSharedData(action.serverId);
         logger.debug(`SE音量永続化完了: serverId=${action.serverId}`);
+    }
+
+    /**
+     * (impl) ISettingsActionRepo
+     * Note: 既存レコードに textCommands がなければ使える状態として扱う（Settingsエンティティのデフォルト）
+     *
+     * @param {TextCommandsUpdateAction} action
+     * @returns {Promise<void>}
+     */
+    async postTextCommandsUpdate(action) {
+        assert(typeof action === 'object');
+
+        const record = await loadSharedData(action.serverId);
+
+        // 新しくtextCommandsを設定
+        record.textCommands = action.enabled;
+
+        // 永続化
+        await persistSharedData(action.serverId);
     }
 }
 

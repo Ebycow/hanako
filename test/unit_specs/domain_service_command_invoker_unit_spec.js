@@ -41,6 +41,52 @@ describe('CommandInvoker', () => {
             });
         });
 
+        context('テキストコマンドを無効にしたサーバー', () => {
+            const disabledHanako = () => basicHanako({ settings: { textCommands: false } });
+
+            specify('既知のコマンドでも実行せず、案内も返さずに中断する', async () => {
+                const invoker = new CommandInvoker();
+                const input = commandInputBlueprint({ argc: 1, argv: ['ask'] });
+                try {
+                    await invoker.invoke(disabledHanako(), input);
+                    should.fail('should have rejected');
+                } catch (e) {
+                    e.should.be.instanceOf(EbyAbortError);
+                }
+            });
+
+            specify('スラッシュコマンドはこれまでどおり実行できる', async () => {
+                const invoker = new CommandInvoker();
+                const input = commandInputBlueprint(
+                    { argc: 1, argv: ['ask'] },
+                    { type: 'interaction', content: 'ask', commandArgs: {} }
+                );
+                const response = await invoker.invoke(disabledHanako(), input);
+                response.type.should.equal('chat');
+            });
+
+            specify('既存のサーバー（設定がない）ではテキストコマンドを使える', async () => {
+                const invoker = new CommandInvoker();
+                const input = commandInputBlueprint({ argc: 1, argv: ['ask'] });
+                const response = await invoker.invoke(basicHanako(), input);
+                response.type.should.equal('chat');
+            });
+
+            specify('テキストコマンドの設定はテキストからは変えられない', async () => {
+                const invoker = new CommandInvoker();
+                const input = commandInputBlueprint(
+                    { argc: 2, argv: ['text-commands', 'true'] },
+                    { memberPermissions: ['manageGuild'] }
+                );
+                try {
+                    await invoker.invoke(basicHanako(), input);
+                    should.fail('should have rejected');
+                } catch (e) {
+                    e.should.be.instanceOf(EbyAbortError);
+                }
+            });
+        });
+
         context('テキストで実行されたときの権限', () => {
             specify('必要な権限がないと実行せずに案内する', async () => {
                 const invoker = new CommandInvoker();

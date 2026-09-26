@@ -23,6 +23,7 @@ module.exports = {
     foley_read: require('./foley_read_command'),
     foley_search: require('./foley_search_command'),
     help: require('./help_command'),
+    text_commands: require('./text_commands_command'),
 };
 
 /*******************************************************

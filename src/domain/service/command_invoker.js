@@ -33,7 +33,7 @@ class CommandInvoker {
         const response =
             commandInput.source === 'slash'
                 ? invokeSlashF(commando, commandInput)
-                : invokeTextF(commando, commandInput);
+                : invokeTextF(hanako, commando, commandInput);
 
         // レスポンスを返す
         return Promise.resolve(response);
@@ -43,17 +43,25 @@ class CommandInvoker {
 /**
  * (private) テキストで入力されたコマンドを実行する
  *
+ * @param {Hanako} hanako 読み上げ花子モデル
  * @param {Commando} commando コマンドーモデル
  * @param {CommandInput} commandInput コマンド引数
  * @returns {Promise<ResponseT>} 実行結果
  */
-function invokeTextF(commando, commandInput) {
+function invokeTextF(hanako, commando, commandInput) {
     // 引数に対応するコマンドを取得
     const [command, input] = commando.resolve(commandInput);
     if (!command) {
         // Note: 利用者は「>」+ 文章で投稿して読み上げを回避する使い方をしている。
         //       未知のコマンドは読み上げにフォールバックせず黙って abort することで、この用途が成り立つ。
         logger.trace(`コマンドが見当たらない ${input}`);
+        return errors.abort();
+    }
+
+    // テキストコマンドを無効にしているサーバーでは、既知のコマンドでも黙って無視する
+    // Note: 「>」などを他のBotのために空けたいサーバーのため、案内も返さない
+    if (!hanako.settings.textCommands) {
+        logger.trace(`テキストコマンドが無効なサーバーなので実行しない ${input}`);
         return errors.abort();
     }
 
