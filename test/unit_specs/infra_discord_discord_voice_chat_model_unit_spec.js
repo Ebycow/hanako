@@ -155,4 +155,32 @@ describe('DiscordVoiceChatModel', () => {
             vc.readingChannels.map((channel) => channel.id).should.deep.equal(['text-1']);
         });
     });
+
+    describe('#push', () => {
+        specify('uses one 20ms silence frame and starts queued streams one at a time', async () => {
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel());
+            const first = { destroy: sinon.stub() };
+            const second = { destroy: sinon.stub() };
+
+            vc.push(first);
+            vc.push(second);
+
+            audioPlayers[0].play.calledOnce.should.be.true;
+            createAudioResource.firstCall.args.should.deep.equal([
+                first,
+                { inputType: 'raw', silencePaddingFrames: 1 },
+            ]);
+            vc.cue.should.deep.equal([second]);
+
+            audioPlayers[0].emit('idle');
+
+            audioPlayers[0].play.calledTwice.should.be.true;
+            createAudioResource.secondCall.args.should.deep.equal([
+                second,
+                { inputType: 'raw', silencePaddingFrames: 1 },
+            ]);
+            vc.cue.should.deep.equal([]);
+        });
+    });
 });

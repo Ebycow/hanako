@@ -23,6 +23,12 @@ describe('StreamFetcher', () => {
         });
     }
 
+    async function consume(stream) {
+        const chunks = [];
+        for await (const chunk of stream) chunks.push(chunk);
+        return Buffer.concat(chunks);
+    }
+
     beforeEach(() => {
         vrStreamRepo = {
             getVoiceroidStream: sinon.stub().resolves(createMockStream()),
@@ -44,6 +50,18 @@ describe('StreamFetcher', () => {
                 const stream = await fetcher.fetch(audios);
                 vrStreamRepo.getVoiceroidStream.calledOnce.should.be.true;
                 should.exist(stream);
+            });
+
+            specify('単一のvoiceroid音声でも末尾無音を除去する', async () => {
+                const sound = Buffer.alloc(4);
+                sound.writeInt16LE(1000, 0);
+                sound.writeInt16LE(1000, 2);
+                const trailingSilence = Buffer.alloc(4 * 480);
+                vrStreamRepo.getVoiceroidStream.resolves(Readable.from([Buffer.concat([sound, trailingSilence])]));
+
+                const stream = await fetcher.fetch([{ type: 'voiceroid', content: 'テスト', speaker: 'kiritan' }]);
+
+                (await consume(stream)).should.deep.equal(sound);
             });
 
             specify('foleyタイプのAudioでfoleyStreamRepoを呼ぶ', async () => {

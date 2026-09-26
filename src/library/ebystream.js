@@ -14,17 +14,17 @@ function ensure(s) {
  */
 class EbyStream extends Readable {
     /**
-     * @param {Readable[]} streams
+     * @param {Array<Readable|function():Promise<Readable>>} streams
      */
     constructor(streams) {
         super();
-        this.destroyed = false;
         this._drained = false;
         this._current = null;
+        this._pending = null;
 
-        this._cue = streams.map(ensure);
-        this._cue.forEach((stream) => this._attachErrorListener(stream));
+        this._cue = streams;
 
+        this._prefetch();
         this._next();
     }
 
@@ -42,29 +42,63 @@ class EbyStream extends Readable {
         }
     }
 
-    destroy(err) {
-        if (this.destroyed) return;
-        this.destroyed = true;
+    _destroy(err, callback) {
+        this._cue = [];
+        const pending = this._pending;
+        this._pending = null;
 
         if (this._current && this._current.destroy) this._current.destroy();
-
-        if (err) this.emit('error', err);
-        this.emit('close');
+        if (pending) {
+            if (pending.stream) {
+                pending.stream.destroy();
+            } else {
+                pending.promise.then((stream) => stream.destroy()).catch(() => {});
+            }
+        }
+        callback(err);
     }
 
     _next() {
         this._current = null;
-        var stream = this._cue.shift();
-        this._gotNextStream(stream);
+        const pending = this._pending;
+        this._pending = null;
+        if (!pending) {
+            this.push(null);
+            return;
+        }
+        const activate = (stream) => {
+            if (this.destroyed) {
+                stream.destroy();
+                return;
+            }
+            this._attachErrorListener(stream);
+            this._gotNextStream(stream);
+            this._prefetch();
+        };
+        if (pending.stream) {
+            activate(pending.stream);
+            return;
+        }
+        pending.promise
+            .then((stream) => {
+                activate(stream);
+            })
+            .catch((err) => this.destroy(err));
+    }
+
+    _prefetch() {
+        if (this._pending || this._cue.length === 0 || this.destroyed) return;
+        const candidate = this._cue.shift();
+        if (typeof candidate !== 'function') {
+            const stream = ensure(candidate);
+            this._pending = { stream, promise: Promise.resolve(stream) };
+            return;
+        }
+        const promise = Promise.resolve(candidate()).then(ensure);
+        this._pending = { stream: null, promise };
     }
 
     _gotNextStream(stream) {
-        if (!stream) {
-            this.push(null);
-            this.destroy();
-            return;
-        }
-
         this._current = stream;
         this._forward();
 

@@ -421,34 +421,40 @@ class DiscordVoiceChatModel {
      * @private
      */
     play() {
+        // dispatcherを設定する前にイベントループへ制御を返すと、短時間に
+        // 複数pushされた際にplay()が重複し、後のresourceが前を置換し得る。
+        if (this.dispatcher !== null) return;
+
         const stream = this.cue.shift();
         if (stream && this.connection && this.audioPlayer) {
             const connection = this.connection;
             const audioPlayer = this.audioPlayer;
-            setImmediate(() => {
-                if (connection !== this.connection || audioPlayer !== this.audioPlayer) {
-                    stream.destroy();
-                    this.dispatcher = null;
-                    return;
-                }
+            if (connection !== this.connection || audioPlayer !== this.audioPlayer) {
+                stream.destroy();
+                this.dispatcher = null;
+                return;
+            }
 
-                logger.debug('Creating audio resource for stream');
-                const resource = createAudioResource(stream, {
-                    inputType: StreamType.Raw,
-                });
-
-                logger.debug('Playing audio resource');
-                audioPlayer.play(resource);
-
-                this.dispatcher = resource;
-
-                audioPlayer.once(AudioPlayerStatus.Idle, () => {
-                    if (audioPlayer !== this.audioPlayer) return;
-                    logger.debug('Audio playback idle, playing next');
-                    this.dispatcher = null;
-                    this.play();
-                });
+            logger.debug('Creating audio resource for stream');
+            const resource = createAudioResource(stream, {
+                inputType: StreamType.Raw,
+                // 1 frame (20ms) is enough to avoid interpolation artifacts.
+                // The library default is 5 frames (100ms), which delays the next queue item.
+                silencePaddingFrames: 1,
             });
+
+            // Reserve playback synchronously so another push cannot schedule a
+            // second resource before audioPlayer.play() starts.
+            this.dispatcher = resource;
+            audioPlayer.once(AudioPlayerStatus.Idle, () => {
+                if (audioPlayer !== this.audioPlayer) return;
+                logger.debug('Audio playback idle, playing next');
+                this.dispatcher = null;
+                this.play();
+            });
+
+            logger.debug('Playing audio resource');
+            audioPlayer.play(resource);
         } else {
             this.dispatcher = null;
         }

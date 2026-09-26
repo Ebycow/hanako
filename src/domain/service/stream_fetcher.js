@@ -30,19 +30,18 @@ class StreamFetcher {
      */
     async fetch(audios) {
         assert(typeof audios === 'object' && Array.isArray(audios));
+        if (audios.some((audio) => audio.type !== 'voiceroid' && audio.type !== 'foley')) {
+            throw new Error('unreachable');
+        }
 
-        const lastIndex = audios.length - 1;
-
-        // Promise<Readable>の配列に変換
-        const promises = audios.map((audio, index) => {
+        // 順次取得するReadable生成関数の配列に変換
+        const streamFactories = audios.map((audio) => async () => {
             // 手続きタイプによって各リポジトリに振り分け
             if (audio.type === 'voiceroid') {
-                const p = this.vrStreamRepo.getVoiceroidStream(audio);
-                // 末尾でないVoiceroid音声は無音トリミングを適用（SE等との結合時にスムーズにする）
-                if (index < lastIndex) {
-                    return p.then((stream) => stream.pipe(new transforms.TrailingSilenceTrimmer()));
-                }
-                return p;
+                const stream = await this.vrStreamRepo.getVoiceroidStream(audio);
+                // VOICEROIDが付加する長い末尾無音を、単一音声を含め常に除去する。
+                // 除去しないと、声が聞こえ終わった後も次のキューが約800ms待たされる。
+                return stream.pipe(new transforms.TrailingSilenceTrimmer());
             } else if (audio.type === 'foley') {
                 return this.foleyStreamRepo.getFoleyStream(audio);
             } else {
@@ -51,10 +50,8 @@ class StreamFetcher {
         });
 
         // 待機
-        const streams = await Promise.all(promises);
-
         // EbyStreamを使ってひとつなぎのStreamとして返却
-        const stream = new EbyStream(streams);
+        const stream = new EbyStream(streamFactories);
         return Promise.resolve(stream);
     }
 }
