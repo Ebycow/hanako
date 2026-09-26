@@ -29,24 +29,36 @@ function isClosedPipeError(err) {
     return err.code === 'EOF' || err.code === 'EPIPE' || err.code === 'ERR_STREAM_DESTROYED';
 }
 
+/** 変換後のPCM（48kHz・16bit・ステレオ）の1秒あたりのバイト数 */
+const PCM_BYTES_PER_SECOND = 48000 * 2 * 2;
+
 /**
  * ダウンロードした音声をFFmpegでPCMに変換するストリームを作る
+ * - 変換結果が空なら 'foley-ffmpeg-empty-output' でエラーにする（変換できない音声）
+ * - 変換結果が maxBytes を超えたら 'foley-audio-too-long' でエラーにする（長すぎる音声は切らずに登録しない）
  *
  * FFmpegは -fs の出力上限に達したときや、変換できない音声だったときに入力を読み切らずに終了する。
  * そのとき残りの入力の書き込みがエラーになるが、これを放置すると捕捉されない例外でプロセスが落ちる。
- * 書き込み側のこのエラーは無視し、変換結果が空かどうかで成否を判断する（空なら 'foley-ffmpeg-empty-output'）。
+ * 書き込み側のこのエラーは無視し、変換結果で成否を判断する。
  *
  * @param {Buffer} data ダウンロードした音声
- * @param {string[]} args FFmpegの引数
+ * @param {string[]} args FFmpegの引数（-fs で maxBytes より少し大きい上限を付けておく）
+ * @param {number} maxBytes 変換後のPCMの最大バイト数
  * @returns {Readable} PCMのストリーム
  */
-function toPcmStream(data, args) {
+function toPcmStream(data, args, maxBytes) {
     const ffmpeg = new prism.FFmpeg({ args });
 
     let outputSize = 0;
     const output = new Transform({
         transform(chunk, _encoding, callback) {
             outputSize += chunk.length;
+            if (outputSize > maxBytes) {
+                // 残りを変換しても無駄なのでFFmpegを止める
+                ffmpeg.destroy();
+                callback(new Error('foley-audio-too-long'));
+                return;
+            }
             callback(null, chunk);
         },
         flush(callback) {
@@ -341,11 +353,14 @@ class NedbFoleyDictionaryTableManager {
         this.settingsRepo = settingsRepo;
         this.ffmpegOptions = ['-analyzeduration', '0', '-loglevel', '0', '-f', 's16le', '-ar', '48000', '-ac', '2'];
 
-        // FFmpeg 出力ファイルサイズ制限を適用する
-        // See: https://www.ffmpeg.org/ffmpeg.html#Main-options
+        // 変換後のPCMの最大バイト数（これを超える長さの音声は登録しない）
         // Note: size(bytes) = seconds * frames/sec(48kHz) * bytes/frame(16-bit) * channels(Stereo)
-        const maxOutputSize = (appSettings.foleyMaxAudioSeconds * 48000 * 2 * 2) >>> 0;
-        this.ffmpegOptions.push('-fs', `${maxOutputSize}`);
+        this.maxOutputSize = (appSettings.foleyMaxAudioSeconds * PCM_BYTES_PER_SECOND) >>> 0;
+
+        // 長すぎる音声を最後まで変換しないよう、FFmpeg 出力ファイルサイズ制限を少し大きめに適用する
+        // （上限をちょうどにすると、上限ぴったりの音声と長すぎる音声を区別できない）
+        // See: https://www.ffmpeg.org/ffmpeg.html#Main-options
+        this.ffmpegOptions.push('-fs', `${this.maxOutputSize + PCM_BYTES_PER_SECOND}`);
     }
 
     /**
@@ -413,7 +428,7 @@ class NedbFoleyDictionaryTableManager {
         }
 
         try {
-            const stream = toPcmStream(response.data, this.ffmpegOptions.slice());
+            const stream = toPcmStream(response.data, this.ffmpegOptions.slice(), this.maxOutputSize);
             const objectKey = Buffer.from(action.keyword).toString('base64');
             // Note: 辞書登録を遅延できるのはsaveFileが同じKeyのレコード挿入を受け付けないため
             //       先着一名様以外はここで不整合エラーになる
@@ -423,6 +438,11 @@ class NedbFoleyDictionaryTableManager {
             if (records.some((record) => action.keyword === record[0])) {
                 const message = 'すでに登録されてるみたい... :sob:';
                 return errors.disappointed(`keyword-already-exists ${action}`, message);
+            }
+            if (err.message === 'foley-audio-too-long') {
+                const seconds = this.appSettings.foleyMaxAudioSeconds;
+                const message = `${seconds}秒より長い音声は登録できないにゃ… 短くしてから試してね :sob:`;
+                return errors.unexpected('foley-audio-too-long', message);
             }
             if (err.message === 'foley-ffmpeg-empty-output') {
                 const message = 'この音声ファイルは変換できなかったにゃ… mp3 か wav で試してみてね :sob:';
@@ -478,7 +498,7 @@ class NedbFoleyDictionaryTableManager {
             }
 
             try {
-                const stream = toPcmStream(response.data, this.ffmpegOptions.slice());
+                const stream = toPcmStream(response.data, this.ffmpegOptions.slice(), this.maxOutputSize);
                 const objectKey = Buffer.from(item.keyword).toString('base64');
                 await this.objectStorageRepo.saveFile(action.serverId, objectKey, 'pcm', stream);
 
@@ -491,9 +511,11 @@ class NedbFoleyDictionaryTableManager {
                 const alreadyExists = records.some((record) => item.keyword === record[0]);
                 const reason = alreadyExists
                     ? 'すでに登録済みです'
-                    : err.message === 'foley-ffmpeg-empty-output'
-                      ? '音声を変換できませんでした'
-                      : '保存に失敗しました';
+                    : err.message === 'foley-audio-too-long'
+                      ? `${this.appSettings.foleyMaxAudioSeconds}秒より長い音声です`
+                      : err.message === 'foley-ffmpeg-empty-output'
+                        ? '音声を変換できませんでした'
+                        : '保存に失敗しました';
                 failedItems.push(`${item.keyword}: ${reason}`);
                 continue;
             }
