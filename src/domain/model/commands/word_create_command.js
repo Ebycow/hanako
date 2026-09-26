@@ -28,6 +28,24 @@ class WordCreateCommand {
     }
 
     /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {from: string, to: string}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        if (input.argc !== 2) {
+            return {
+                response: input.newChatResponse(
+                    'コマンドの形式が間違っています :sob: 例:`@hanako 教育 電 いなづま`',
+                    'error'
+                ),
+            };
+        }
+        return { args: { from: input.argv[0], to: input.argv[1] } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -44,13 +62,7 @@ class WordCreateCommand {
         assert(typeof input === 'object');
         logger.info(`教育単語追加コマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        if (input.argc !== 2) {
-            return input.newChatResponse('コマンドの形式が間違っています :sob: 例:`@hanako 教育 電 いなづま`', 'error');
-        }
-
-        const from = input.argv[0];
-        const to = input.argv[1];
+        const { from, to } = input.args;
 
         // 文字数下限のバリデーション
         if (from.length < 2 || to.length < 2) {

@@ -28,6 +28,16 @@ class WordClearCommand {
     }
 
     /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {force: boolean}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        return { args: { force: input.argc === 1 && input.argv[0] === '--force' } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -51,7 +61,7 @@ class WordClearCommand {
             );
         }
 
-        if (input.argc !== 1 || input.argv[0] !== '--force') {
+        if (!input.args.force) {
             return input.newChatResponse(
                 '**ほんとうにけすのですか？ こうかいしませんね？**\nすべての単語を削除する場合はコマンドに `--force` を付けてください。例:`@hanako 白紙 --force`',
                 'force'
