@@ -37,6 +37,7 @@ class CommandInvoker {
             return errors.abort();
         }
 
+        // TODO: 実行者の権限チェックが未実装（誰でも全コマンドを実行できる）。テキスト/スラッシュ両方に効く方式を要検討
         // コマンドを実行
         const response = command.process(input);
 
