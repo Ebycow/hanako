@@ -2,9 +2,9 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const InteractionBuilder = require('../service/interaction_builder');
 const MessageService = require('../service/message_service');
-const ResponseHandler = require('../service/response_handler');
+const InteractionResponder = require('../service/interaction_responder');
 const HanakoLoader = require('../service/hanako_loader');
-const ChatResponse = require('../domain/entity/responses/chat_response');
+const Commando = require('../domain/model/commando');
 const errors = require('../core/errors').promises;
 const sanitizeContent = require('../core/utils/sanitize_content');
 const { ApplicationCommandOptionType, MessageFlags } = require('discord.js');
@@ -25,7 +25,7 @@ class InteractionCtrl {
         this.client = client;
         this.builder = new InteractionBuilder();
         this.service = new MessageService();
-        this.responseHandler = new ResponseHandler();
+        this.responder = new InteractionResponder();
         this.hanakoLoader = new HanakoLoader();
 
         logger.trace('セットアップ完了');
@@ -52,36 +52,32 @@ class InteractionCtrl {
             return;
         }
 
-        // 3秒以内に応答しないとインタラクションが失効するため、先に「考え中」の応答を返しておく
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        // 一覧や検索など本人が見たいだけのコマンドは、結果を実行者にだけ見せる
+        const K = Commando.findSlashCommand(interaction.commandName);
+        const ephemeral = Boolean(K && K.slash.ephemeral);
 
-        let result = 'コマンドを実行しました！😸';
+        // 3秒以内に応答しないとインタラクションが失効するため、先に「考え中」の応答を返しておく
+        // Note: 公開範囲は保留した時点で決まり、後から変えられない
+        await interaction.deferReply(ephemeral ? { flags: MessageFlags.Ephemeral } : {});
+
         try {
-            const succeeded = await processInteractionF.call(this, interaction);
-            if (!succeeded) {
-                // アクションの失敗理由は onFailure としてチャンネルに投稿済み
-                result = 'コマンドの実行に失敗しました･･･😿\n理由はチャンネルへの投稿を見てね';
-            }
+            const response = await processInteractionF.call(this, interaction);
+            await this.responder.respond(interaction, response, ephemeral);
         } catch (error) {
-            result = 'コマンドの実行に失敗しました･･･😿';
-            if (error.eby && error.type === 'disappointed' && error.explained) {
-                // 権限不足など利用者に伝えるべき理由があるときは、実行者にだけ見える応答で伝える
-                result += '\n' + error.message;
-            }
+            await this.responder
+                .replyFailure(interaction, error, ephemeral)
+                .catch((e) => logger.warn('インタラクションの応答に失敗', e));
             throw error;
-        } finally {
-            await interaction.editReply(result).catch((e) => logger.warn('インタラクションの応答に失敗', e));
-            setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
         }
     }
 }
 
 /**
- * (private) スラッシュコマンドを実行する
+ * (private) スラッシュコマンドを実行してレスポンスを得る
  *
  * @this {InteractionCtrl}
  * @param {discord.ChatInputCommandInteraction} interaction 受信したスラッシュコマンド
- * @returns {Promise<boolean>} アクションが失敗したときは false
+ * @returns {Promise<import('../domain/entity/responses').ResponseT>} コマンドのレスポンス
  */
 async function processInteractionF(interaction) {
     // 読み上げ花子モデルを取得
@@ -106,24 +102,8 @@ async function processInteractionF(interaction) {
     const entity = await this.builder.build(hanako, builderParam);
 
     // メッセージに対する花子のレスポンスを取得
-    // 実行者と実行内容がチャンネルで分かるように、先に実行ログを投稿する
-    const executionLog = new ChatResponse({
-        id: interaction.id,
-        content: `${interaction.user.username}が「${describeInteractionF(interaction)}」を実行したよ！`,
-        channelId: interaction.channel.id,
-        code: 'simple',
-    });
-    try {
-        await this.responseHandler.handle(executionLog);
-    } catch (error) {
-        logger.warn(`スラッシュコマンド実行ログの投稿に失敗しました (interaction: ${interaction.id})`, error);
-    }
-
-    const response = await this.service.serve(hanako, entity);
-
-    // レスポンスハンドラにレスポンス処理をさせて終了
-    const succeeded = await this.responseHandler.handle(response);
-    return succeeded !== false;
+    // Note: 実行者と実行内容は、公開の返信にDiscordが「○○が /コマンド を使用しました」と表示する
+    return this.service.serve(hanako, entity);
 }
 
 /**
@@ -169,25 +149,6 @@ function buildCommandArgsF(interaction) {
 
 function nameOfF(entity, key) {
     return entity ? entity[key] : undefined;
-}
-
-/**
- * (private) 実行ログ用にスラッシュコマンドを表記する 例: /teach from:花子 to:はなこ
- *
- * @param {discord.ChatInputCommandInteraction} interaction 受信したスラッシュコマンド
- * @returns {string}
- */
-function describeInteractionF(interaction) {
-    const options = interaction.options.data.map((option) => {
-        if (option.type === ApplicationCommandOptionType.User) {
-            return `${option.name}:@${option.member ? option.member.displayName : option.user.username}`;
-        }
-        if (option.type === ApplicationCommandOptionType.Attachment) {
-            return `${option.name}:${option.attachment.name}`;
-        }
-        return `${option.name}:${option.value}`;
-    });
-    return ['/' + interaction.commandName, ...options].join(' ');
 }
 
 module.exports = InteractionCtrl;

@@ -36,6 +36,7 @@ class SilenceReadCommand {
         return {
             name: 'blacklist-show',
             description: 'ブラックリストの一覧を表示します',
+            ephemeral: true,
             options: [],
         };
     }

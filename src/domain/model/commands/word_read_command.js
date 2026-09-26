@@ -36,6 +36,7 @@ class WordReadCommand {
         return {
             name: 'dictionary',
             description: '教育済みの単語一覧を表示します',
+            ephemeral: true,
             options: [],
         };
     }

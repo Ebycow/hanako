@@ -132,6 +132,7 @@ class FoleySearchCommand {
         return {
             name: 'se-search',
             description: 'SEをキーワードで検索します',
+            ephemeral: true,
             options: [{ type: 'string', name: 'keyword', description: '検索キーワード', required: true }],
         };
     }

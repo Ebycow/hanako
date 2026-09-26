@@ -1,8 +1,6 @@
 const should = require('chai').should();
 const sinon = require('sinon');
 const proxyquire = require('proxyquire').noCallThru();
-const ChatResponse = require('../../src/domain/entity/responses/chat_response');
-const EbyDisappointedError = require('../../src/core/errors/eby_disappointed_error');
 const { MessageFlags } = require('discord.js');
 
 /**
@@ -24,7 +22,8 @@ describe('InteractionCtrl', () => {
     let sandbox;
     let builderBuild;
     let serviceServe;
-    let responseHandle;
+    let respond;
+    let replyFailure;
     let hanakoLoad;
     let InteractionCtrl;
 
@@ -41,9 +40,12 @@ describe('InteractionCtrl', () => {
             }
         }
 
-        class ResponseHandlerStub {
-            async handle(...args) {
-                return responseHandle(...args);
+        class InteractionResponderStub {
+            async respond(...args) {
+                return respond(...args);
+            }
+            async replyFailure(...args) {
+                return replyFailure(...args);
             }
         }
 
@@ -56,7 +58,7 @@ describe('InteractionCtrl', () => {
         InteractionCtrl = proxyquire('../../src/app/interaction_ctrl', {
             '../service/interaction_builder': InteractionBuilderStub,
             '../service/message_service': MessageServiceStub,
-            '../service/response_handler': ResponseHandlerStub,
+            '../service/interaction_responder': InteractionResponderStub,
             '../service/hanako_loader': HanakoLoaderStub,
         });
     }
@@ -103,7 +105,8 @@ describe('InteractionCtrl', () => {
         sandbox = sinon.createSandbox();
         builderBuild = sandbox.stub().resolves({ id: 'entity-id' });
         serviceServe = sandbox.stub().resolves({ type: 'silent' });
-        responseHandle = sandbox.stub().resolves();
+        respond = sandbox.stub().resolves(true);
+        replyFailure = sandbox.stub().resolves();
         hanakoLoad = sandbox.stub().resolves({ prefix: '>' });
         loadSubject();
     });
@@ -182,35 +185,6 @@ describe('InteractionCtrl', () => {
         });
     });
 
-    specify('通常レスポンスより先に実行ログが投稿される', async () => {
-        const ctrl = new InteractionCtrl({});
-        const serviceResponse = {
-            type: 'chat',
-            id: 'response-id',
-            content: 'ok',
-            code: 'simple',
-            channelId: 'channel-id',
-        };
-        serviceServe.resolves(serviceResponse);
-        const interaction = interactionBlueprint({
-            commandName: 'se-add',
-            options: {
-                data: [
-                    { type: 3, name: 'keyword', value: 'key' },
-                    { type: 3, name: 'url', value: 'https://example.com/a.mp3' },
-                ],
-            },
-        });
-
-        await ctrl.onInteraction(interaction);
-
-        responseHandle.callCount.should.equal(2);
-        const logResponse = responseHandle.firstCall.args[0];
-        logResponse.should.be.instanceOf(ChatResponse);
-        logResponse.content.should.equal('aliceが「/se-add keyword:key url:https://example.com/a.mp3」を実行したよ！');
-        responseHandle.secondCall.args[0].should.equal(serviceResponse);
-    });
-
     specify('user オプションはユーザーIDとサーバーでの表示名にする', async () => {
         const ctrl = new InteractionCtrl({});
         const interaction = interactionBlueprint({
@@ -233,27 +207,23 @@ describe('InteractionCtrl', () => {
         builderBuild.firstCall.args[1].commandArgs.should.deep.equal({ user: { id: 'bob-id', name: 'ボブ' } });
     });
 
-    specify('ログ投稿に失敗してもメインのレスポンス処理は継続する', async () => {
+    specify('コマンドのレスポンスはインタラクションへの返信として返す', async () => {
         const ctrl = new InteractionCtrl({});
-        const serviceResponse = { type: 'silent' };
+        const serviceResponse = { type: 'chat', code: 'simple', content: 'はい' };
         serviceServe.resolves(serviceResponse);
-        responseHandle.onFirstCall().rejects(new Error('log failed'));
-        responseHandle.onSecondCall().resolves();
-        const interaction = interactionBlueprint({
-            commandName: 'ask',
-        });
+        const interaction = interactionBlueprint({ commandName: 'ask' });
 
         await ctrl.onInteraction(interaction);
 
-        responseHandle.callCount.should.equal(2);
-        responseHandle.secondCall.args[0].should.equal(serviceResponse);
-        interaction.editReply.calledOnce.should.be.true;
-        interaction.editReply.firstCall.args[0].should.have.string('実行しました');
+        respond.calledOnce.should.be.true;
+        respond.firstCall.args[0].should.equal(interaction);
+        respond.firstCall.args[1].should.equal(serviceResponse);
+        respond.firstCall.args[2].should.equal(false);
     });
 
-    specify('処理より先に実行者だけに見える形で応答を保留する（3秒制限対策）', async () => {
+    specify('皆に関係するコマンドは処理より先に公開で応答を保留する（3秒制限対策）', async () => {
         const ctrl = new InteractionCtrl({});
-        const interaction = interactionBlueprint();
+        const interaction = interactionBlueprint({ commandName: 'ask' });
         serviceServe.callsFake(async () => {
             // 処理が始まる時点で応答の保留が済んでいる
             interaction.deferReply.calledOnce.should.be.true;
@@ -262,8 +232,18 @@ describe('InteractionCtrl', () => {
 
         await ctrl.onInteraction(interaction);
 
-        interaction.deferReply.firstCall.args[0].should.have.property('flags', MessageFlags.Ephemeral);
+        should.not.exist(interaction.deferReply.firstCall.args[0].flags);
         interaction.reply.called.should.be.false;
+    });
+
+    specify('一覧や検索のコマンドは実行者にだけ見える形で応答を保留する', async () => {
+        const ctrl = new InteractionCtrl({});
+        const interaction = interactionBlueprint({ commandName: 'dictionary' });
+
+        await ctrl.onInteraction(interaction);
+
+        interaction.deferReply.firstCall.args[0].should.have.property('flags', MessageFlags.Ephemeral);
+        respond.firstCall.args[2].should.equal(true);
     });
 
     specify('処理に失敗したら失敗を応答し、エラーは上位に伝える', async () => {
@@ -274,28 +254,19 @@ describe('InteractionCtrl', () => {
 
         (await captureRejection(ctrl.onInteraction(interaction))).should.equal(error);
 
-        interaction.editReply.firstCall.args[0].should.have.string('失敗しました');
+        replyFailure.calledOnce.should.be.true;
+        replyFailure.firstCall.args[1].should.equal(error);
     });
 
-    specify('アクションが失敗して onFailure が処理されたら失敗を応答する', async () => {
+    specify('返信中に失敗しても失敗を応答し、エラーは上位に伝える', async () => {
         const ctrl = new InteractionCtrl({});
         const interaction = interactionBlueprint();
-        responseHandle.onSecondCall().resolves(false);
-
-        await ctrl.onInteraction(interaction);
-
-        interaction.editReply.firstCall.args[0].should.have.string('失敗しました');
-    });
-
-    specify('説明付きの EbyDisappointedError なら理由も応答に含める', async () => {
-        const ctrl = new InteractionCtrl({});
-        const interaction = interactionBlueprint();
-        const error = new EbyDisappointedError('missing-text-permissions', '権限がないみたい');
-        responseHandle.onSecondCall().rejects(error);
+        const error = new Error('action failed');
+        respond.rejects(error);
 
         (await captureRejection(ctrl.onInteraction(interaction))).should.equal(error);
 
-        interaction.editReply.firstCall.args[0].should.have.string('権限がないみたい');
+        replyFailure.calledOnce.should.be.true;
     });
 
     specify('スラッシュコマンド以外のインタラクションは何もせず中断する', async () => {

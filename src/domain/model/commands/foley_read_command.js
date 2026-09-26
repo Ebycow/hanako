@@ -36,6 +36,7 @@ class FoleyReadCommand {
         return {
             name: 'se-list',
             description: 'SEの一覧を表示します',
+            ephemeral: true,
             options: [],
         };
     }

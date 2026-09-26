@@ -83,4 +83,5 @@ module.exports = {
  * @property {string} name コマンド名
  * @property {string} description 説明
  * @property {SlashCommandOption[]} options オプション
+ * @property {boolean} [ephemeral] 結果を実行者にだけ見せるか（一覧や検索など、本人が見たいだけの参照系で true）
  */

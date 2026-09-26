@@ -34,6 +34,7 @@ class HelpCommand {
         return {
             name: 'help',
             description: 'コマンド一覧と使い方を表示します',
+            ephemeral: true,
             options: [],
         };
     }
