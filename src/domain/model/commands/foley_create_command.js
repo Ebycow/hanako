@@ -41,7 +41,13 @@ class FoleyCreateCommand {
             description: 'SE（効果音）を追加します',
             options: [
                 { type: 'string', name: 'keyword', description: 'SEを呼び出すキーワード', required: true },
-                { type: 'string', name: 'url', description: '音声ファイルのURL（.wav, .mp3）', required: true },
+                { type: 'string', name: 'url', description: '音声ファイルのURL（.wav, .mp3）', required: false },
+                {
+                    type: 'attachment',
+                    name: 'file',
+                    description: '音声ファイル（URLの代わりに添付する場合）',
+                    required: false,
+                },
             ],
         };
     }

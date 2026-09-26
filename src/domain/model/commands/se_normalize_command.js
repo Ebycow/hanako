@@ -38,7 +38,14 @@ class SeNormalizeCommand {
             name: 'se-normalize',
             description: 'SEの音量を正規化するレベルを設定します（0〜100、0で無効化）',
             options: [
-                { type: 'integer', name: 'level', description: '正規化レベル（0〜100、デフォルト50）', required: true },
+                {
+                    type: 'integer',
+                    name: 'level',
+                    description: '正規化レベル（0〜100、デフォルト50）',
+                    required: true,
+                    minValue: 0,
+                    maxValue: 100,
+                },
             ],
         };
     }

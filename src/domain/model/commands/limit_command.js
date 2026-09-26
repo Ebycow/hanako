@@ -37,7 +37,16 @@ class LimitCommand {
         return {
             name: 'limit',
             description: '読み上げる文字数の上限を設定します',
-            options: [{ type: 'integer', name: 'number', description: '文字数の上限（例: 30）', required: true }],
+            options: [
+                {
+                    type: 'integer',
+                    name: 'number',
+                    description: '文字数の上限（例: 30）',
+                    required: true,
+                    minValue: 0,
+                    maxValue: 2000,
+                },
+            ],
         };
     }
 
