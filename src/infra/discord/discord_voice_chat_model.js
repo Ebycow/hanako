@@ -17,6 +17,10 @@ const VOICE_RECOVERY_WAIT_MS = 5000;
 const VOICE_READY_WAIT_MS = 20000;
 const RECONNECT_BASE_DELAY_MS = 30000;
 const RECONNECT_MAX_DELAY_MS = 300000;
+// 発言と発言の間に挟む無音の長さ。VOICEROIDの末尾無音は除去しているため、
+// ここで間を取らないと別々の発言がつながって聞こえる。
+const UTTERANCE_GAP_MS = 300;
+const OPUS_FRAME_MS = 20;
 
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('discord.js').VoiceChannel} discord.VoiceChannel */
@@ -438,9 +442,9 @@ class DiscordVoiceChatModel {
             logger.debug('Creating audio resource for stream');
             const resource = createAudioResource(stream, {
                 inputType: StreamType.Raw,
-                // 1 frame (20ms) is enough to avoid interpolation artifacts.
-                // The library default is 5 frames (100ms), which delays the next queue item.
-                silencePaddingFrames: 1,
+                // The player stays non-idle until these silence frames are sent,
+                // so this also acts as the gap before the next queue item.
+                silencePaddingFrames: Math.ceil(UTTERANCE_GAP_MS / OPUS_FRAME_MS),
             });
 
             // Reserve playback synchronously so another push cannot schedule a
