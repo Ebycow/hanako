@@ -28,6 +28,16 @@ class SilenceClearCommand {
     }
 
     /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {force: boolean}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        return { args: { force: input.argc === 1 && input.argv[0] === '--force' } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -51,7 +61,7 @@ class SilenceClearCommand {
             );
         }
 
-        if (input.argc !== 1 || input.argv[0] !== '--force') {
+        if (!input.args.force) {
             return input.newChatResponse(
                 '**ほんとうにけすのですか？ こうかいしませんね？**\n読み上げ停止中のユーザーを全て解除する場合はコマンドに `--force` を付けてください。例:`@hanako 大赦 --force`',
                 'force'

@@ -28,6 +28,34 @@ class SilenceDeleteCommand {
     }
 
     /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {user: {id: string, name: string}}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        // Note: 引数がちょうど1つ ∧ 引数がアットマークで始まる
+        if (input.argc !== 1 || !input.argv[0].startsWith('@')) {
+            return {
+                response: input.newChatResponse(
+                    'コマンドの形式が間違っています :sob: 例:`@hanako 恩赦 @Ebycow`',
+                    'error'
+                ),
+            };
+        }
+
+        const name = input.argv[0].slice(1);
+
+        // Note: サーバー外のユーザーをDiscordタグ直打ち等でメンションされると解決できない
+        //       またはユーザーではなくロールにメンションした場合
+        if (!input.mentionedUsers.has(name)) {
+            return { response: input.newChatResponse('そんな人いる？ :thinking:', 'error') };
+        }
+
+        return { args: { user: { id: input.mentionedUsers.get(name), name } } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -44,21 +72,7 @@ class SilenceDeleteCommand {
         assert(typeof input === 'object');
         logger.info(`沈黙ユーザー削除コマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        // Note: 引数がちょうど1つ ∧ 引数がアットマークで始まる
-        if (input.argc !== 1 || !input.argv[0].startsWith('@')) {
-            return input.newChatResponse('コマンドの形式が間違っています :sob: 例:`@hanako 恩赦 @Ebycow`', 'error');
-        }
-
-        const username = input.argv[0].slice(1);
-
-        // Note: サーバー外のユーザーをDiscordタグ直打ち等でメンションされると解決できない
-        //       またはユーザーではなくロールにメンションした場合
-        if (!input.mentionedUsers.has(username)) {
-            return input.newChatResponse('そんな人いる？ :thinking:', 'error');
-        }
-
-        const userId = input.mentionedUsers.get(username);
+        const { id: userId, name: username } = input.args.user;
         const silence = this.hanako.silenceDictionary.lines.find((line) => line.userId === userId);
 
         // ユーザーが登録されていない
