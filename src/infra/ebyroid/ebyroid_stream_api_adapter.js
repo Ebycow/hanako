@@ -4,8 +4,20 @@ const transforms = require('../../library/transforms');
 const AppSettings = require('../../core/app_settings');
 const IVoiceroidStreamRepo = require('../../domain/repo/i_voiceroid_stream_repo');
 const log4js = require('log4js');
+const { compose } = require('stream');
 
 const logger = log4js.getLogger(require('path').basename(__filename));
+const STREAMING_API_PATH = '/api/v2/audiostream';
+
+function resolveMode(url, configuredMode) {
+    if (configuredMode !== 'auto') return configuredMode;
+    try {
+        const pathname = new URL(url).pathname.replace(/\/$/, '');
+        return pathname === STREAMING_API_PATH ? 'streaming-post' : 'legacy-get';
+    } catch {
+        return 'legacy-get';
+    }
+}
 
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('../../domain/entity/audios/voiceroid_audio')} VoiceroidAudio */
@@ -23,6 +35,7 @@ class EbyroidStreamApiAdapter {
      */
     constructor(appSettings) {
         this.url = appSettings.ebyroidStreamApiUrl;
+        this.mode = resolveMode(this.url, appSettings.ebyroidStreamApiMode || 'auto');
     }
 
     /**
@@ -43,7 +56,17 @@ class EbyroidStreamApiAdapter {
         let response;
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                response = await axios.get(this.url, { responseType: 'stream', params: params });
+                if (this.mode === 'streaming-post') {
+                    response = await axios.post(this.url, params, {
+                        responseType: 'stream',
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                } else {
+                    response = await axios.get(this.url, {
+                        responseType: 'stream',
+                        params: params,
+                    });
+                }
                 break;
             } catch (err) {
                 if (err.code === 'ECONNRESET' && attempt < maxRetries) {
@@ -58,13 +81,13 @@ class EbyroidStreamApiAdapter {
         const bitDepth = parseInt(response.headers['ebyroid-pcm-bit-depth'], 10);
         const numChannels = parseInt(response.headers['ebyroid-pcm-number-of-channels'], 10);
 
-        let stream = response.data;
+        let channelTransform;
         if (numChannels == 1) {
             // 元データがモノラルのとき
-            stream = stream.pipe(new transforms.Mono2StereoConverter());
+            channelTransform = new transforms.Mono2StereoConverter();
         } else {
             // 元データがステレオのとき
-            stream = stream.pipe(new transforms.StereoByteAdjuster());
+            channelTransform = new transforms.StereoByteAdjuster();
         }
 
         // TODO リサンプル処理をEbyroidに移行
@@ -76,9 +99,9 @@ class EbyroidStreamApiAdapter {
             toRate: 48000,
             toDepth: 16,
         });
-        stream = stream.pipe(resample);
-
-        return Promise.resolve(stream);
+        // Propagate HTTP/transform failures and preserve backpressure across
+        // the complete response -> channel conversion -> resampling pipeline.
+        return Promise.resolve(compose(response.data, channelTransform, resample));
     }
 }
 

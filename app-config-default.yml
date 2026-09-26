@@ -18,6 +18,10 @@ settings:
   # Ebyroid AudioStream API の URL
   ebyroid_stream_api_url: 'http://localhost:4090/api/v1/audiostream'
 
+  # auto: /api/v2/audiostream ならPOSTストリーミング、それ以外は従来GET
+  # legacy-get / streaming-post で明示的に固定可能
+  ebyroid_stream_api_mode: 'auto'
+
   # SE音源を取得するときの最大ファイルサイズ（Bytes）
   foley_max_download_byte_size: 2000000
 

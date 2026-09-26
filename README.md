@@ -115,7 +115,9 @@
   * VoiceroidがインストールされたWindowsマシン
   * 有効なVoiceroidライセンス
   * デフォルトポート: 4090
-* または `GET /api/v1/audiostream?text=&name=` でaudio/wavを返すHTTP APIサーバ
+* または次のいずれかを提供するHTTP音声サーバ
+  * `POST /api/v2/audiostream`（JSON body、chunked raw PCM。推奨）
+  * `GET /api/v1/audiostream?text=&name=`（従来互換）
 
 ## Special Dependencies
 * **node-libsamplerate**: ローカルカスタム依存関係 (`vendor/node-libsamplerate-prebuilt`)
@@ -143,7 +145,7 @@ Discord Developer Portalよりアプリケーションを作成し、ボット�
 * Message Content Intent（テキストコマンドの読み取りに必要）
 
 ## 2.音声サーバの設定
-標準の機能では、HTTPリクエストによる `GET /api/v1/audiostream?text=読み上げテキスト&name=キャラクター名` に対して、audio/wavにてストリームを返答する形式のオーディオサーバを任意にTTSの為に利用可能です
+標準ではEbyroidの `POST /api/v2/audiostream`（JSON body）と、従来の `GET /api/v1/audiostream?text=...&name=...` の両方を利用できます。v2では発言内容をURLに含めず、生成途中のraw PCMを受け取った時点からDiscordへ流します。
 
 Ebyroidは、VoiceroidがインストールされたWindowsマシンを音声サーバとして利用可能にするために最適なアプリケーションです。  
 動作には有効なライセンスを持つVoiceroidライブラリを所持している必要があります。アプリケーションのインストールは当該リポジトリから可能です https://github.com/nanokina/ebyroid
@@ -155,6 +157,16 @@ hanakoの標準設定では4090番ポートにある音声サーバに接続を�
 C:\ebyroid> ebyroid.exe configure
 C:\ebyroid> ebyroid.exe start 
 ```
+
+ストリーミングを有効にするには、`app-config.yml`へ次を設定します。
+
+```yaml
+settings:
+  ebyroid_stream_api_url: 'http://localhost:4090/api/v2/audiostream'
+  ebyroid_stream_api_mode: 'auto'
+```
+
+`auto`はURLが `/api/v2/audiostream`ならPOSTストリーミング、それ以外なら従来GETを選びます。明示的に固定する場合は `streaming-post` または `legacy-get` を指定できます。環境変数 `EBYROID_STREAM_API_URL` と `EBYROID_STREAM_API_MODE` でも上書きできます。
 
 ## 3.hanakoのインストール
 ```

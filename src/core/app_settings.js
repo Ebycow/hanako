@@ -56,6 +56,12 @@ class AppSettings {
             override = {};
         }
         const data = Object.assign({}, base, override);
+        if (process.env.EBYROID_STREAM_API_URL) {
+            data.ebyroidStreamApiUrl = process.env.EBYROID_STREAM_API_URL;
+        }
+        if (process.env.EBYROID_STREAM_API_MODE) {
+            data.ebyroidStreamApiMode = process.env.EBYROID_STREAM_API_MODE;
+        }
         return new AppSettings(data);
     }
 
@@ -68,6 +74,7 @@ class AppSettings {
      * @param {string} data.discordClientId
      * @param {string} data.discordGuildId
      * @param {string} data.ebyroidStreamApiUrl
+     * @param {string} [data.ebyroidStreamApiMode='auto']
      * @param {number} data.foleyMaxDownloadByteSize
      * @param {number} data.foleyMaxAudioSeconds
      * @param {number} data.foleyNormalizeTargetPeak
@@ -79,6 +86,8 @@ class AppSettings {
         assert(typeof data.discordClientId === 'string');
         assert(typeof data.discordGuildId === 'string');
         assert(typeof data.ebyroidStreamApiUrl === 'string');
+        const streamApiMode = data.ebyroidStreamApiMode || 'auto';
+        assert(['auto', 'legacy-get', 'streaming-post'].includes(streamApiMode));
         assert(typeof data.foleyMaxDownloadByteSize === 'number');
         assert(typeof data.foleyMaxAudioSeconds === 'number');
         assert(typeof data.foleyNormalizeTargetPeak === 'number');
@@ -88,7 +97,7 @@ class AppSettings {
         );
 
         Object.defineProperty(this, 'data', {
-            value: Object.assign({}, data),
+            value: Object.assign({}, data, { ebyroidStreamApiMode: streamApiMode }),
             writable: false,
             enumerable: false,
             configurable: false,
@@ -138,6 +147,15 @@ class AppSettings {
      */
     get ebyroidStreamApiUrl() {
         return this.data.ebyroidStreamApiUrl;
+    }
+
+    /**
+     * Ebyroid API transport mode.
+     *
+     * @type {'auto'|'legacy-get'|'streaming-post'}
+     */
+    get ebyroidStreamApiMode() {
+        return this.data.ebyroidStreamApiMode;
     }
 
     /**
