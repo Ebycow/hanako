@@ -6,14 +6,11 @@ const ResponseHandler = require('../service/response_handler');
 const HanakoLoader = require('../service/hanako_loader');
 const ChatResponse = require('../domain/entity/responses/chat_response');
 const errors = require('../core/errors').promises;
-const { MessageFlags } = require('discord.js');
+const sanitizeContent = require('../core/utils/sanitize_content');
+const { ApplicationCommandOptionType, MessageFlags } = require('discord.js');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Interaction} discord.Interaction */
-
-const SLASH_COMMAND_ALIASES = Object.freeze({
-    'se-search': 'se?',
-});
 
 /**
  * Commandコントローラ
@@ -90,13 +87,14 @@ async function processInteractionF(interaction) {
     // 読み上げ花子モデルを取得
     const hanako = await this.hanakoLoader.load(interaction.guild.id);
 
-    // スラッシュコマンドのオプションを処理
-    const { content, mentionedUsers } = buildInteractionCommandContentF(hanako.prefix, interaction);
+    // スラッシュコマンドのオプションを名前付きの引数にする
+    const commandArgs = buildCommandArgsF(interaction);
 
     // メッセージエンティティの作成
     const builderParam = {
         id: interaction.id,
-        content,
+        commandName: interaction.commandName,
+        commandArgs,
         userId: interaction.user.id,
         userName: interaction.user.username,
         channelId: interaction.channel.id,
@@ -104,7 +102,6 @@ async function processInteractionF(interaction) {
         serverId: interaction.guildId,
         serverName: interaction.guild.name,
         voiceChannelId: interaction.member.voice.channel ? interaction.member.voice.channel.id : null,
-        mentionedUsers,
     };
     const entity = await this.builder.build(hanako, builderParam);
 
@@ -112,7 +109,7 @@ async function processInteractionF(interaction) {
     // 実行者と実行内容がチャンネルで分かるように、先に実行ログを投稿する
     const executionLog = new ChatResponse({
         id: interaction.id,
-        content: `${interaction.user.username}が「${content}」を実行したよ！`,
+        content: `${interaction.user.username}が「${describeInteractionF(interaction)}」を実行したよ！`,
         channelId: interaction.channel.id,
         code: 'simple',
     });
@@ -129,40 +126,68 @@ async function processInteractionF(interaction) {
     return succeeded !== false;
 }
 
-function resolveTextCommandNameF(slashCommandName) {
-    return SLASH_COMMAND_ALIASES[slashCommandName] || slashCommandName;
+/**
+ * (private) スラッシュコマンドのオプションを名前付きの引数にする
+ * - 文字列はテキスト投稿と同じ標準化をかける
+ * - ユーザーは {id, name}、添付ファイルは attachments 配列にまとめる
+ *
+ * @param {discord.ChatInputCommandInteraction} interaction 受信したスラッシュコマンド
+ * @returns {object} 名前付きの引数
+ */
+function buildCommandArgsF(interaction) {
+    const guild = interaction.guild;
+    const resolvers = {
+        user: (id) => nameOfF(guild.members.cache.get(id), 'displayName'),
+        role: (id) => nameOfF(guild.roles.cache.get(id), 'name'),
+        channel: (id) => nameOfF(guild.channels.cache.get(id), 'name'),
+    };
+
+    const args = {};
+    for (const option of interaction.options.data) {
+        switch (option.type) {
+            case ApplicationCommandOptionType.String:
+                args[option.name] = sanitizeContent(option.value, resolvers);
+                break;
+            case ApplicationCommandOptionType.User:
+                args[option.name] = {
+                    id: option.value,
+                    name: option.member ? option.member.displayName : option.user.username,
+                };
+                break;
+            case ApplicationCommandOptionType.Attachment:
+                args.attachments = (args.attachments || []).concat({
+                    name: option.attachment.title || option.attachment.name,
+                    url: option.attachment.url,
+                });
+                break;
+            default:
+                args[option.name] = option.value;
+        }
+    }
+    return args;
 }
 
-function buildInteractionCommandContentF(prefix, interaction) {
-    const textCommandName = resolveTextCommandNameF(interaction.commandName);
-    let content = prefix + textCommandName;
-    const mentionedUsers = new Map();
+function nameOfF(entity, key) {
+    return entity ? entity[key] : undefined;
+}
 
-    const options = interaction.options && Array.isArray(interaction.options.data) ? interaction.options.data : [];
-    if (options.length === 0) {
-        return { content, mentionedUsers };
-    }
-
-    const args = options
-        .map((option) => {
-            if (option.type === 6) {
-                // USER option
-                const username = option.user ? option.user.username : `${option.value}`;
-                mentionedUsers.set(username, option.value);
-                return '@' + username;
-            }
-            if (option.value === undefined || option.value === null) {
-                return null;
-            }
-            return `${option.value}`;
-        })
-        .filter((value) => value !== null);
-
-    if (args.length > 0) {
-        content += ' ' + args.join(' ');
-    }
-
-    return { content, mentionedUsers };
+/**
+ * (private) 実行ログ用にスラッシュコマンドを表記する 例: /teach from:花子 to:はなこ
+ *
+ * @param {discord.ChatInputCommandInteraction} interaction 受信したスラッシュコマンド
+ * @returns {string}
+ */
+function describeInteractionF(interaction) {
+    const options = interaction.options.data.map((option) => {
+        if (option.type === ApplicationCommandOptionType.User) {
+            return `${option.name}:@${option.member ? option.member.displayName : option.user.username}`;
+        }
+        if (option.type === ApplicationCommandOptionType.Attachment) {
+            return `${option.name}:${option.attachment.name}`;
+        }
+        return `${option.name}:${option.value}`;
+    });
+    return ['/' + interaction.commandName, ...options].join(' ');
 }
 
 module.exports = InteractionCtrl;

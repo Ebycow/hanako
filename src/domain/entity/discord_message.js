@@ -10,14 +10,15 @@ class DiscordMessage {
      *
      * @param {object} data
      * @param {string} data.id エンティティID
-     * @param {string} data.content メッセージ内容
-     * @param {'command'|'read'} data.type メッセージタイプ
+     * @param {string} data.content メッセージ内容（interactionのときはスラッシュコマンド名）
+     * @param {'command'|'interaction'|'read'} data.type メッセージタイプ
      * @param {string} data.serverId 送信元DiscordサーバーID
      * @param {string} data.channelId 送信元チャンネルID
      * @param {string} data.userId 送信者のユーザーID
      * @param {?string} data.voiceChannelId 送信者が参加中の音声チャンネルID またはnull
      * @param {Map<string, string>} data.mentionedUsers メンションされているユーザーの表示名とユーザーIDの辞書配列
      * @param {Array<{name: string, url: string}>} data.attachments 添付ファイルの配列
+     * @param {object} [data.commandArgs] スラッシュコマンドのオプションから作った名前付きの引数（interactionのみ）
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -29,6 +30,7 @@ class DiscordMessage {
         assert(typeof data.voiceChannelId === 'string' || data.voiceChannelId === null);
         assert(typeof data.mentionedUsers === 'object');
         assert(Array.isArray(data.attachments || []));
+        assert(typeof data.commandArgs === 'undefined' || typeof data.commandArgs === 'object');
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -117,6 +119,15 @@ class DiscordMessage {
      */
     get attachments() {
         return (this.data.attachments || []).slice();
+    }
+
+    /**
+     * スラッシュコマンドのオプションから作った名前付きの引数
+     *
+     * @type {object}
+     */
+    get commandArgs() {
+        return this.data.commandArgs || {};
     }
 
     toString() {

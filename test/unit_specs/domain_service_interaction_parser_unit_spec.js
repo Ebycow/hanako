@@ -1,59 +1,36 @@
-const should = require('chai').should();
+require('chai').should();
 const InteractionParser = require('../../src/domain/service/interaction_parser');
-const EbyAbortError = require('../../src/core/errors/eby_abort_error');
 const { basicHanako, dmessageBlueprint } = require('../helpers/blueprints');
 
 /************************************************************************
  * InteractionParserクラス単体スペック
  *
  * メソッド：#parse
- * 期待動作：Discordインタラクションをパースしてコマンド引数に変換する
- * 備考：CommandParserとほぼ同一ロジックだがtype='interaction'を受け付ける
+ * 期待動作：スラッシュコマンドのメッセージをコマンド引数に変換する
+ * 備考：引数は文字列に戻さず、名前付きの引数のまま渡す
  ***********************************************************************/
 
 describe('InteractionParser', () => {
     describe('#parse', () => {
-        context('正常系', () => {
-            specify('プリフィクス形式のインタラクションをパースする', async () => {
-                const parser = new InteractionParser();
-                const hanako = basicHanako();
-                const dm = dmessageBlueprint({ type: 'interaction', content: '>ask 質問' });
-                const input = await parser.parse(hanako, dm);
-                input.argc.should.equal(2);
-                input.argv[0].should.equal('ask');
-                input.argv[1].should.equal('質問');
+        specify('argvはスラッシュコマンド名だけで、名前付きの引数をそのまま持つ', async () => {
+            const parser = new InteractionParser();
+            const dm = dmessageBlueprint({
+                type: 'interaction',
+                content: 'teach',
+                commandArgs: { from: 'Hello World', to: 'ハロワ' },
             });
-
-            specify('@メンション形式のインタラクションをパースする', async () => {
-                const parser = new InteractionParser();
-                const hanako = basicHanako();
-                const dm = dmessageBlueprint({ type: 'interaction', content: '@hanako help' });
-                const input = await parser.parse(hanako, dm);
-                input.argc.should.equal(1);
-                input.argv[0].should.equal('help');
-            });
-
-            specify('idがdmessageのidと一致する', async () => {
-                const parser = new InteractionParser();
-                const hanako = basicHanako();
-                const dm = dmessageBlueprint({ type: 'interaction', content: '>help' });
-                const input = await parser.parse(hanako, dm);
-                input.id.should.equal(dm.id);
-            });
+            const input = await parser.parse(basicHanako(), dm);
+            input.argv.should.deep.equal(['teach']);
+            input.args.should.deep.equal({ from: 'Hello World', to: 'ハロワ' });
+            input.source.should.equal('slash');
         });
 
-        context('異常系', () => {
-            specify('プリフィクスでも@でもない形式はabortする', async () => {
-                const parser = new InteractionParser();
-                const hanako = basicHanako();
-                const dm = dmessageBlueprint({ type: 'interaction', content: 'ask 質問' });
-                try {
-                    await parser.parse(hanako, dm);
-                    should.fail('should have rejected');
-                } catch (e) {
-                    e.should.be.instanceOf(EbyAbortError);
-                }
-            });
+        specify('idがdmessageのidと一致する', async () => {
+            const parser = new InteractionParser();
+            const dm = dmessageBlueprint({ id: 'interaction-001', type: 'interaction', content: 'help' });
+            const input = await parser.parse(basicHanako(), dm);
+            input.id.should.equal('interaction-001');
+            input.args.should.deep.equal({});
         });
     });
 });

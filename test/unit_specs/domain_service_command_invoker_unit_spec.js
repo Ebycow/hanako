@@ -57,5 +57,49 @@ describe('CommandInvoker', () => {
                 }
             });
         });
+
+        context('スラッシュコマンド', () => {
+            function slashInput(commandName, commandArgs) {
+                return commandInputBlueprint(
+                    { argc: 1, argv: [commandName], args: commandArgs },
+                    { type: 'interaction', content: commandName, commandArgs }
+                );
+            }
+
+            specify('空白を含む値もそのまま1つの引数として扱う', async () => {
+                const invoker = new CommandInvoker();
+                const input = slashInput('teach', { from: 'Hello World', to: 'ハロー ワールド' });
+                const response = await invoker.invoke(basicHanako(), input);
+                response.type.should.equal('action');
+                response.action.from.should.equal('Hello World');
+                response.action.to.should.equal('ハロー ワールド');
+            });
+
+            specify('ユーザーはIDで受け取る', async () => {
+                const invoker = new CommandInvoker();
+                const input = slashInput('blacklist-add', { user: { id: 'bob-id', name: 'ボブ' } });
+                const response = await invoker.invoke(basicHanako(), input);
+                response.type.should.equal('action');
+                response.action.userId.should.equal('bob-id');
+            });
+
+            specify('テキストのコマンド名と違うスラッシュコマンド名でも解決する', async () => {
+                const invoker = new CommandInvoker();
+                const input = slashInput('se-search', { keyword: 'ドン' });
+                const response = await invoker.invoke(basicHanako(), input);
+                response.type.should.equal('chat');
+            });
+
+            specify('未知のスラッシュコマンドはabortする', async () => {
+                const invoker = new CommandInvoker();
+                const input = slashInput('unknown-xyz', {});
+                try {
+                    await invoker.invoke(basicHanako(), input);
+                    should.fail('should have rejected');
+                } catch (e) {
+                    e.should.be.instanceOf(EbyAbortError);
+                }
+            });
+        });
     });
 });
