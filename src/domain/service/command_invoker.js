@@ -7,6 +7,7 @@ const Commando = require('../model/commando');
 /** @typedef {import('../entity/command_input')} CommandInput */
 /** @typedef {import('../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../model/hanako')} Hanako */
+/** @typedef {import('../model/commands').CommandT} CommandT */
 
 /**
  * ドメインサービス
@@ -37,13 +38,35 @@ class CommandInvoker {
             return errors.abort();
         }
 
+        // テキストの引数を名前付きの引数に変換（形式が間違っていればその案内を返す）
+        const parsed = parseArgsF(command, input);
+        if (parsed.response) {
+            return Promise.resolve(parsed.response);
+        }
+
         // TODO: 実行者の権限チェックが未実装（誰でも全コマンドを実行できる）。テキスト/スラッシュ両方に効く方式を要検討
         // コマンドを実行
-        const response = command.process(input);
+        const response = command.process(input.withArgs(parsed.args));
 
         // レスポンスを返す
         return Promise.resolve(response);
     }
+}
+
+/**
+ * (private) コマンドの引数を名前付きの引数に変換する
+ * - 引数を取らないコマンドは parseText を持たない
+ *
+ * @param {CommandT} command 実行するコマンド
+ * @param {CommandInput} input コマンド名を消費済みのコマンド引数
+ * @returns {{args: object}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+ */
+function parseArgsF(command, input) {
+    const K = command.constructor;
+    if (typeof K.parseText !== 'function') {
+        return { args: {} };
+    }
+    return K.parseText(input);
 }
 
 module.exports = CommandInvoker;

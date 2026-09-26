@@ -83,6 +83,36 @@ describe('CommandInput', () => {
         });
     });
 
+    describe('名前付きの引数と入力元', () => {
+        specify('argsを省略すると空のオブジェクトになる', () => {
+            const input = commandInputBlueprint();
+            input.args.should.deep.equal({});
+        });
+
+        specify('テキスト投稿から作られたときsourceはtext', () => {
+            const input = commandInputBlueprint({}, { type: 'command' });
+            input.source.should.equal('text');
+        });
+
+        specify('スラッシュコマンドから作られたときsourceはslash', () => {
+            const input = commandInputBlueprint({}, { type: 'interaction' });
+            input.source.should.equal('slash');
+        });
+
+        specify('withArgsは引数を持たせた新しいエンティティを返し、元は変化しない', () => {
+            const input = commandInputBlueprint({ argc: 1, argv: ['a'] });
+            const withArgs = input.withArgs({ from: 'a' });
+            withArgs.args.should.deep.equal({ from: 'a' });
+            withArgs.argv.should.deep.equal(['a']);
+            input.args.should.deep.equal({});
+        });
+
+        specify('consumeしてもargsは引き継がれる', () => {
+            const input = commandInputBlueprint({ argc: 2, argv: ['a', 'b'], args: { x: 1 } });
+            input.consume().args.should.deep.equal({ x: 1 });
+        });
+    });
+
     describe('#newChatResponse', () => {
         specify('ChatResponseを生成する', () => {
             const input = commandInputBlueprint({}, { channelId: 'ch-001' });

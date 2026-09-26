@@ -5,6 +5,7 @@ const {
     commandInputBlueprint,
     wordDictionaryLineBlueprint,
     WordDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -40,7 +41,7 @@ describe('WordReadCommand', () => {
                 const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint();
                 const sub = new WordReadCommand(basicHanako({ wordDictionary: wd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('pager');
@@ -52,7 +53,7 @@ describe('WordReadCommand', () => {
             specify('辞書が空ならエラーレスポンスを返す', () => {
                 const input = commandInputBlueprint();
                 const sub = new WordReadCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');

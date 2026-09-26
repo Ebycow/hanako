@@ -5,6 +5,7 @@ const {
     commandInputBlueprint,
     foleyDictionaryLineBlueprint,
     FoleyDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -60,7 +61,7 @@ describe('FoleySearchCommand', () => {
                     argv: ['SPKチェック完了'],
                 });
                 const sub = new FoleySearchCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('simple');
@@ -93,7 +94,7 @@ describe('FoleySearchCommand', () => {
                     argv: ['spkチェック完了'],
                 });
                 const sub = new FoleySearchCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.content
                     .indexOf('SPKチェック完了')
@@ -121,7 +122,7 @@ describe('FoleySearchCommand', () => {
                     argv: ['SPK', '確認済み'],
                 });
                 const sub = new FoleySearchCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.content.should.include('確認済みSPKボイス');
                 res.content.should.not.include('SPKだけのボイス');
@@ -145,7 +146,7 @@ describe('FoleySearchCommand', () => {
                 });
                 const input = commandInputBlueprint({ argc: 1, argv: ['SPKチェク完了'] });
                 const sub = new FoleySearchCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.content.should.include('SPKチェック完了しました');
                 res.content.should.not.include('処理が終わりました');
@@ -172,7 +173,7 @@ describe('FoleySearchCommand', () => {
                     argv: ['SPKチェック完了'],
                 });
                 const sub = new FoleySearchCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.content.should.include('SPKチェック完了しました');
                 res.content.should.not.include('SPKチェク完了');
@@ -195,7 +196,7 @@ describe('FoleySearchCommand', () => {
                 });
                 const input = commandInputBlueprint({ argc: 1, argv: ['SE'] });
                 const sub = new FoleySearchCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 // contentにはスペース区切りで最大5つのキーワードが含まれる
@@ -215,7 +216,7 @@ describe('FoleySearchCommand', () => {
                     argv: ['まったく違う検索'],
                 });
                 const sub = new FoleySearchCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.content.should.equal('近いSEは見つからなかったよ :sob:');
             });
@@ -225,7 +226,7 @@ describe('FoleySearchCommand', () => {
             specify('引数なしはエラー', () => {
                 const input = commandInputBlueprint({ argc: 0, argv: [] });
                 const sub = new FoleySearchCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -234,7 +235,7 @@ describe('FoleySearchCommand', () => {
             specify('SE辞書が空ならエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['タピオカ'] });
                 const sub = new FoleySearchCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');

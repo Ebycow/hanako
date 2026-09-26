@@ -16,6 +16,7 @@ class CommandInput {
      * @param {number} data.argc 引数の数
      * @param {string[]} data.argv 引数の配列
      * @param {DiscordMessage} data.origin 元となったDiscordMessageエンティティ
+     * @param {object} [data.args={}] 名前付きの引数（テキストはparseText、スラッシュはオプションから作る）
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -23,9 +24,10 @@ class CommandInput {
         assert(Array.isArray(data.argv) && data.argv.length === data.argc);
         assert(data.argv.every((x) => typeof x === 'string'));
         assert(typeof data.origin === 'object');
+        assert(typeof data.args === 'undefined' || (typeof data.args === 'object' && data.args !== null));
 
         Object.defineProperty(this, 'data', {
-            value: Object.assign({}, data),
+            value: Object.assign({}, data, { args: Object.freeze(Object.assign({}, data.args)) }),
             writable: false,
             enumerable: true,
             configurable: false,
@@ -57,6 +59,24 @@ class CommandInput {
      */
     get argv() {
         return this.data.argv.slice();
+    }
+
+    /**
+     * 名前付きの引数
+     *
+     * @type {object}
+     */
+    get args() {
+        return this.data.args;
+    }
+
+    /**
+     * コマンドの入力元（'>'などのテキスト投稿か、スラッシュコマンドか）
+     *
+     * @type {'text'|'slash'}
+     */
+    get source() {
+        return this.data.origin.type === 'interaction' ? 'slash' : 'text';
     }
 
     /**
@@ -127,6 +147,23 @@ class CommandInput {
             argc: this.argc - 1,
             argv: this.argv.slice(1),
             origin: this.data.origin,
+            args: this.args,
+        });
+    }
+
+    /**
+     * 名前付きの引数を持たせた新しいエンティティを返す
+     *
+     * @param {object} args 名前付きの引数
+     * @returns {CommandInput} 引数を持ったCommandInput
+     */
+    withArgs(args) {
+        return new CommandInput({
+            id: this.id,
+            argc: this.argc,
+            argv: this.data.argv,
+            origin: this.data.origin,
+            args,
         });
     }
 

@@ -1,6 +1,6 @@
 const should = require('chai').should();
 const SpeakerCommand = require('../../src/domain/model/commands/speaker_command');
-const { basicHanako, commandInputBlueprint } = require('../helpers/blueprints');
+const { basicHanako, commandInputBlueprint, processText } = require('../helpers/blueprints');
 
 /************************************************************************
  * SpeakerCommandクラス単体スペック
@@ -33,7 +33,7 @@ describe('SpeakerCommand', () => {
             specify('有効なスピーカー名でアクションレスポンスを返す', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['kiritan'] });
                 const sub = new SpeakerCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('speaker_update');
@@ -44,7 +44,7 @@ describe('SpeakerCommand', () => {
             specify('defaultを指定するとデフォルト戻しメッセージを返す', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['default'] });
                 const sub = new SpeakerCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.onSuccess.content.should.include('デフォルト');
@@ -55,7 +55,7 @@ describe('SpeakerCommand', () => {
             specify('引数なしはエラー', () => {
                 const input = commandInputBlueprint({ argc: 0, argv: [] });
                 const sub = new SpeakerCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -64,7 +64,7 @@ describe('SpeakerCommand', () => {
             specify('引数が2つ以上はエラー', () => {
                 const input = commandInputBlueprint({ argc: 2, argv: ['a', 'b'] });
                 const sub = new SpeakerCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');

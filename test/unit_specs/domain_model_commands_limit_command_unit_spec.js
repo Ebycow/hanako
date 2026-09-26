@@ -1,6 +1,6 @@
 const should = require('chai').should();
 const LimitCommand = require('../../src/domain/model/commands/limit_command');
-const { basicHanako, commandInputBlueprint } = require('../helpers/blueprints');
+const { basicHanako, commandInputBlueprint, processText } = require('../helpers/blueprints');
 
 /************************************************************************
  * LimitCommandクラス単体スペック
@@ -33,7 +33,7 @@ describe('LimitCommand', () => {
             specify('正しい文字数制限アクションレスポンスを返す', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['500'] });
                 const sub = new LimitCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('max_count_update');
@@ -45,7 +45,7 @@ describe('LimitCommand', () => {
             specify('0を指定すると制限解除メッセージを返す', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['0'] });
                 const sub = new LimitCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.maxCount.should.equal(0);
@@ -55,7 +55,7 @@ describe('LimitCommand', () => {
             specify('2000を指定しても正常', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['2000'] });
                 const sub = new LimitCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.maxCount.should.equal(2000);
@@ -66,7 +66,7 @@ describe('LimitCommand', () => {
             specify('引数なしはエラー', () => {
                 const input = commandInputBlueprint({ argc: 0, argv: [] });
                 const sub = new LimitCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -75,7 +75,7 @@ describe('LimitCommand', () => {
             specify('数値以外はエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['abc'] });
                 const sub = new LimitCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -84,7 +84,7 @@ describe('LimitCommand', () => {
             specify('マイナスはエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['-1'] });
                 const sub = new LimitCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -93,7 +93,7 @@ describe('LimitCommand', () => {
             specify('2001以上はエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['2001'] });
                 const sub = new LimitCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');

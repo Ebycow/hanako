@@ -5,6 +5,7 @@ const {
     commandInputBlueprint,
     wordDictionaryLineBlueprint,
     WordDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -44,7 +45,7 @@ describe('WordClearCommand', () => {
                 const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint({ argc: 1, argv: ['--force'] });
                 const sub = new WordClearCommand(basicHanako({ wordDictionary: wd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('word_clear');
@@ -56,7 +57,7 @@ describe('WordClearCommand', () => {
             specify('辞書が空ならエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['--force'] });
                 const sub = new WordClearCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -67,7 +68,7 @@ describe('WordClearCommand', () => {
                 const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint({ argc: 0, argv: [] });
                 const sub = new WordClearCommand(basicHanako({ wordDictionary: wd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('force');

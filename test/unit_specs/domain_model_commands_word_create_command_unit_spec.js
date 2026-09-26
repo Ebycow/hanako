@@ -5,6 +5,7 @@ const {
     commandInputBlueprint,
     wordDictionaryLineBlueprint,
     WordDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -38,7 +39,7 @@ describe('WordCreateCommand', () => {
             specify('正しい教育アクションレスポンスを返す', () => {
                 const input = commandInputBlueprint({ argc: 2, argv: ['花子', 'はなこ'] });
                 const sub = new WordCreateCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('word_create');
@@ -53,7 +54,7 @@ describe('WordCreateCommand', () => {
             specify('引数が2つでないとエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['花子'] });
                 const sub = new WordCreateCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -62,7 +63,7 @@ describe('WordCreateCommand', () => {
             specify('1文字のfromはエラー', () => {
                 const input = commandInputBlueprint({ argc: 2, argv: ['花', 'はな'] });
                 const sub = new WordCreateCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -71,7 +72,7 @@ describe('WordCreateCommand', () => {
             specify('1文字のtoはエラー', () => {
                 const input = commandInputBlueprint({ argc: 2, argv: ['花子', 'は'] });
                 const sub = new WordCreateCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -81,7 +82,7 @@ describe('WordCreateCommand', () => {
                 const longStr = 'あ'.repeat(51);
                 const input = commandInputBlueprint({ argc: 2, argv: [longStr, 'はなこ'] });
                 const sub = new WordCreateCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -92,7 +93,7 @@ describe('WordCreateCommand', () => {
                 const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint({ argc: 2, argv: ['花子', 'ハナコ'] });
                 const sub = new WordCreateCommand(basicHanako({ wordDictionary: wd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -107,7 +108,7 @@ describe('WordCreateCommand', () => {
                 const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines });
                 const input = commandInputBlueprint({ argc: 2, argv: ['新語あ', 'しんごあ'] });
                 const sub = new WordCreateCommand(basicHanako({ wordDictionary: wd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');

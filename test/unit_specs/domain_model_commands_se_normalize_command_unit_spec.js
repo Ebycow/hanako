@@ -1,6 +1,6 @@
 const should = require('chai').should();
 const SeNormalizeCommand = require('../../src/domain/model/commands/se_normalize_command');
-const { basicHanako, commandInputBlueprint } = require('../helpers/blueprints');
+const { basicHanako, commandInputBlueprint, processText } = require('../helpers/blueprints');
 
 /************************************************************************
  * SeNormalizeCommandクラス単体スペック
@@ -33,7 +33,7 @@ describe('SeNormalizeCommand', () => {
             specify('正しいSE正規化更新アクションレスポンスを返す', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['80'] });
                 const sub = new SeNormalizeCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('se_normalize_update');
@@ -45,7 +45,7 @@ describe('SeNormalizeCommand', () => {
             specify('0を指定すると無効メッセージを返す', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['0'] });
                 const sub = new SeNormalizeCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.seNormalize.should.equal(0.0);
@@ -55,7 +55,7 @@ describe('SeNormalizeCommand', () => {
             specify('50（デフォルト）を指定しても正常', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['50'] });
                 const sub = new SeNormalizeCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.seNormalize.should.equal(0.5);
@@ -64,7 +64,7 @@ describe('SeNormalizeCommand', () => {
             specify('100を指定しても正常', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['100'] });
                 const sub = new SeNormalizeCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.seNormalize.should.equal(1.0);
@@ -75,7 +75,7 @@ describe('SeNormalizeCommand', () => {
             specify('引数なしはエラー', () => {
                 const input = commandInputBlueprint({ argc: 0, argv: [] });
                 const sub = new SeNormalizeCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -84,7 +84,7 @@ describe('SeNormalizeCommand', () => {
             specify('数値以外はエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['abc'] });
                 const sub = new SeNormalizeCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -93,7 +93,7 @@ describe('SeNormalizeCommand', () => {
             specify('マイナスはエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['-1'] });
                 const sub = new SeNormalizeCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -102,7 +102,7 @@ describe('SeNormalizeCommand', () => {
             specify('101以上はエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['101'] });
                 const sub = new SeNormalizeCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -111,7 +111,7 @@ describe('SeNormalizeCommand', () => {
             specify('小数はエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['50.5'] });
                 const sub = new SeNormalizeCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');

@@ -6,6 +6,7 @@ const {
     dmessageBlueprint,
     silenceDictionaryLineBlueprint,
     SilenceDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -41,7 +42,7 @@ describe('SilenceCreateCommand', () => {
                 const origin = dmessageBlueprint({ mentionedUsers: mentions });
                 const input = commandInputBlueprint({ argc: 1, argv: ['@Ebycow'], origin });
                 const sub = new SilenceCreateCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('silence_create');
@@ -54,7 +55,7 @@ describe('SilenceCreateCommand', () => {
             specify('引数なしはエラー', () => {
                 const input = commandInputBlueprint({ argc: 0, argv: [] });
                 const sub = new SilenceCreateCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -63,7 +64,7 @@ describe('SilenceCreateCommand', () => {
             specify('@で始まらない引数はエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['Ebycow'] });
                 const sub = new SilenceCreateCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -72,7 +73,7 @@ describe('SilenceCreateCommand', () => {
             specify('メンションユーザーに存在しないユーザーはエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['@Unknown'] });
                 const sub = new SilenceCreateCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -85,7 +86,7 @@ describe('SilenceCreateCommand', () => {
                 const line = silenceDictionaryLineBlueprint({ userId: 'user-001' });
                 const sd = new SilenceDictionary({ id: 'sd', serverId: 'mock-server-id', lines: [line] });
                 const sub = new SilenceCreateCommand(basicHanako({ silenceDictionary: sd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');

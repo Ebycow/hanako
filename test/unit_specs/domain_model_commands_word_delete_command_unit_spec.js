@@ -5,6 +5,7 @@ const {
     commandInputBlueprint,
     wordDictionaryLineBlueprint,
     WordDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -40,7 +41,7 @@ describe('WordDeleteCommand', () => {
                 const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint({ argc: 1, argv: ['花子'] });
                 const sub = new WordDeleteCommand(basicHanako({ wordDictionary: wd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('word_delete');
@@ -52,7 +53,7 @@ describe('WordDeleteCommand', () => {
             specify('引数なしはエラー', () => {
                 const input = commandInputBlueprint({ argc: 0, argv: [] });
                 const sub = new WordDeleteCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -61,7 +62,7 @@ describe('WordDeleteCommand', () => {
             specify('存在しない単語はエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['存在しない'] });
                 const sub = new WordDeleteCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
