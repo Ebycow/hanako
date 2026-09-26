@@ -6,6 +6,9 @@ const CANCEL_ID = 'hanako:confirm-cancel';
 /**
  * 破壊的なスラッシュコマンドの実行を確かめるボタン
  * Note: テキスト投稿で `--force` を付けて確定するのと同じ役割
+ * Note: 引数を持たないコマンドにだけ使える。確定したときは元の引数を持ち越さず、
+ *       `{ force: true }` だけで実行し直すため（ConfirmButtonCtrl）。
+ *       引数を持つコマンドで使うときは、引数をカスタムIDなどで持ち越す仕組みを先に作ること
  *
  * @param {string} commandName 確定したときに実行するスラッシュコマンド名
  * @returns {ActionRowBuilder} ボタンの行

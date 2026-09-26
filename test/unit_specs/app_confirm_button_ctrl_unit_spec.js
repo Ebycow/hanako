@@ -67,6 +67,7 @@ describe('ConfirmButtonCtrl', () => {
             guildId: 'guild-id',
             guild: { id: 'guild-id', name: 'guild-name' },
             member: { voice: { channel: null } },
+            message: { id: 'message-id' },
             update: sinon.stub().resolves(),
             deferUpdate: sinon.stub().resolves(),
         };
@@ -77,11 +78,55 @@ describe('ConfirmButtonCtrl', () => {
 
         await new ConfirmButtonCtrl({}).onConfirmButton(interaction);
 
-        interaction.deferUpdate.calledOnce.should.be.true;
+        interaction.update.firstCall.args[0].components.should.deep.equal([]);
         const builderParam = builderBuild.firstCall.args[1];
         builderParam.commandName.should.equal('blacklist-clear');
         builderParam.commandArgs.should.deep.equal({ force: true });
         respond.firstCall.args[0].should.deep.equal({ interaction, commandName: 'blacklist-clear' });
+    });
+
+    specify('実行中にもう一度押されても二重に実行しない', async () => {
+        let finish;
+        serviceServe.returns(new Promise((resolve) => (finish = resolve)));
+        const ctrl = new ConfirmButtonCtrl({});
+        const first = buttonInteraction('hanako:confirm:blacklist-clear');
+        const second = buttonInteraction('hanako:confirm:blacklist-clear');
+
+        const running = ctrl.onConfirmButton(first);
+        await ctrl.onConfirmButton(second);
+        finish({ type: 'silent' });
+        await running;
+
+        serviceServe.calledOnce.should.be.true;
+        second.deferUpdate.calledOnce.should.be.true;
+        second.update.called.should.be.false;
+    });
+
+    specify('実行中に「やめておく」が押されても取り消し表示にしない', async () => {
+        let finish;
+        serviceServe.returns(new Promise((resolve) => (finish = resolve)));
+        const ctrl = new ConfirmButtonCtrl({});
+
+        const running = ctrl.onConfirmButton(buttonInteraction('hanako:confirm:blacklist-clear'));
+        const cancel = buttonInteraction('hanako:confirm-cancel');
+        await ctrl.onConfirmButton(cancel);
+        finish({ type: 'silent' });
+        await running;
+
+        cancel.update.called.should.be.false;
+        cancel.deferUpdate.calledOnce.should.be.true;
+    });
+
+    specify('実行が終われば同じメッセージのボタンをまた受け付ける', async () => {
+        const ctrl = new ConfirmButtonCtrl({});
+
+        await ctrl.onConfirmButton(buttonInteraction('hanako:confirm:blacklist-clear'));
+        serviceServe.rejects(new Error('boom'));
+        await ctrl.onConfirmButton(buttonInteraction('hanako:confirm:blacklist-clear')).catch(() => {});
+        serviceServe.resolves({ type: 'silent' });
+        await ctrl.onConfirmButton(buttonInteraction('hanako:confirm:blacklist-clear'));
+
+        serviceServe.callCount.should.equal(3);
     });
 
     specify('「やめておく」なら何も実行せずボタンを外す', async () => {

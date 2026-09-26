@@ -67,7 +67,7 @@ class InteractionResponder {
      * 確認ボタンで実行を確定したときの返し先
      * - 確認は実行者にだけ見える返信で行っているため、結果は皆に見えるよう改めて公開で返信する
      *
-     * @param {discord.ButtonInteraction} interaction 更新を保留済み（deferUpdate）の確認ボタン
+     * @param {discord.ButtonInteraction} interaction 応答済み（update でボタンを外した）の確認ボタン
      * @param {string} commandName 確定したスラッシュコマンド名
      * @returns {ReplyTarget}
      */

@@ -27,6 +27,8 @@ class ConfirmButtonCtrl {
         this.service = new MessageService();
         this.responder = new InteractionResponder();
         this.hanakoLoader = new HanakoLoader();
+        // 実行中の確認メッセージのID（連打で同じコマンドを二重に実行しないため）
+        this.running = new Set();
 
         logger.trace('セットアップ完了');
     }
@@ -43,23 +45,38 @@ class ConfirmButtonCtrl {
             return errors.abort();
         }
 
+        // 実行中に押されたボタンは、応答だけして何もしない
+        // Note: ボタンを外す更新がDiscordに届く前に続けて押されると、ここに届く
+        const messageId = interaction.message.id;
+        if (this.running.has(messageId)) {
+            logger.info(`実行中の確認ボタンが押されたので無視した (message: ${messageId})`);
+            await interaction.deferUpdate();
+            return;
+        }
+
         if (!button.confirmed) {
             await interaction.update({ content: 'やめておきました', components: [] });
             return;
         }
 
-        // 3秒以内に応答しないとインタラクションが失効するため、先に更新を保留しておく
-        await interaction.deferUpdate();
-
-        const target = InteractionResponder.confirmedReplyTarget(interaction, button.commandName);
+        this.running.add(messageId);
         try {
-            const response = await processConfirmedF.call(this, interaction, button.commandName);
-            await this.responder.respond(target, response);
-        } catch (error) {
-            await this.responder
-                .replyFailure(target, error)
-                .catch((e) => logger.warn('インタラクションの応答に失敗', e));
-            throw error;
+            // 3秒以内に応答しないとインタラクションが失効するため先に応答し、
+            // 同時にボタンを外して、実行中にもう一度押せないようにする
+            await interaction.update({ content: '実行しています…', components: [] });
+
+            const target = InteractionResponder.confirmedReplyTarget(interaction, button.commandName);
+            try {
+                const response = await processConfirmedF.call(this, interaction, button.commandName);
+                await this.responder.respond(target, response);
+            } catch (error) {
+                await this.responder
+                    .replyFailure(target, error)
+                    .catch((e) => logger.warn('インタラクションの応答に失敗', e));
+                throw error;
+            }
+        } finally {
+            this.running.delete(messageId);
         }
     }
 }
