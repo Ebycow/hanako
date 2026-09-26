@@ -157,7 +157,7 @@ describe('DiscordVoiceChatModel', () => {
     });
 
     describe('#push', () => {
-        specify('uses one 20ms silence frame and starts queued streams one at a time', async () => {
+        specify('pads a 300ms gap and starts queued streams one at a time', async () => {
             const vc = new DiscordVoiceChatModel('guild-1');
             await vc.join(voiceChannel());
             const first = { destroy: sinon.stub() };
@@ -169,7 +169,7 @@ describe('DiscordVoiceChatModel', () => {
             audioPlayers[0].play.calledOnce.should.be.true;
             createAudioResource.firstCall.args.should.deep.equal([
                 first,
-                { inputType: 'raw', silencePaddingFrames: 1 },
+                { inputType: 'raw', silencePaddingFrames: 15 },
             ]);
             vc.cue.should.deep.equal([second]);
 
@@ -178,7 +178,7 @@ describe('DiscordVoiceChatModel', () => {
             audioPlayers[0].play.calledTwice.should.be.true;
             createAudioResource.secondCall.args.should.deep.equal([
                 second,
-                { inputType: 'raw', silencePaddingFrames: 1 },
+                { inputType: 'raw', silencePaddingFrames: 15 },
             ]);
             vc.cue.should.deep.equal([]);
         });
