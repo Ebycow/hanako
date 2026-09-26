@@ -42,13 +42,13 @@ describe('slash_command_builder', () => {
             const manageGuild = String(PermissionFlagsBits.ManageGuild);
             const moderateMembers = String(PermissionFlagsBits.ModerateMembers);
 
-            ['limit', 'dictionary-clear', 'blacklist-clear'].forEach((name) =>
+            ['limit', 'dictionary-clear', 'blacklist-clear', 'se-normalize'].forEach((name) =>
                 byName[name].default_member_permissions.should.equal(manageGuild)
             );
             ['blacklist-add', 'blacklist-remove', 'blacklist-show'].forEach((name) =>
                 byName[name].default_member_permissions.should.equal(moderateMembers)
             );
-            ['ask', 'plz', 'teach', 'se-add', 'se-normalize', 'speaker'].forEach((name) =>
+            ['ask', 'plz', 'teach', 'se-add', 'speaker'].forEach((name) =>
                 should.not.exist(byName[name].default_member_permissions)
             );
         });

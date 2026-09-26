@@ -28,7 +28,7 @@
 | SEの一覧 | 音声辞書 音声一覧 se-dictionary se-dic se-list | /se-list | - | @hanako se-list |
 | SEの検索 | se? | /se-search | - | @hanako se? 泣 |
 | SEの名前変更 | 音声名置換 se-rename | /se-rename | - | @hanako se-rename （泣く） （号泣） |
-| SE正規化 | SE正規化 se-normalize senorm | /se-normalize | - | @hanako se-normalize 80 |
+| SE正規化 | SE正規化 se-normalize senorm | /se-normalize | サーバー管理 | @hanako se-normalize 80 |
 | ブラックリスト追加 | 沈黙 blacklist-add | /blacklist-add | メンバーをタイムアウト | @hanako blacklist-add @seikin |
 | ブラックリスト除外 | 恩赦 blacklist-remove | /blacklist-remove | メンバーをタイムアウト | @hanako blacklist-remove @hikakin |
 | ブラックリスト一覧 | 名簿 blacklist-show | /blacklist-show | メンバーをタイムアウト | @hanako blacklist-show |

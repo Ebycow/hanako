@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const SeNormalizeUpdateAction = require('../../entity/actions/se_normalize_update_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').PermissionName} PermissionName */
 /** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
@@ -26,6 +27,15 @@ class SeNormalizeCommand {
      */
     static get names() {
         return ['SE正規化', 'se-normalize', 'senorm'];
+    }
+
+    /**
+     * 実行に必要な権限（スラッシュコマンドの初期値と、テキストで実行されたときの確認に使う）
+     *
+     * @type {PermissionName}
+     */
+    static get requiredPermission() {
+        return 'manageGuild';
     }
 
     /**
