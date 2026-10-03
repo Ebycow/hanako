@@ -62,7 +62,7 @@ class RecoveryService {
 async function doRecoveryF(info) {
     // サーバーステータスを取得
     const serverStatus = await this.serverStatusRepo.loadServerStatus(info.serverId);
-    logger.info(`ボイスチャット復帰処理を実行 [${serverStatus.serverName}]`);
+    logger.info(`ボイスチャット復帰処理を実行 (server: ${info.serverId})`);
 
     // 復帰前チャットを送信
     const startingChat = new ChatResponse({

@@ -162,7 +162,8 @@ function formatLogEvent(logEvent) {
  * 環境変数 LOG_LEVEL で出力レベルを上書きできる（例: LOG_LEVEL=trace）。
  * レベルを下げても発言本文は出ない。
  *
- * ログは日付ごとのファイルに分かれ、期限なく保持する（numBackups: 99999）。
+ * ログは日付ごとのファイルに分かれ、app.log は 90 日分、errors.log は 365 日分を保持する（numBackups）。
+ * 保持期間はプライバシーポリシーに明記しているので、変えるときはポリシーも合わせて直すこと。
  * Note: dateFile の numBackups は省略すると 1 日分しか残らないため、必ず明示すること。
  *
  * @param {string} configPath log4js 設定 JSON のパス

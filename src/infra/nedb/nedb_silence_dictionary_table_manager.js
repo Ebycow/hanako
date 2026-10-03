@@ -88,7 +88,7 @@ async function loadSharedData(serverId) {
                             record[0] = data;
                             record[1] = new Date();
                             record[2] = uuid();
-                            logger.info(`migrate: ${data} ${record}`);
+                            logger.info(`migrate: id=${record[2]}`);
                             return record;
                         }
                         return data;

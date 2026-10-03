@@ -71,7 +71,7 @@ class FoleyRenameAction {
     }
 
     toString() {
-        return `FoleyRenameAction(id=${this.id}, serverId=${this.serverId}, keywordFrom=${this.keywordFrom}, keywordTo=${this.keywordTo})`;
+        return `FoleyRenameAction(id=${this.id}, serverId=${this.serverId})`;
     }
 }
 

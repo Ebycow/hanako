@@ -180,12 +180,12 @@ class FopenObjectStorage {
                 if (err) {
                     reject(err);
                 } else if (docs.length === 0) {
-                    logger.warn('整合性警告：存在しないキー', query);
+                    logger.warn(`整合性警告：存在しないキー seg:${segmentKey} suf:${fileType}`);
                     reject(new errors.Disappointed('record-not-found', '対応するデータが存在しません。'));
                 } else {
                     if (docs.length > 1) {
                         logger.warn('整合性警告：複数レコード検知');
-                        logger.warn(`count:${docs.length} seg:${segmentKey} desc:${objectKey} suf:${fileType}`);
+                        logger.warn(`count:${docs.length} seg:${segmentKey} suf:${fileType}`);
                     }
                     resolve(docs[0].file);
                 }
@@ -225,12 +225,12 @@ class FopenObjectStorage {
                 if (err) {
                     reject(err);
                 } else if (docs.length === 0) {
-                    logger.warn('整合性警告：存在しないキー', query);
+                    logger.warn(`整合性警告：存在しないキー seg:${segmentKey} suf:${fileType}`);
                     reject(new errors.Disappointed('record-not-found', '対応するデータが存在しません。'));
                 } else {
                     if (docs.length > 1) {
                         logger.warn('整合性警告：複数レコード検知');
-                        logger.warn(`count:${docs.length} seg:${segmentKey} desc:${objectKey} suf:${fileType}`);
+                        logger.warn(`count:${docs.length} seg:${segmentKey} suf:${fileType}`);
                         logger.warn('Delete要求なのでこのまま全て削除します。');
                     }
                     resolve(docs);

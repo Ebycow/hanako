@@ -60,7 +60,7 @@ class FoleyDeleteAction {
     }
 
     toString() {
-        return `FoleyDeleteAction(id=${this.id}, serverId=${this.serverId}, url=${this.foleyId})`;
+        return `FoleyDeleteAction(id=${this.id}, serverId=${this.serverId}, foleyId=${this.foleyId})`;
     }
 }
 

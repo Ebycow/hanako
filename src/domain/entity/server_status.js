@@ -76,7 +76,7 @@ class ServerStatus {
     }
 
     toString() {
-        return `ServerStatus(id=${this.id}, serverId=${this.serverId}, serverName=${this.serverName}, userId=${this.userId}, prefix=${this.prefix})`;
+        return `ServerStatus(id=${this.id}, serverId=${this.serverId}, userId=${this.userId}, prefix=${this.prefix})`;
     }
 }
 

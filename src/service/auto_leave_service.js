@@ -57,7 +57,7 @@ class AutoLeaveService {
         await this.actionHandler.handle(action);
 
         // ログ出力して終了
-        logger.info(`誰もいないので退出した。[${data.serverName}] ${data.voiceChannelName}`);
+        logger.info(`誰もいないので退出した。(server: ${hanako.serverId})`);
         return Promise.resolve();
     }
 }

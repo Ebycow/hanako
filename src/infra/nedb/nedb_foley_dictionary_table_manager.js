@@ -468,10 +468,13 @@ class NedbFoleyDictionaryTableManager {
         const succeededKeywords = [];
 
         // 各アイテムを順次処理
-        for (const item of action.items) {
+        for (const [index, item] of action.items.entries()) {
+            // ログにはキーワードを出さず、何件目のアイテムかで追う
+            const itemLabel = `${index + 1}/${action.items.length}`;
+
             // 重複チェック（既に処理済みのアイテムも含む）
             if (records.some((record) => item.keyword === record[0])) {
-                logger.warn(`キーワード重複をスキップ: ${item.keyword}`);
+                logger.warn(`キーワード重複をスキップ (item: ${itemLabel})`);
                 failedItems.push(`${item.keyword}: すでに登録済みです`);
                 continue;
             }
@@ -480,7 +483,7 @@ class NedbFoleyDictionaryTableManager {
             try {
                 response = await downloadFoley(item.url, this.appSettings.foleyMaxDownloadByteSize);
             } catch (err) {
-                logger.warn(`ファイルダウンロード失敗をスキップ: ${item.keyword} - ${err.message}`);
+                logger.warn(`ファイルダウンロード失敗をスキップ (item: ${itemLabel}) - ${err.message}`);
                 const reason = isForbiddenAddressError(err)
                     ? 'そのURLからは取得できません'
                     : isDownloadTimeout(err)
@@ -492,7 +495,7 @@ class NedbFoleyDictionaryTableManager {
 
             const fileType = await fileTypeFromBuffer(response.data);
             if (!fileType || !fileType.mime.startsWith('audio')) {
-                logger.warn(`音声ファイル以外をスキップ: ${item.keyword}`);
+                logger.warn(`音声ファイル以外をスキップ (item: ${itemLabel})`);
                 failedItems.push(`${item.keyword}: 音声ファイルではありません`);
                 continue;
             }
@@ -502,11 +505,12 @@ class NedbFoleyDictionaryTableManager {
                 const objectKey = Buffer.from(item.keyword).toString('base64');
                 await this.objectStorageRepo.saveFile(action.serverId, objectKey, 'pcm', stream);
 
-                records.push([item.keyword, item.url, uuid()]);
+                const foleyId = uuid();
+                records.push([item.keyword, item.url, foleyId]);
                 succeededKeywords.push(item.keyword);
-                logger.info(`SE追加成功: ${item.keyword}`);
+                logger.info(`SE追加成功 (item: ${itemLabel}, ID: ${foleyId})`);
             } catch (err) {
-                logger.warn(`ファイル保存失敗をスキップ: ${item.keyword} - ${err.message}`);
+                logger.warn(`ファイル保存失敗をスキップ (item: ${itemLabel}) - ${err.message}`);
                 // ダウンロード待ちの間に同じキーワードが別の登録で先に登録された
                 const alreadyExists = records.some((record) => item.keyword === record[0]);
                 const reason = alreadyExists
@@ -587,7 +591,7 @@ class NedbFoleyDictionaryTableManager {
             if (index !== -1) {
                 const deletedRecord = records.splice(index, 1)[0];
                 deletedRecords.push(deletedRecord);
-                logger.info(`SE削除: ${deletedRecord[0]} (ID: ${foleyId})`);
+                logger.info(`SE削除 (ID: ${foleyId})`);
             } else {
                 logger.warn(`SE削除対象が見つからない: ID ${foleyId}`);
             }
@@ -601,9 +605,9 @@ class NedbFoleyDictionaryTableManager {
             try {
                 const objectKey = Buffer.from(record[0]).toString('base64');
                 await this.objectStorageRepo.deleteFile(action.serverId, objectKey, 'pcm');
-                logger.info(`ファイル削除成功: ${record[0]}`);
+                logger.info(`ファイル削除成功 (ID: ${record[2]})`);
             } catch (err) {
-                logger.error(`ファイル削除失敗: ${record[0]} - ${err.message}`);
+                logger.error(`ファイル削除失敗 (ID: ${record[2]}) - ${err.message}`);
                 // ファイル削除に失敗してもエラーにはしない（既に削除済みの可能性もある）
             }
         }

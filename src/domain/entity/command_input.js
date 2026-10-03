@@ -208,8 +208,9 @@ class CommandInput {
     }
 
     toString() {
-        const mentionedUsersJson = JSON.stringify(Object.fromEntries(this.mentionedUsers.entries()));
-        return `CommandInput(id=${this.id}, argc=${this.argc}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId}, mentionedUsers=${mentionedUsersJson})`;
+        // ログに出るので表示名は含めず、IDだけにする
+        const mentionedUserIds = Array.from(this.mentionedUsers.values()).join(',');
+        return `CommandInput(id=${this.id}, argc=${this.argc}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId}, mentionedUserIds=[${mentionedUserIds}])`;
     }
 }
 

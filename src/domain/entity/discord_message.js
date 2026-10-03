@@ -142,8 +142,9 @@ class DiscordMessage {
     }
 
     toString() {
-        const mentionedUsersJson = JSON.stringify(Object.fromEntries(this.mentionedUsers.entries()));
-        return `DiscordMessage(id=${this.id}, type=${this.type}, serverId=${this.serverId}, channelId=${this.channelId}, userId=${this.userId}, voiceChannelId=${this.voiceChannelId}, mentionedUsers=${mentionedUsersJson}, contentLength=${this.content.length})`;
+        // ログに出るので表示名は含めず、IDだけにする
+        const mentionedUserIds = Array.from(this.mentionedUsers.values()).join(',');
+        return `DiscordMessage(id=${this.id}, type=${this.type}, serverId=${this.serverId}, channelId=${this.channelId}, userId=${this.userId}, voiceChannelId=${this.voiceChannelId}, mentionedUserIds=[${mentionedUserIds}], contentLength=${this.content.length})`;
     }
 }
 
