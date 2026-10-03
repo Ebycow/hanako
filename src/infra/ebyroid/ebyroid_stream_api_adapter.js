@@ -42,9 +42,10 @@ class EbyroidStreamApiAdapter {
      * (impl) IVoiceroidStreamRepo
      *
      * @param {VoiceroidAudio} audio
+     * @param {AbortSignal} [signal] 中断の合図。応答の受信中に中断されてもレスポンスを破棄する
      * @returns {Promise<Readable>}
      */
-    async getVoiceroidStream(audio) {
+    async getVoiceroidStream(audio, signal) {
         const params = {
             text: audio.content,
         };
@@ -60,16 +61,19 @@ class EbyroidStreamApiAdapter {
                     response = await axios.post(this.url, params, {
                         responseType: 'stream',
                         headers: { 'Content-Type': 'application/json' },
+                        signal,
                     });
                 } else {
                     response = await axios.get(this.url, {
                         responseType: 'stream',
                         params: params,
+                        signal,
                     });
                 }
                 break;
             } catch (err) {
-                if (err.code === 'ECONNRESET' && attempt < maxRetries) {
+                // 中断されたら再試行しない
+                if (err.code === 'ECONNRESET' && attempt < maxRetries && !signal?.aborted) {
                     logger.warn(`ECONNRESET発生。リトライします (${attempt}/${maxRetries})`);
                     continue;
                 }
@@ -101,6 +105,7 @@ class EbyroidStreamApiAdapter {
         });
         // Propagate HTTP/transform failures and preserve backpressure across
         // the complete response -> channel conversion -> resampling pipeline.
+        // Destroying the composed stream also destroys the HTTP response.
         return Promise.resolve(compose(response.data, channelTransform, resample));
     }
 }

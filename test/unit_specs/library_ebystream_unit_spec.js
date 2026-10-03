@@ -66,6 +66,63 @@ describe('EbyStream', () => {
         });
     });
 
+    describe('取得の開始と中断', () => {
+        specify('構築しただけでは生成関数を呼ばない', () => {
+            let called = 0;
+            const stream = new EbyStream([
+                async () => {
+                    called += 1;
+                    return createDataStream('a');
+                },
+            ]);
+            called.should.equal(0);
+            stream.destroy();
+        });
+
+        specify('startは何度呼んでも、最初の生成関数を1回だけ呼ぶ', () => {
+            let called = 0;
+            const stream = new EbyStream([
+                async () => {
+                    called += 1;
+                    return createDataStream('a');
+                },
+            ]);
+            stream.start();
+            stream.start();
+            called.should.equal(1);
+            stream.destroy();
+        });
+
+        specify('破棄すると、生成関数に渡した中断の合図が送られる', () => {
+            let signal;
+            const stream = new EbyStream([
+                (s) => {
+                    signal = s;
+                    return new Promise(() => {});
+                },
+            ]);
+            stream.start();
+            signal.aborted.should.be.false;
+            stream.destroy();
+            signal.aborted.should.be.true;
+        });
+
+        specify('取得前に破棄すると、生成関数は呼ばずに直接渡したストリームを破棄する', () => {
+            let called = 0;
+            const direct = createDataStream('a');
+            const stream = new EbyStream([
+                direct,
+                async () => {
+                    called += 1;
+                    return createDataStream('b');
+                },
+            ]);
+            stream.destroy();
+            direct.destroyed.should.be.true;
+            called.should.equal(0);
+        });
+    });
+
     describe('エラー伝搬', () => {
         specify('子ストリームのerrorがEbyStreamに伝搬する', (done) => {
             const errStream = new Readable({

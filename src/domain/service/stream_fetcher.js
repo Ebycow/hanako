@@ -1,6 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
+const { compose } = require('stream');
 const Injector = require('../../core/injector');
 const IVoiceroidStreamRepo = require('../repo/i_voiceroid_stream_repo');
 const IFoleyStreamRepo = require('../repo/i_foley_stream_repo');
@@ -37,13 +38,14 @@ class StreamFetcher {
         }
 
         // 順次取得するReadable生成関数の配列に変換
-        const streamFactories = audios.map((audio) => async () => {
+        const streamFactories = audios.map((audio) => async (signal) => {
             // 手続きタイプによって各リポジトリに振り分け
             if (audio.type === 'voiceroid') {
-                const stream = await this.vrStreamRepo.getVoiceroidStream(audio);
+                const stream = await this.vrStreamRepo.getVoiceroidStream(audio, signal);
                 // VOICEROIDが付加する長い末尾無音を、単一音声を含め常に除去する。
                 // 除去しないと、声が聞こえ終わった後も次のキューが約800ms待たされる。
-                return stream.pipe(new transforms.TrailingSilenceTrimmer());
+                // pipeでは破棄が上流へ伝わらずHTTPレスポンスが残るため、composeでつなぐ。
+                return compose(stream, new transforms.TrailingSilenceTrimmer());
             } else if (audio.type === 'foley') {
                 return this.foleyStreamRepo.getFoleyStream(audio);
             } else {
@@ -52,8 +54,9 @@ class StreamFetcher {
         });
 
         // EbyStreamを使ってひとつなぎのStreamとして返却
+        // 取得は再生の直前（先読み）か読み取り開始時に始まり、破棄されると中断される
         const stream = new EbyStream(streamFactories);
-        // 取得は返却後に進むため、再生待ちの間に失敗しても uncaughtException にならないよう常に受けておく
+        // 取得は返却後に進むため、先読み中に失敗しても uncaughtException にならないよう常に受けておく
         // （再生中の失敗は AudioPlayer の error でも拾われ、次の音声へ進む）
         stream.on('error', (err) => logger.warn('音声ストリームの取得に失敗', err));
         return Promise.resolve(stream);

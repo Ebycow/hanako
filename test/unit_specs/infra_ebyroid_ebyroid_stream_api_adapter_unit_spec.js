@@ -28,6 +28,13 @@ async function consume(stream) {
     return Buffer.concat(chunks);
 }
 
+/** axios stub that only settles when its signal aborts, like a request stuck in Ebyroid's queue */
+function hangUntilAborted(_url, _params, config) {
+    return new Promise((_resolve, reject) => {
+        config.signal.addEventListener('abort', () => reject(config.signal.reason));
+    });
+}
+
 describe('EbyroidStreamApiAdapter', () => {
     let axios;
     let EbyroidStreamApiAdapter;
@@ -105,5 +112,36 @@ describe('EbyroidStreamApiAdapter', () => {
         );
         sinon.assert.calledOnce(axios.post);
         sinon.assert.notCalled(axios.get);
+    });
+
+    describe('cancellation', () => {
+        const url = 'http://localhost:4090/api/v2/audiostream';
+
+        it('stops waiting for the response when the caller aborts', async () => {
+            axios.post.callsFake(hangUntilAborted);
+            const adapter = new EbyroidStreamApiAdapter({ ebyroidStreamApiUrl: url });
+            const controller = new AbortController();
+
+            const result = adapter
+                .getVoiceroidStream({ content: 'cancelled', speaker: 'default' }, controller.signal)
+                .catch((err) => err);
+            controller.abort();
+
+            expect((await result).name).to.equal('AbortError');
+            expect(axios.post.firstCall.args[2].signal.aborted).to.equal(true);
+        });
+
+        it('does not retry ECONNRESET once the request has been aborted', async () => {
+            const controller = new AbortController();
+            axios.post.callsFake(async () => {
+                controller.abort();
+                throw Object.assign(new Error('socket hang up'), { code: 'ECONNRESET' });
+            });
+            const adapter = new EbyroidStreamApiAdapter({ ebyroidStreamApiUrl: url });
+
+            await adapter.getVoiceroidStream({ content: 'x', speaker: 'default' }, controller.signal).catch(() => {});
+
+            sinon.assert.calledOnce(axios.post);
+        });
     });
 });

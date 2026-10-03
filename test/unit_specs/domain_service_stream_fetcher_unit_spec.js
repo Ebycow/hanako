@@ -45,11 +45,30 @@ describe('StreamFetcher', () => {
 
     describe('#fetch', () => {
         context('正常系', () => {
-            specify('voiceroidタイプのAudioでvrStreamRepoを呼ぶ', async () => {
+            specify('fetchしただけでは取得を始めない', async () => {
                 const audios = [{ type: 'voiceroid', content: 'テスト', speaker: 'kiritan' }];
                 const stream = await fetcher.fetch(audios);
+                vrStreamRepo.getVoiceroidStream.called.should.be.false;
+                stream.destroy();
+            });
+
+            specify(
+                'voiceroidタイプのAudioは、読み取りを始めるとvrStreamRepoから中断の合図付きで取得する',
+                async () => {
+                    const audio = { type: 'voiceroid', content: 'テスト', speaker: 'kiritan' };
+                    const stream = await fetcher.fetch([audio]);
+                    await consume(stream);
+                    vrStreamRepo.getVoiceroidStream.calledOnce.should.be.true;
+                    vrStreamRepo.getVoiceroidStream.firstCall.args[0].should.equal(audio);
+                    vrStreamRepo.getVoiceroidStream.firstCall.args[1].should.be.an.instanceOf(AbortSignal);
+                }
+            );
+
+            specify('startで読み取りの前に取得を始められる', async () => {
+                const stream = await fetcher.fetch([{ type: 'voiceroid', content: 'テスト', speaker: 'kiritan' }]);
+                stream.start();
                 vrStreamRepo.getVoiceroidStream.calledOnce.should.be.true;
-                should.exist(stream);
+                stream.destroy();
             });
 
             specify('単一のvoiceroid音声でも末尾無音を除去する', async () => {
@@ -67,8 +86,8 @@ describe('StreamFetcher', () => {
             specify('foleyタイプのAudioでfoleyStreamRepoを呼ぶ', async () => {
                 const audios = [{ type: 'foley', keyword: 'ドンッ' }];
                 const stream = await fetcher.fetch(audios);
+                await consume(stream);
                 foleyStreamRepo.getFoleyStream.calledOnce.should.be.true;
-                should.exist(stream);
             });
 
             specify('混合配列で両方のリポジトリを呼ぶ', async () => {
@@ -77,9 +96,9 @@ describe('StreamFetcher', () => {
                     { type: 'foley', keyword: 'ドンッ' },
                 ];
                 const stream = await fetcher.fetch(audios);
+                await consume(stream);
                 vrStreamRepo.getVoiceroidStream.calledOnce.should.be.true;
                 foleyStreamRepo.getFoleyStream.calledOnce.should.be.true;
-                should.exist(stream);
             });
 
             specify('空配列ではリポジトリを呼ばない', async () => {
@@ -101,16 +120,65 @@ describe('StreamFetcher', () => {
                 }
             });
 
-            specify('再生待ちで読み手がいない間に取得が失敗してもuncaughtExceptionにならない', async () => {
+            specify('先読みで読み手がいない間に取得が失敗してもuncaughtExceptionにならない', async () => {
                 vrStreamRepo.getVoiceroidStream.rejects(new Error('Request failed with status code 500'));
 
                 const stream = await fetcher.fetch([{ type: 'voiceroid', content: 'テスト', speaker: 'kiritan' }]);
-                // 読み手を付けずに待つ（キューで再生待ちの状態）。errorリスナーが無ければここで例外になる
+                // 読み手を付けずに先読みだけ始める（再生待ちの先頭の状態）。errorリスナーが無ければここで例外になる
+                stream.start();
                 await new Promise((resolve) => stream.once('close', resolve));
 
                 stream.destroyed.should.be.true;
                 stream.errored.message.should.equal('Request failed with status code 500');
             });
+        });
+
+        context('中断', () => {
+            specify('取得中に破棄すると、リポジトリに渡した中断の合図が送られる', async () => {
+                let signal;
+                vrStreamRepo.getVoiceroidStream.callsFake((_audio, s) => {
+                    signal = s;
+                    return new Promise(() => {});
+                });
+                const stream = await fetcher.fetch([{ type: 'voiceroid', content: 'テスト', speaker: 'kiritan' }]);
+                stream.start();
+                signal.aborted.should.be.false;
+
+                stream.destroy();
+
+                signal.aborted.should.be.true;
+            });
+
+            specify('再生中に破棄すると、取得したレスポンスのストリームまで破棄される', async () => {
+                // 終わらないレスポンス
+                const response = new Readable({ read() {} });
+                response.push(Buffer.alloc(4, 1));
+                vrStreamRepo.getVoiceroidStream.resolves(response);
+                const stream = await fetcher.fetch([{ type: 'voiceroid', content: 'テスト', speaker: 'kiritan' }]);
+                stream.resume();
+                await new Promise((resolve) => setImmediate(resolve));
+
+                stream.destroy();
+                await new Promise((resolve) => setImmediate(resolve));
+
+                response.destroyed.should.be.true;
+            });
+
+            specify(
+                '先読み済みで再生前のレスポンスがエラーになっても、uncaughtExceptionにならずerrorとして伝搬する',
+                async () => {
+                    const response = new Readable({ read() {} });
+                    vrStreamRepo.getVoiceroidStream.resolves(response);
+                    const stream = await fetcher.fetch([{ type: 'voiceroid', content: 'テスト', speaker: 'kiritan' }]);
+                    stream.start();
+                    await new Promise((resolve) => setImmediate(resolve));
+
+                    response.destroy(new Error('socket hang up'));
+                    await new Promise((resolve) => stream.once('close', resolve));
+
+                    stream.errored.message.should.equal('socket hang up');
+                }
+            );
         });
     });
 });

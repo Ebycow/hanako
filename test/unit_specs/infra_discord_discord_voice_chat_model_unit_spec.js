@@ -182,5 +182,33 @@ describe('DiscordVoiceChatModel', () => {
             ]);
             vc.cue.should.deep.equal([]);
         });
+
+        specify('再生中は、再生待ちの先頭だけ先に取得を始める', async () => {
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel());
+            const playing = { destroy: sinon.stub(), start: sinon.stub() };
+            const next = { destroy: sinon.stub(), start: sinon.stub() };
+            const later = { destroy: sinon.stub(), start: sinon.stub() };
+
+            vc.push(playing);
+            vc.push(next);
+            vc.push(later);
+
+            next.start.called.should.be.true;
+            later.start.called.should.be.false;
+
+            audioPlayers[0].emit('idle');
+
+            later.start.called.should.be.true;
+        });
+
+        specify('VCに接続していない間は取得を始めない', () => {
+            const vc = new DiscordVoiceChatModel('guild-1');
+            const stream = { destroy: sinon.stub(), start: sinon.stub() };
+
+            vc.push(stream);
+
+            stream.start.called.should.be.false;
+        });
     });
 });

@@ -293,6 +293,22 @@ class DiscordVoiceChatModel {
         if (this.connection !== null && this.dispatcher === null) {
             this.play();
         }
+        this.prefetchNext();
+    }
+
+    /**
+     * 再生中なら、次に再生する音声だけ先に取得を始める
+     * 発言の間が空かないようにするため。2件目以降は取得を始めないので、
+     * 再生待ちが伸びても音声生成のリクエストは増えない。
+     *
+     * @private
+     */
+    prefetchNext() {
+        if (this.dispatcher === null) return;
+        const next = this.cue[0];
+        if (next && typeof next.start === 'function') {
+            next.start();
+        }
     }
 
     /**
@@ -459,6 +475,7 @@ class DiscordVoiceChatModel {
 
             logger.debug('Playing audio resource');
             audioPlayer.play(resource);
+            this.prefetchNext();
         } else {
             this.dispatcher = null;
         }
