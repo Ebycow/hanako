@@ -1,5 +1,6 @@
 // 上から下へ
 const chain = [
+    require('./character_width_formatter'),
     require('./url_formatter'),
     require('./word_dictionary_formatter'),
     require('./cyrillic_katakana_formatter'),

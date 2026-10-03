@@ -116,6 +116,18 @@ describe('WordCreateCommand', () => {
                 res.content.should.include('教育済み');
             });
 
+            specify('文字種をそろえると既存の単語と同じになる場合もエラー', () => {
+                const line = wordDictionaryLineBlueprint({ from: 'ﾊﾅｺ', to: 'はなこ' });
+                const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
+                const input = commandInputBlueprint({ argc: 2, argv: ['ハナコ', 'はなこさん'] });
+                const sub = new WordCreateCommand(basicHanako({ wordDictionary: wd }));
+                const res = processText(sub, input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+                res.content.should.include('教育済み');
+            });
+
             specify('上限10000件に達しているとエラー', () => {
                 const lines = [];
                 for (let i = 0; i < 10000; i++) {

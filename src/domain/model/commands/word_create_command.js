@@ -92,8 +92,10 @@ class WordCreateCommand {
             return input.newChatResponse('もじながすぎわろたwwww 50文字を超える教育はできません', 'error');
         }
 
-        // 重複チェック
-        const dup = this.hanako.wordDictionary.lines.find((line) => line.from === from);
+        // 重複チェック（読み上げでは文字種をそろえて照合するため、そろえると同じになる単語も重複とする）
+        const dup = this.hanako.wordDictionary.lines.find(
+            (line) => utils.unifyCharacterWidth(line.from) === utils.unifyCharacterWidth(from)
+        );
         if (dup) {
             return input.newChatResponse(`すでに教育済みの単語です！ 『${dup.from} ⇨ ${dup.to}』`, 'error');
         }

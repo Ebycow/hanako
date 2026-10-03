@@ -48,6 +48,16 @@ describe('FoleyRenameCommand', () => {
                 res.onSuccess.content.should.include('ドンッ');
                 res.onSuccess.content.should.include('ドカン');
             });
+
+            specify('半角カナのSE名を全角に直す変更はできる', () => {
+                const line = foleyDictionaryLineBlueprint({ keyword: 'ﾄﾞﾝｯ' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
+                const input = commandInputBlueprint({ argc: 2, argv: ['ﾄﾞﾝｯ', 'ドンッ'] });
+                const sub = new FoleyRenameCommand(basicHanako({ foleyDictionary: fd }));
+                const res = processText(sub, input);
+
+                res.type.should.equal('action');
+            });
         });
 
         context('異常系', () => {
@@ -74,6 +84,18 @@ describe('FoleyRenameCommand', () => {
                 const line2 = foleyDictionaryLineBlueprint({ id: 'fdl-2', keyword: 'ドカン' });
                 const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line1, line2] });
                 const input = commandInputBlueprint({ argc: 2, argv: ['ドンッ', 'ドカン'] });
+                const sub = new FoleyRenameCommand(basicHanako({ foleyDictionary: fd }));
+                const res = processText(sub, input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('変更先が文字種をそろえると既存のSE名と同じになるとエラー', () => {
+                const line1 = foleyDictionaryLineBlueprint({ id: 'fdl-1', keyword: 'ドンッ' });
+                const line2 = foleyDictionaryLineBlueprint({ id: 'fdl-2', keyword: 'ドカン' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line1, line2] });
+                const input = commandInputBlueprint({ argc: 2, argv: ['ドンッ', 'ﾄﾞｶﾝ'] });
                 const sub = new FoleyRenameCommand(basicHanako({ foleyDictionary: fd }));
                 const res = processText(sub, input);
 

@@ -88,8 +88,11 @@ class FoleyRenameCommand {
             return input.newChatResponse(`そのキーワードは存在しません･･･`, 'error');
         }
 
-        // 存在チェック
-        const dup = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keywordTo);
+        // 存在チェック（文字種をそろえると同じになるキーワードも重複とする。半角カナを全角に直すような変更は許す）
+        const dup = this.hanako.foleyDictionary.lines.find(
+            (line) =>
+                line.id !== exs.id && utils.unifyCharacterWidth(line.keyword) === utils.unifyCharacterWidth(keywordTo)
+        );
         if (dup) {
             return input.newChatResponse(`そのキーワードはすでに存在しています･･･`, 'error');
         }

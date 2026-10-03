@@ -7,28 +7,28 @@ const utils = require('../../../core/utils');
 
 /**
  * 登録済みSE名に一致する範囲を辞書置換から保護する
- * FoleyDictionaryは長いキーワード順に並んでいるため、重なる場合は長いSE名を優先する。
+ * readingKeywordsは長いキーワード順に並んでいるため、重なる場合は長いSE名を優先する。
  *
  * @param {string} text
- * @param {import('../../entity/foley_dictionary_line')[]} foleyLines
+ * @param {string[]} foleyKeywords
  * @returns {TextSegment[]}
  */
-function splitByFoleyKeywords(text, foleyLines) {
-    return foleyLines.reduce(
-        (segments, line) =>
+function splitByFoleyKeywords(text, foleyKeywords) {
+    return foleyKeywords.reduce(
+        (segments, keyword) =>
             segments.flatMap((segment) => {
-                if (segment.isFoley || !segment.content.includes(line.keyword)) {
+                if (segment.isFoley || !segment.content.includes(keyword)) {
                     return [segment];
                 }
 
-                const parts = segment.content.split(line.keyword);
+                const parts = segment.content.split(keyword);
                 return parts.flatMap((content, index) => {
                     const result = [];
                     if (content.length > 0) {
                         result.push({ content, isFoley: false });
                     }
                     if (index < parts.length - 1) {
-                        result.push({ content: line.keyword, isFoley: true });
+                        result.push({ content: keyword, isFoley: true });
                     }
                     return result;
                 });
@@ -39,6 +39,8 @@ function splitByFoleyKeywords(text, foleyLines) {
 
 /**
  * 教育辞書を照合用の表にする
+ * 読み上げ文は文字種統一済みなので、登録も文字種をそろえてから表にする。
+ * 文字種をそろえると同じ単語になる登録が複数ある場合は、先に並んでいる登録を使う。
  *
  * @param {import('../../entity/word_dictionary_line')[]} wordLines
  * @returns {WordTable}
@@ -47,9 +49,13 @@ function buildWordTable(wordLines) {
     const table = new Map();
     const lengthSetsByHead = new Map();
     for (const line of wordLines) {
-        table.set(line.from, line.to);
+        const from = utils.unifyCharacterWidth(line.from);
+        if (table.has(from)) {
+            continue;
+        }
+        table.set(from, utils.unifyCharacterWidth(line.to));
 
-        const chars = Array.from(line.from);
+        const chars = Array.from(from);
         const lengths = lengthSetsByHead.get(chars[0]) ?? new Set();
         lengths.add(chars.length);
         lengthSetsByHead.set(chars[0], lengths);
@@ -133,10 +139,10 @@ class WordDictionaryFormatter {
         }
 
         const wordTable = buildWordTable(this.hanako.wordDictionary.lines);
-        const foleyLines = this.hanako.foleyDictionary.lines;
+        const foleyKeywords = this.hanako.foleyDictionary.readingKeywords.map((entry) => entry.keyword);
 
         // SE名に一致した部分を保護し、それ以外の文章だけに辞書置換を適用する
-        return splitByFoleyKeywords(text, foleyLines)
+        return splitByFoleyKeywords(text, foleyKeywords)
             .map((segment) => (segment.isFoley ? segment.content : replaceWords(segment.content, wordTable)))
             .join('');
     }

@@ -39,18 +39,18 @@ class FoleyReader {
 
         /**
          * @param {InternalAudioT} plain
-         * @param {FoleyDictionaryLine} line
+         * @param {{line: FoleyDictionaryLine, keyword: string}} entry
          * @returns {Array<InternalAudioT>}
          */
-        const wrap = (plain, line) => {
+        const wrap = (plain, { line, keyword }) => {
             if (plain.type !== 'plain') {
                 return [plain];
             }
 
-            if (plain.content.includes(line.keyword)) {
+            if (plain.content.includes(keyword)) {
                 const newFoley = () => new FoleyAudio({ serverId: this.hanako.serverId, foleyId: line.id });
                 return plain.content
-                    .split(line.keyword)
+                    .split(keyword)
                     .map((s) => (s === '' ? new Noop() : new Plain({ content: s })))
                     .map((v) => [v])
                     .reduceRight((rhs, lhs) => lhs.concat([newFoley()], rhs));
@@ -59,7 +59,10 @@ class FoleyReader {
             }
         };
 
-        return this.hanako.foleyDictionary.lines.reduce((acc, line) => acc.map((v) => wrap(v, line)).flat(), [value]);
+        return this.hanako.foleyDictionary.readingKeywords.reduce(
+            (acc, entry) => acc.map((v) => wrap(v, entry)).flat(),
+            [value]
+        );
     }
 }
 

@@ -153,9 +153,36 @@ describe('WordDictionaryFormatter', () => {
                 fmt.format('ABCD').should.equal('YCD');
             });
 
+            specify('全角英数字や半角カナで登録した単語も照合できる', () => {
+                const fmt = formatterWith([
+                    { from: 'ｗｗ', to: 'わらわら' },
+                    { from: 'ﾊﾅｺ', to: 'はなこ' },
+                ]);
+                // 読み上げ文は前段のCharacterWidthFormatterで文字種統一済み
+                fmt.format('ハナコww').should.equal('はなこわらわら');
+            });
+
+            specify('置換後の単語も文字種をそろえる', () => {
+                const fmt = formatterWith([{ from: '花子', to: 'ﾊﾅｺ' }]);
+                fmt.format('花子').should.equal('ハナコ');
+            });
+
+            specify('文字種をそろえると同じになる登録は先に並んでいる登録を使う', () => {
+                const fmt = formatterWith([
+                    { from: 'ｗｗ', to: 'わらわら' },
+                    { from: 'ww', to: 'ダブダブ' },
+                ]);
+                fmt.format('ww').should.equal('わらわら');
+            });
+
             specify('絵文字を含む単語を置換する', () => {
                 const fmt = formatterWith([{ from: '👍👍', to: 'いいね' }]);
                 fmt.format('a👍👍b👍').should.equal('aいいねb👍');
+            });
+
+            specify('半角カナで登録したSE名も辞書置換から保護する', () => {
+                const fmt = formatterWith([{ from: 'ドン', to: 'どん' }], ['ﾄﾞﾝｯ']);
+                fmt.format('ドンッとドン').should.equal('ドンッとどん');
             });
         });
     });
