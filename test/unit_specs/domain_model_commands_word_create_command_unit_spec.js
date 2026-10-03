@@ -116,9 +116,9 @@ describe('WordCreateCommand', () => {
                 res.content.should.include('教育済み');
             });
 
-            specify('上限200件に達しているとエラー', () => {
+            specify('上限10000件に達しているとエラー', () => {
                 const lines = [];
-                for (let i = 0; i < 200; i++) {
+                for (let i = 0; i < 10000; i++) {
                     lines.push(wordDictionaryLineBlueprint({ id: `wdl-${i}`, from: `単語${i}あ`, to: `よみ${i}あ` }));
                 }
                 const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines });

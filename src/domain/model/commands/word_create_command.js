@@ -99,9 +99,9 @@ class WordCreateCommand {
         }
 
         // 上限数チェック
-        if (this.hanako.wordDictionary.lines.length >= 200) {
+        if (this.hanako.wordDictionary.lines.length >= 10000) {
             return input.newChatResponse(
-                'すでに上限数(200)の単語が登録されています。何か削除してから再度試してください。',
+                'すでに上限数(10000)の単語が登録されています。何か削除してから再度試してください。',
                 'error'
             );
         }
