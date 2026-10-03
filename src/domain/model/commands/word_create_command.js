@@ -1,6 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
+const utils = require('../../../core/utils');
 const WordCreateAction = require('../../entity/actions/word_create_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
@@ -82,13 +83,13 @@ class WordCreateCommand {
         const { from, to } = input.args;
 
         // 文字数下限のバリデーション
-        if (from.length < 2 || to.length < 2) {
+        if (utils.countUnicode(from) < 2 || utils.countUnicode(to) < 2) {
             return input.newChatResponse('一文字教育はできないよ', 'error');
         }
 
         // 文字数上限のバリデーション
-        if (from.length > 50 || to.length > 50) {
-            return input.newChatResponse('もじながすぎわろたwwww 50文字以上の教育はできません', 'error');
+        if (utils.countUnicode(from) > 50 || utils.countUnicode(to) > 50) {
+            return input.newChatResponse('もじながすぎわろたwwww 50文字を超える教育はできません', 'error');
         }
 
         // 重複チェック

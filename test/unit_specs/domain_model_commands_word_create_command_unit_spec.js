@@ -78,6 +78,22 @@ describe('WordCreateCommand', () => {
                 res.code.should.equal('error');
             });
 
+            specify('50文字のfromは登録できる', () => {
+                const input = commandInputBlueprint({ argc: 2, argv: ['あ'.repeat(50), 'はなこ'] });
+                const sub = new WordCreateCommand(basicHanako());
+                const res = processText(sub, input);
+
+                res.type.should.equal('action');
+            });
+
+            specify('絵文字はサロゲートペアでも1文字と数える', () => {
+                const input = commandInputBlueprint({ argc: 2, argv: ['🌸'.repeat(50), 'はなこ'] });
+                const sub = new WordCreateCommand(basicHanako());
+                const res = processText(sub, input);
+
+                res.type.should.equal('action');
+            });
+
             specify('50文字超のfromはエラー', () => {
                 const longStr = 'あ'.repeat(51);
                 const input = commandInputBlueprint({ argc: 2, argv: [longStr, 'はなこ'] });
