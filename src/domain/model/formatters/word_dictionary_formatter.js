@@ -3,6 +3,7 @@ const utils = require('../../../core/utils');
 
 /** @typedef {import('../../model/hanako')} Hanako */
 /** @typedef {{content: string, isFoley: boolean}} TextSegment */
+/** @typedef {{table: Map<string, string>, lengthsByHead: Map<string, number[]>}} WordTable */
 
 /**
  * 登録済みSE名に一致する範囲を辞書置換から保護する
@@ -37,14 +38,60 @@ function splitByFoleyKeywords(text, foleyLines) {
 }
 
 /**
+ * 教育辞書を照合用の表にする
+ *
+ * @param {import('../../entity/word_dictionary_line')[]} wordLines
+ * @returns {WordTable}
+ */
+function buildWordTable(wordLines) {
+    const table = new Map();
+    const lengthSetsByHead = new Map();
+    for (const line of wordLines) {
+        table.set(line.from, line.to);
+
+        const chars = Array.from(line.from);
+        const lengths = lengthSetsByHead.get(chars[0]) ?? new Set();
+        lengths.add(chars.length);
+        lengthSetsByHead.set(chars[0], lengths);
+    }
+
+    // 先頭の文字ごとに、その文字で始まる登録の文字数を長い順に持つ
+    const lengthsByHead = new Map();
+    for (const [head, lengths] of lengthSetsByHead) {
+        lengthsByHead.set(
+            head,
+            [...lengths].sort((a, b) => b - a)
+        );
+    }
+    return { table, lengthsByHead };
+}
+
+/**
  * 教育辞書による置換を実行する
+ * 左から順に、その位置で最も長く一致する登録で置換する。
+ * 置換結果は再び検索しないため、登録どうしが連鎖して文字列が膨張することはない。
  *
  * @param {string} text
- * @param {import('../../entity/word_dictionary_line')[]} wordLines
+ * @param {WordTable} wordTable
  * @returns {string}
  */
-function replaceWords(text, wordLines) {
-    return wordLines.reduce((str, line) => str.split(line.from).join(line.to), text);
+function replaceWords(text, { table, lengthsByHead }) {
+    // 絵文字を途中で切らないよう、countUnicodeと同じくコードポイント単位で扱う
+    const chars = Array.from(text);
+    let result = '';
+    let i = 0;
+    while (i < chars.length) {
+        const lengths = lengthsByHead.get(chars[i]) ?? [];
+        const length = lengths.find((n) => i + n <= chars.length && table.has(chars.slice(i, i + n).join('')));
+        if (length === undefined) {
+            result += chars[i];
+            i += 1;
+        } else {
+            result += table.get(chars.slice(i, i + length).join(''));
+            i += length;
+        }
+    }
+    return result;
 }
 
 /**
@@ -85,12 +132,12 @@ class WordDictionaryFormatter {
             return text;
         }
 
-        const wordLines = this.hanako.wordDictionary.lines;
+        const wordTable = buildWordTable(this.hanako.wordDictionary.lines);
         const foleyLines = this.hanako.foleyDictionary.lines;
 
         // SE名に一致した部分を保護し、それ以外の文章だけに辞書置換を適用する
         return splitByFoleyKeywords(text, foleyLines)
-            .map((segment) => (segment.isFoley ? segment.content : replaceWords(segment.content, wordLines)))
+            .map((segment) => (segment.isFoley ? segment.content : replaceWords(segment.content, wordTable)))
             .join('');
     }
 }

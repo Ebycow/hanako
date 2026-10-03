@@ -92,5 +92,71 @@ describe('WordDictionaryFormatter', () => {
                 fmt.format('').should.equal('');
             });
         });
+
+        context('置換方式', () => {
+            /**
+             * @param {Array<{from: string, to: string}>} words
+             * @param {string[]} [foleyKeywords]
+             */
+            const formatterWith = (words, foleyKeywords = []) => {
+                const wordDictionary = new WordDictionary({
+                    id: 'wd',
+                    serverId: 'mock-server-id',
+                    lines: words.map((word, i) => wordDictionaryLineBlueprint({ id: `wdl-${i}`, ...word })),
+                });
+                const foleyDictionary = new FoleyDictionary({
+                    id: 'fd',
+                    serverId: 'mock-server-id',
+                    lines: foleyKeywords.map((keyword, i) => foleyDictionaryLineBlueprint({ id: `fdl-${i}`, keyword })),
+                });
+                return new WordDictionaryFormatter(basicHanako({ wordDictionary, foleyDictionary }));
+            };
+
+            specify('置換結果は別の登録で再置換しない', () => {
+                const fmt = formatterWith([
+                    { from: 'わら', to: 'ww' },
+                    { from: 'ww', to: 'わらわら' },
+                ]);
+                fmt.format('わら').should.equal('ww');
+            });
+
+            specify('置換結果が別の登録に一致しても文字列が膨張しない', () => {
+                const fmt = formatterWith([
+                    { from: 'AA', to: 'B'.repeat(50) },
+                    { from: 'BB', to: 'C'.repeat(50) },
+                    { from: 'CC', to: 'D'.repeat(50) },
+                ]);
+                fmt.format('AA').should.equal('B'.repeat(50));
+            });
+
+            specify('置換結果と元の文字のつなぎ目は再置換しない', () => {
+                const fmt = formatterWith([
+                    { from: 'おはー', to: 'おは' },
+                    { from: 'はよ', to: 'ハヨ' },
+                ]);
+                fmt.format('おはーよ').should.equal('おはよ');
+            });
+
+            specify('同じ位置では長い登録を優先する', () => {
+                const fmt = formatterWith([
+                    { from: '花子', to: 'はなこ' },
+                    { from: '花子さん', to: 'ハナコサン' },
+                ]);
+                fmt.format('花子さんと花子').should.equal('ハナコサンとはなこ');
+            });
+
+            specify('登録どうしが重なる場合は左にある登録を優先する', () => {
+                const fmt = formatterWith([
+                    { from: 'BCD', to: 'X' },
+                    { from: 'AB', to: 'Y' },
+                ]);
+                fmt.format('ABCD').should.equal('YCD');
+            });
+
+            specify('絵文字を含む単語を置換する', () => {
+                const fmt = formatterWith([{ from: '👍👍', to: 'いいね' }]);
+                fmt.format('a👍👍b👍').should.equal('aいいねb👍');
+            });
+        });
     });
 });
