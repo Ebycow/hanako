@@ -44,6 +44,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
             ebyroidStreamApiUrl: 'http://localhost:0',
             foleyMaxDownloadByteSize: 1048576,
             foleyMaxAudioSeconds: 10,
+            foleyMaxStorageByteSize: 3000000000,
             foleyNormalizeTargetPeak: 0.5,
         });
     }
@@ -108,6 +109,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
             saveFile: sandbox.stub().resolves(),
             readFile: sandbox.stub().resolves(new PassThrough()),
             deleteFile: sandbox.stub().resolves(),
+            getTotalSize: sandbox.stub().resolves(0),
         };
 
         // settingsRepo stub - デフォルトでseNormalize=0.5のSettingsを返す
@@ -271,6 +273,44 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 } catch (err) {
                     err.type.should.equal('disappointed');
                 }
+            });
+
+            specify('保存容量が上限に達している → ダウンロードせず rejected (disappointed)', async () => {
+                const mgr = createManager();
+                objectStorageRepo.getTotalSize.resolves(3000000000);
+
+                const action = new FoleyCreateAction({
+                    id: 'act-full',
+                    serverId: 'sv-full',
+                    keyword: 'ドン',
+                    url: 'http://example.com/don.mp3',
+                });
+
+                try {
+                    await mgr.postFoleyCreate(action);
+                    should.fail('should have rejected');
+                } catch (err) {
+                    err.type.should.equal('disappointed');
+                    err.message.should.include('3GB');
+                }
+                objectStorageRepo.getTotalSize.calledWith('sv-full', 'pcm').should.be.true;
+                fakeAxios.get.called.should.be.false;
+                (await mgr.loadFoleyDictionary('sv-full')).lines.should.have.lengthOf(0);
+            });
+
+            specify('保存容量が上限未満なら登録できる', async () => {
+                const mgr = createManager();
+                objectStorageRepo.getTotalSize.resolves(3000000000 - 1);
+
+                const action = new FoleyCreateAction({
+                    id: 'act-almost',
+                    serverId: 'sv-almost',
+                    keyword: 'ドン',
+                    url: 'http://example.com/don.mp3',
+                });
+                await mgr.postFoleyCreate(action);
+
+                (await mgr.loadFoleyDictionary('sv-almost')).lines.should.have.lengthOf(1);
             });
 
             specify('ダウンロードサイズ超過 → rejected (unexpected)', async () => {
@@ -530,6 +570,32 @@ describe('NedbFoleyDictionaryTableManager', () => {
             const dict = await mgr.loadFoleyDictionary('sv-partial');
             dict.lines.should.have.lengthOf(1);
             dict.lines[0].keyword.should.equal('OK音');
+        });
+
+        specify('途中で保存容量が上限に達したら残りは登録しない', async () => {
+            const mgr = createManager();
+            objectStorageRepo.getTotalSize.onFirstCall().resolves(0);
+            objectStorageRepo.getTotalSize.resolves(3000000000);
+
+            const action = new FoleyCreateMultipleAction({
+                id: 'act-m-full',
+                serverId: 'sv-multi-full',
+                items: [
+                    { keyword: 'ドン', url: 'http://example.com/don.mp3' },
+                    { keyword: 'バーン', url: 'http://example.com/barn.mp3' },
+                ],
+            });
+
+            try {
+                await mgr.postFoleyCreateMultiple(action);
+                should.fail('should have rejected');
+            } catch (err) {
+                err.type.should.equal('disappointed');
+                err.message.should.include('バーン: SEの保存容量がいっぱいです');
+            }
+            fakeAxios.get.calledOnce.should.be.true;
+            const dict = await mgr.loadFoleyDictionary('sv-multi-full');
+            dict.lines.map((l) => l.keyword).should.deep.equal(['ドン']);
         });
 
         specify('制限時間切れ・先を越された登録は理由を分けて伝える', async () => {

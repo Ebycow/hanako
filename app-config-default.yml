@@ -28,6 +28,11 @@ settings:
   # SE音源を取得するときの最大再生時間（秒）
   foley_max_audio_seconds: 60
 
+  # 1サーバーが保存できるSE音源の合計サイズ（Bytes）
+  # 超えると新しいSEを登録できなくなる（登録済みのSEは消さない）
+  # Note: SE音源は無圧縮PCMで保存される（1秒あたり約188KB）
+  foley_max_storage_byte_size: 3000000000
+
   # SE音量正規化のデフォルトターゲットピークレベル（0.0〜1.0の範囲、0で無効化）
   # 例: 0.5 = デフォルト50%（約-6dBFS）、0.0 = デフォルト無効化
   foley_normalize_target_peak: 0.5

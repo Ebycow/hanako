@@ -36,6 +36,15 @@ class IObjectStorageRepo extends Interface {
      * @returns {Promise<void>}
      */
     async deleteFile(segmentKey, objectKey, fileType) {}
+
+    /**
+     * セグメント内に保存されている、指定した種類のファイルの合計サイズを取得
+     *
+     * @param {string} segmentKey セグメントキー
+     * @param {string} fileType ファイル種類
+     * @returns {Promise<number>} 合計バイト数
+     */
+    async getTotalSize(segmentKey, fileType) {}
 }
 
 module.exports = IObjectStorageRepo;

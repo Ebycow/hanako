@@ -364,6 +364,18 @@ class NedbFoleyDictionaryTableManager {
     }
 
     /**
+     * SE音源の保存容量が上限に達しているかどうか
+     * Note: 登録のたびにファイルサイズを合計する。重くなったらレコードにサイズを持たせる方式に切り替える
+     *
+     * @param {string} serverId
+     * @returns {Promise<boolean>}
+     */
+    async isStorageFull(serverId) {
+        const usedSize = await this.objectStorageRepo.getTotalSize(serverId, 'pcm');
+        return usedSize >= this.appSettings.foleyMaxStorageByteSize;
+    }
+
+    /**
      * (impl) IFoleyDictionaryRepo
      *
      * @param {string} serverId
@@ -394,6 +406,12 @@ class NedbFoleyDictionaryTableManager {
         if (records.some((record) => action.keyword === record[0])) {
             const message = 'すでに登録されてるみたい... :sob:';
             return errors.disappointed(`keyword-already-exists ${action}`, message);
+        }
+
+        if (await this.isStorageFull(action.serverId)) {
+            const maxSize = prettyBytes(this.appSettings.foleyMaxStorageByteSize).replace(/\s/, '');
+            const message = `SEの保存容量がいっぱい（上限${maxSize}）にゃ… いらないSEを消してから試してね :sob:`;
+            return errors.disappointed('foley-storage-full', message);
         }
 
         let response;
@@ -476,6 +494,13 @@ class NedbFoleyDictionaryTableManager {
             if (records.some((record) => item.keyword === record[0])) {
                 logger.warn(`キーワード重複をスキップ (item: ${itemLabel})`);
                 failedItems.push(`${item.keyword}: すでに登録済みです`);
+                continue;
+            }
+
+            if (await this.isStorageFull(action.serverId)) {
+                logger.warn(`保存容量の上限によりスキップ (item: ${itemLabel})`);
+                const maxSize = prettyBytes(this.appSettings.foleyMaxStorageByteSize).replace(/\s/, '');
+                failedItems.push(`${item.keyword}: SEの保存容量がいっぱいです（上限${maxSize}）`);
                 continue;
             }
 

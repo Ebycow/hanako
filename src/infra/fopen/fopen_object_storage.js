@@ -276,6 +276,41 @@ class FopenObjectStorage {
                     })
             );
     }
+
+    /**
+     * (impl) IObjectStorageRepo
+     *
+     * @param {string} segmentKey
+     * @param {string} fileType
+     * @returns {Promise<number>}
+     */
+    async getTotalSize(segmentKey, fileType) {
+        const dirPath = `./files/${segmentKey}/${fileType}`;
+
+        let entries;
+        try {
+            entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
+        } catch (err) {
+            // まだ1件も保存していないセグメントにはディレクトリがない
+            if (err.code === 'ENOENT') {
+                return 0;
+            }
+            throw err;
+        }
+
+        const sizes = await Promise.all(
+            entries
+                .filter((entry) => entry.isFile())
+                .map((entry) =>
+                    fs.promises.stat(`${dirPath}/${entry.name}`).then(
+                        (stats) => stats.size,
+                        // 列挙と取得の間に削除されたファイルは数えない
+                        (err) => (err.code === 'ENOENT' ? 0 : Promise.reject(err))
+                    )
+                )
+        );
+        return sizes.reduce((total, size) => total + size, 0);
+    }
 }
 
 // IObjectStorageRepoの実装として登録

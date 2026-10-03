@@ -77,6 +77,7 @@ class AppSettings {
      * @param {string} [data.ebyroidStreamApiMode='auto']
      * @param {number} data.foleyMaxDownloadByteSize
      * @param {number} data.foleyMaxAudioSeconds
+     * @param {number} data.foleyMaxStorageByteSize
      * @param {number} data.foleyNormalizeTargetPeak
      */
     constructor(data) {
@@ -90,6 +91,7 @@ class AppSettings {
         assert(['auto', 'legacy-get', 'streaming-post'].includes(streamApiMode));
         assert(typeof data.foleyMaxDownloadByteSize === 'number');
         assert(typeof data.foleyMaxAudioSeconds === 'number');
+        assert(typeof data.foleyMaxStorageByteSize === 'number');
         assert(typeof data.foleyNormalizeTargetPeak === 'number');
         assert(
             data.foleyNormalizeTargetPeak >= 0.0 && data.foleyNormalizeTargetPeak <= 1.0,
@@ -174,6 +176,15 @@ class AppSettings {
      */
     get foleyMaxAudioSeconds() {
         return this.data.foleyMaxAudioSeconds;
+    }
+
+    /**
+     * 1サーバーが保存できるSE音源の合計バイト数
+     *
+     * @type {number}
+     */
+    get foleyMaxStorageByteSize() {
+        return this.data.foleyMaxStorageByteSize;
     }
 
     /**
