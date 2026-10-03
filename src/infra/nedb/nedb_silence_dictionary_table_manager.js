@@ -1,7 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const uuid = require('uuidv4').uuid;
+const uuid = require('crypto').randomUUID;
 const errors = require('../../core/errors').promises;
 const ISilenceActionRepo = require('../../domain/repo/i_silence_action_repo');
 const ISilenceDictionaryRepo = require('../../domain/repo/i_silence_dictionary_repo');
@@ -88,7 +88,7 @@ async function loadSharedData(serverId) {
                             record[0] = data;
                             record[1] = new Date();
                             record[2] = uuid();
-                            logger.info(`migrate: ${data} ${record}`);
+                            logger.info(`migrate: id=${record[2]}`);
                             return record;
                         }
                         return data;
@@ -231,7 +231,7 @@ class NedbSilenceDictionaryTableManager {
         const records = await loadSharedData(action.serverId);
 
         if (records.some((record) => action.userId === record[0])) {
-            return errors.disappointed(`silence-already-exists ${action} ${records}`);
+            return errors.disappointed(`silence-already-exists ${action}`);
         }
 
         records.push([action.userId, new Date(), uuid()]);
@@ -252,7 +252,7 @@ class NedbSilenceDictionaryTableManager {
         const index = records.findIndex((record) => action.silenceId === record[2]);
 
         if (index === -1) {
-            return errors.disappointed(`silence-not-found ${action} ${records}`);
+            return errors.disappointed(`silence-not-found ${action}`);
         }
 
         records.splice(index, 1);

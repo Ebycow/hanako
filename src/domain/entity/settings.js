@@ -14,6 +14,7 @@ class Settings {
      * @param {number} data.maxCount 最大読み上げ文字数
      * @param {{ userId : string , name : string }} data.speaker サーバーの読み上げキャラクター指定
      * @param {number} [data.seNormalize=0.5] SE正規化レベル（0.0〜1.0、デフォルト0.5）
+     * @param {boolean} [data.textCommands=true] テキストコマンド（@hanako や > で始まるコマンド）を使えるか
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -25,8 +26,12 @@ class Settings {
         const seNormalize = data.seNormalize !== undefined ? data.seNormalize : 0.5;
         assert(typeof seNormalize === 'number' && seNormalize >= 0.0 && seNormalize <= 1.0);
 
+        // textCommandsはオプショナル（既存レコード互換のため、これまでどおり使える状態をデフォルトにする）
+        const textCommands = data.textCommands !== undefined ? data.textCommands : true;
+        assert(typeof textCommands === 'boolean');
+
         Object.defineProperty(this, 'data', {
-            value: Object.assign({}, data, { seNormalize }),
+            value: Object.assign({}, data, { seNormalize, textCommands }),
             writable: false,
             enumerable: true,
             configurable: false,
@@ -78,8 +83,17 @@ class Settings {
         return this.data.seNormalize;
     }
 
+    /**
+     * テキストコマンド（@hanako や > で始まるコマンド）を使えるか
+     *
+     * @type {boolean}
+     */
+    get textCommands() {
+        return this.data.textCommands;
+    }
+
     toString() {
-        return `Settings(id=${this.id}, serverId=${this.serverId}, maxCount=${this.maxCount}, speaker=${this.speaker}, seNormalize=${this.seNormalize})`;
+        return `Settings(id=${this.id}, serverId=${this.serverId}, maxCount=${this.maxCount}, speaker=${this.speaker}, seNormalize=${this.seNormalize}, textCommands=${this.textCommands})`;
     }
 }
 

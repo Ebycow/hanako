@@ -1,7 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const uuid = require('uuidv4').uuid;
+const uuid = require('crypto').randomUUID;
 const errors = require('../core/errors').promises;
 const LeaveVoiceAction = require('../domain/entity/actions/leave_voice_action');
 const ActionHandler = require('../domain/service/action_handler');
@@ -57,7 +57,7 @@ class AutoLeaveService {
         await this.actionHandler.handle(action);
 
         // ログ出力して終了
-        logger.info(`誰もいないので退出した。[${data.serverName}] ${data.voiceChannelName}`);
+        logger.info(`誰もいないので退出した。(server: ${hanako.serverId})`);
         return Promise.resolve();
     }
 }

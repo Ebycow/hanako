@@ -17,6 +17,10 @@ const VOICE_RECOVERY_WAIT_MS = 5000;
 const VOICE_READY_WAIT_MS = 20000;
 const RECONNECT_BASE_DELAY_MS = 30000;
 const RECONNECT_MAX_DELAY_MS = 300000;
+// 発言と発言の間に挟む無音の長さ。VOICEROIDの末尾無音は除去しているため、
+// ここで間を取らないと別々の発言がつながって聞こえる。
+const UTTERANCE_GAP_MS = 300;
+const OPUS_FRAME_MS = 20;
 
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('discord.js').VoiceChannel} discord.VoiceChannel */
@@ -289,6 +293,22 @@ class DiscordVoiceChatModel {
         if (this.connection !== null && this.dispatcher === null) {
             this.play();
         }
+        this.prefetchNext();
+    }
+
+    /**
+     * 再生中なら、次に再生する音声だけ先に取得を始める
+     * 発言の間が空かないようにするため。2件目以降は取得を始めないので、
+     * 再生待ちが伸びても音声生成のリクエストは増えない。
+     *
+     * @private
+     */
+    prefetchNext() {
+        if (this.dispatcher === null) return;
+        const next = this.cue[0];
+        if (next && typeof next.start === 'function') {
+            next.start();
+        }
     }
 
     /**
@@ -421,34 +441,41 @@ class DiscordVoiceChatModel {
      * @private
      */
     play() {
+        // dispatcherを設定する前にイベントループへ制御を返すと、短時間に
+        // 複数pushされた際にplay()が重複し、後のresourceが前を置換し得る。
+        if (this.dispatcher !== null) return;
+
         const stream = this.cue.shift();
         if (stream && this.connection && this.audioPlayer) {
             const connection = this.connection;
             const audioPlayer = this.audioPlayer;
-            setImmediate(() => {
-                if (connection !== this.connection || audioPlayer !== this.audioPlayer) {
-                    stream.destroy();
-                    this.dispatcher = null;
-                    return;
-                }
+            if (connection !== this.connection || audioPlayer !== this.audioPlayer) {
+                stream.destroy();
+                this.dispatcher = null;
+                return;
+            }
 
-                logger.debug('Creating audio resource for stream');
-                const resource = createAudioResource(stream, {
-                    inputType: StreamType.Raw,
-                });
-
-                logger.debug('Playing audio resource');
-                audioPlayer.play(resource);
-
-                this.dispatcher = resource;
-
-                audioPlayer.once(AudioPlayerStatus.Idle, () => {
-                    if (audioPlayer !== this.audioPlayer) return;
-                    logger.debug('Audio playback idle, playing next');
-                    this.dispatcher = null;
-                    this.play();
-                });
+            logger.debug('Creating audio resource for stream');
+            const resource = createAudioResource(stream, {
+                inputType: StreamType.Raw,
+                // The player stays non-idle until these silence frames are sent,
+                // so this also acts as the gap before the next queue item.
+                silencePaddingFrames: Math.ceil(UTTERANCE_GAP_MS / OPUS_FRAME_MS),
             });
+
+            // Reserve playback synchronously so another push cannot schedule a
+            // second resource before audioPlayer.play() starts.
+            this.dispatcher = resource;
+            audioPlayer.once(AudioPlayerStatus.Idle, () => {
+                if (audioPlayer !== this.audioPlayer) return;
+                logger.debug('Audio playback idle, playing next');
+                this.dispatcher = null;
+                this.play();
+            });
+
+            logger.debug('Playing audio resource');
+            audioPlayer.play(resource);
+            this.prefetchNext();
         } else {
             this.dispatcher = null;
         }

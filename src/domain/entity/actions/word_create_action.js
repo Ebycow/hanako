@@ -71,7 +71,7 @@ class WordCreateAction {
     }
 
     toString() {
-        return `WordCreateAction(id=${this.id}, serverId=${this.serverId}, from=${this.from}, to=${this.to})`;
+        return `WordCreateAction(id=${this.id}, serverId=${this.serverId})`;
     }
 }
 

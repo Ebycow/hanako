@@ -1,6 +1,6 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
-const uuid = require('uuidv4').uuid;
+const uuid = require('crypto').randomUUID;
 const Injector = require('../core/injector');
 const JoinVoiceAction = require('../domain/entity/actions/join_voice_action');
 const ChatResponse = require('../domain/entity/responses/chat_response');
@@ -62,7 +62,7 @@ class RecoveryService {
 async function doRecoveryF(info) {
     // サーバーステータスを取得
     const serverStatus = await this.serverStatusRepo.loadServerStatus(info.serverId);
-    logger.info(`ボイスチャット復帰処理を実行 [${serverStatus.serverName}]`);
+    logger.info(`ボイスチャット復帰処理を実行 (server: ${info.serverId})`);
 
     // 復帰前チャットを送信
     const startingChat = new ChatResponse({

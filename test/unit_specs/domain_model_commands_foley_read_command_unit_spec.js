@@ -5,6 +5,7 @@ const {
     commandInputBlueprint,
     foleyDictionaryLineBlueprint,
     FoleyDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -40,7 +41,7 @@ describe('FoleyReadCommand', () => {
                 const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint();
                 const sub = new FoleyReadCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('pager');
@@ -51,7 +52,7 @@ describe('FoleyReadCommand', () => {
             specify('SE辞書が空ならエラーレスポンスを返す', () => {
                 const input = commandInputBlueprint();
                 const sub = new FoleyReadCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');

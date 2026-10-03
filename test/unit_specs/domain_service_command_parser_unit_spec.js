@@ -76,6 +76,18 @@ describe('CommandParser', () => {
                     e.should.be.instanceOf(EbyAbortError);
                 }
             });
+
+            specify('「>」のみの投稿はabortする（読み上げを回避する用途）', async () => {
+                const parser = new CommandParser();
+                const hanako = basicHanako();
+                const dm = dmessageBlueprint({ type: 'command', content: '>' });
+                try {
+                    await parser.parse(hanako, dm);
+                    should.fail('should have rejected');
+                } catch (e) {
+                    e.should.be.instanceOf(EbyAbortError);
+                }
+            });
         });
     });
 });

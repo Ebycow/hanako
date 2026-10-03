@@ -3,6 +3,8 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const Pager = require('../pager');
 
+/** @typedef {import('./index').PermissionName} PermissionName */
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -27,6 +29,29 @@ class SilenceReadCommand {
     }
 
     /**
+     * 実行に必要な権限（スラッシュコマンドの初期値と、テキストで実行されたときの確認に使う）
+     *
+     * @type {PermissionName}
+     */
+    static get requiredPermission() {
+        return 'moderateMembers';
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'blacklist-show',
+            description: 'ブラックリストの一覧を表示します',
+            ephemeral: true,
+            options: [],
+        };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -44,8 +69,9 @@ class SilenceReadCommand {
         logger.info(`沈黙ユーザーの一覧コマンドを受理 ${input}`);
 
         if (this.hanako.silenceDictionary.lines.length === 0) {
+            const example = input.usage('@hanako 沈黙 @Ebycow', '/blacklist-add user:@Ebycow');
             return input.newChatResponse(
-                '読み上げ停止中のユーザーはいません。\n沈黙コマンドを使うと個別に読み上げを停止できます。 例:`@hanako 沈黙 @Ebycow`',
+                `読み上げ停止中のユーザーはいません。\n沈黙コマンドを使うと個別に読み上げを停止できます。 例:\`${example}\``,
                 'error'
             );
         }

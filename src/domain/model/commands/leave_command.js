@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const LeaveVoiceAction = require('../../entity/actions/leave_voice_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -25,6 +26,19 @@ class LeaveCommand {
      */
     static get names() {
         return ['さようなら', 'bye', 'b'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'bye',
+            description: 'はなこがボイスチャットから退出します．お疲れ！',
+            options: [],
+        };
     }
 
     /**

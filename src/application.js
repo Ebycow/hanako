@@ -6,6 +6,8 @@ const Injector = require('./core/injector');
 const AppConfig = require('./core/app_config');
 const AppSettings = require('./core/app_settings');
 const InteractionCtrl = require('./app/interaction_ctrl');
+const PagerButtonCtrl = require('./app/pager_button_ctrl');
+const ConfirmButtonCtrl = require('./app/confirm_button_ctrl');
 const MessageCtrl = require('./app/message_ctrl');
 const ReadyCtrl = require('./app/ready_ctrl');
 const PagerReactionCtrl = require('./app/pager_reaction_ctrl');
@@ -23,6 +25,11 @@ const VoiceChatActionMiddleWare = require('./app/voice_chat_action_middle_ware')
 function handleUncaughtError(err) {
     if (err.eby && err.type === 'abort') {
         // === EbyAbortError
+        return Promise.resolve();
+    }
+    if (err.eby && err.type === 'disappointed') {
+        // === EbyDisappointedError（権限不足など、利用者側の状況で処理を続けられなかった）
+        logger.warn('処理を中断した。', err);
         return Promise.resolve();
     }
 
@@ -52,6 +59,9 @@ class Application {
                 GatewayIntentBits.DirectMessageReactions,
                 GatewayIntentBits.GuildVoiceStates,
             ],
+            // 利用者の入力を含む投稿で @everyone・ロール・ユーザーへの通知が飛ばないよう、メンションはすべて無効化する
+            // （メンション表記自体は名前として表示される）
+            allowedMentions: { parse: [], repliedUser: false },
         });
     }
 
@@ -69,9 +79,11 @@ class Application {
 
         // コントローラの登録
         this.bind('clientReady', ReadyCtrl);
+        this.bind('clientReady', StatusChangeCtrl);
         this.bind('interactionCreate', InteractionCtrl);
+        this.bind('interactionCreate', PagerButtonCtrl);
+        this.bind('interactionCreate', ConfirmButtonCtrl);
         this.bind('messageCreate', MessageCtrl, [MessageSanitizeMiddleWare]);
-        this.bind('messageCreate', StatusChangeCtrl, [MessageSanitizeMiddleWare]);
         this.bind('messageReactionAdd', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
         this.bind('messageReactionRemove', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
         this.bind('voiceStateUpdate', AutoLeaveCtrl, [VoiceChatActionMiddleWare]);

@@ -1,9 +1,11 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
+const utils = require('../../../core/utils');
 const WordCreateAction = require('../../entity/actions/word_create_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -28,6 +30,40 @@ class WordCreateCommand {
     }
 
     /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'teach',
+            description: '単語の読み替えを教育します',
+            options: [
+                { type: 'string', name: 'from', description: '置換前の単語', required: true },
+                { type: 'string', name: 'to', description: '置換後の単語', required: true },
+            ],
+        };
+    }
+
+    /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {from: string, to: string}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        if (input.argc !== 2) {
+            return {
+                response: input.newChatResponse(
+                    'コマンドの形式が間違っています :sob: 例:`@hanako 教育 電 いなづま`',
+                    'error'
+                ),
+            };
+        }
+        return { args: { from: input.argv[0], to: input.argv[1] } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -44,34 +80,30 @@ class WordCreateCommand {
         assert(typeof input === 'object');
         logger.info(`教育単語追加コマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        if (input.argc !== 2) {
-            return input.newChatResponse('コマンドの形式が間違っています :sob: 例:`@hanako 教育 電 いなづま`', 'error');
-        }
-
-        const from = input.argv[0];
-        const to = input.argv[1];
+        const { from, to } = input.args;
 
         // 文字数下限のバリデーション
-        if (from.length < 2 || to.length < 2) {
+        if (utils.countUnicode(from) < 2 || utils.countUnicode(to) < 2) {
             return input.newChatResponse('一文字教育はできないよ', 'error');
         }
 
         // 文字数上限のバリデーション
-        if (from.length > 50 || to.length > 50) {
-            return input.newChatResponse('もじながすぎわろたwwww 50文字以上の教育はできません', 'error');
+        if (utils.countUnicode(from) > 50 || utils.countUnicode(to) > 50) {
+            return input.newChatResponse('もじながすぎわろたwwww 50文字を超える教育はできません', 'error');
         }
 
-        // 重複チェック
-        const dup = this.hanako.wordDictionary.lines.find((line) => line.from === from);
+        // 重複チェック（読み上げでは文字種をそろえて照合するため、そろえると同じになる単語も重複とする）
+        const dup = this.hanako.wordDictionary.lines.find(
+            (line) => utils.unifyCharacterWidth(line.from) === utils.unifyCharacterWidth(from)
+        );
         if (dup) {
             return input.newChatResponse(`すでに教育済みの単語です！ 『${dup.from} ⇨ ${dup.to}』`, 'error');
         }
 
         // 上限数チェック
-        if (this.hanako.wordDictionary.lines.length >= 200) {
+        if (this.hanako.wordDictionary.lines.length >= 10000) {
             return input.newChatResponse(
-                'すでに上限数(200)の単語が登録されています。何か削除してから再度試してください。',
+                'すでに上限数(10000)の単語が登録されています。何か削除してから再度試してください。',
                 'error'
             );
         }

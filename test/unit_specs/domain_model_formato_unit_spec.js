@@ -6,7 +6,7 @@ const { basicHanako, wordDictionaryLineBlueprint, WordDictionary } = require('..
  * Formatoクラス単体スペック
  *
  * メソッド：#normalize
- * 期待動作：URL→辞書→文字数制限の順にフォーマットする
+ * 期待動作：文字種統一→URL→辞書→キリル文字→文字数制限の順にフォーマットする
  * 備考：なし
  ***********************************************************************/
 
@@ -45,6 +45,18 @@ describe('Formato', () => {
                 result.should.be.a('string');
                 result.should.not.match(/[а-яА-ЯёЁ]/);
                 result.should.equal('プリヴェト');
+            });
+
+            specify('文字種をそろえてから辞書置換する', () => {
+                const line = wordDictionaryLineBlueprint({ from: 'ww', to: 'わらわら' });
+                const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
+                const formato = new Formato(basicHanako({ wordDictionary: wd }));
+                formato.normalize('ｗｗ ﾊﾅｺ').should.equal('わらわら ハナコ');
+            });
+
+            specify('全角で書かれたURLも置換する', () => {
+                const formato = new Formato(basicHanako());
+                formato.normalize('見て ｈｔｔｐｓ://example.com').should.equal('見て URL');
             });
 
             specify('辞書置換がキリル文字変換より先に適用される', () => {

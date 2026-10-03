@@ -4,6 +4,8 @@ const assert = require('assert').strict;
 const MaxCountUpdateAction = require('../../entity/actions/max_count_update_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').PermissionName} PermissionName */
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -28,6 +30,52 @@ class LimitCommand {
     }
 
     /**
+     * 実行に必要な権限（スラッシュコマンドの初期値と、テキストで実行されたときの確認に使う）
+     *
+     * @type {PermissionName}
+     */
+    static get requiredPermission() {
+        return 'manageGuild';
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'limit',
+            description: '読み上げる文字数の上限を設定します',
+            options: [
+                {
+                    type: 'integer',
+                    name: 'number',
+                    description: '文字数の上限（例: 30）',
+                    required: true,
+                    minValue: 0,
+                    maxValue: 2000,
+                },
+            ],
+        };
+    }
+
+    /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {number: number}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        if (input.argc !== 1 || !Number.isInteger(Number.parseInt(input.argv[0], 10))) {
+            return {
+                response: input.newChatResponse('コマンドの形式が間違っています :sob: 例:`@hanako 制限 500`', 'error'),
+            };
+        }
+        return { args: { number: Number.parseInt(input.argv[0], 10) } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -44,12 +92,7 @@ class LimitCommand {
         assert(typeof input === 'object');
         logger.info(`最大読み上げ文字数制限コマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        if (input.argc !== 1 || !Number.isInteger(Number.parseInt(input.argv[0], 10))) {
-            return input.newChatResponse('コマンドの形式が間違っています :sob: 例:`@hanako 制限 500`', 'error');
-        }
-
-        const newMaxCount = Number.parseInt(input.argv[0], 10);
+        const newMaxCount = input.args.number;
 
         // 設定値下限のバリデーション
         if (newMaxCount < 0) {

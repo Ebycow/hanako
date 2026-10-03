@@ -1,6 +1,6 @@
 const should = require('chai').should();
 const HelpCommand = require('../../src/domain/model/commands/help_command');
-const { commandInputBlueprint } = require('../helpers/blueprints');
+const { commandInputBlueprint, processText } = require('../helpers/blueprints');
 
 /************************************************************************
  * HelpCommandクラス単体スペック
@@ -33,7 +33,7 @@ describe('HelpCommand', () => {
             specify('ヘルプURLを含む会話レスポンスを返す', () => {
                 const input = commandInputBlueprint();
                 const sub = new HelpCommand();
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('simple');

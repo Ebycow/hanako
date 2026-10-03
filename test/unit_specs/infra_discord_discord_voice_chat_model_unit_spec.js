@@ -155,4 +155,60 @@ describe('DiscordVoiceChatModel', () => {
             vc.readingChannels.map((channel) => channel.id).should.deep.equal(['text-1']);
         });
     });
+
+    describe('#push', () => {
+        specify('pads a 300ms gap and starts queued streams one at a time', async () => {
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel());
+            const first = { destroy: sinon.stub() };
+            const second = { destroy: sinon.stub() };
+
+            vc.push(first);
+            vc.push(second);
+
+            audioPlayers[0].play.calledOnce.should.be.true;
+            createAudioResource.firstCall.args.should.deep.equal([
+                first,
+                { inputType: 'raw', silencePaddingFrames: 15 },
+            ]);
+            vc.cue.should.deep.equal([second]);
+
+            audioPlayers[0].emit('idle');
+
+            audioPlayers[0].play.calledTwice.should.be.true;
+            createAudioResource.secondCall.args.should.deep.equal([
+                second,
+                { inputType: 'raw', silencePaddingFrames: 15 },
+            ]);
+            vc.cue.should.deep.equal([]);
+        });
+
+        specify('再生中は、再生待ちの先頭だけ先に取得を始める', async () => {
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel());
+            const playing = { destroy: sinon.stub(), start: sinon.stub() };
+            const next = { destroy: sinon.stub(), start: sinon.stub() };
+            const later = { destroy: sinon.stub(), start: sinon.stub() };
+
+            vc.push(playing);
+            vc.push(next);
+            vc.push(later);
+
+            next.start.called.should.be.true;
+            later.start.called.should.be.false;
+
+            audioPlayers[0].emit('idle');
+
+            later.start.called.should.be.true;
+        });
+
+        specify('VCに接続していない間は取得を始めない', () => {
+            const vc = new DiscordVoiceChatModel('guild-1');
+            const stream = { destroy: sinon.stub(), start: sinon.stub() };
+
+            vc.push(stream);
+
+            stream.start.called.should.be.false;
+        });
+    });
 });

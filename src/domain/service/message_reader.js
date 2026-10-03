@@ -48,7 +48,7 @@ class MessageReader {
         const audios = reado.compose(text);
 
         if (audios.length === 0) {
-            logger.info(`変換後の読み上げ手続きが空なので読み上げを中止する ${text} ${dmessage}`);
+            logger.info(`変換後の読み上げ手続きが空なので読み上げを中止する ${dmessage}`);
             return errors.abort();
         }
 

@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const WordDeleteAction = require('../../entity/actions/word_delete_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -28,6 +29,37 @@ class WordDeleteCommand {
     }
 
     /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'forget',
+            description: '教育した単語を忘却します',
+            options: [{ type: 'string', name: 'from', description: '忘却する単語', required: true }],
+        };
+    }
+
+    /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {from: string}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        if (input.argc !== 1) {
+            return {
+                response: input.newChatResponse(
+                    'コマンドの形式が間違っています :sob: 例:`@hanako 忘却 御伽原`',
+                    'error'
+                ),
+            };
+        }
+        return { args: { from: input.argv[0] } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -44,12 +76,7 @@ class WordDeleteCommand {
         assert(typeof input === 'object');
         logger.info(`教育単語削除コマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        if (input.argc !== 1) {
-            return input.newChatResponse('コマンドの形式が間違っています :sob: 例:`@hanako 忘却 御伽原`', 'error');
-        }
-
-        const word = this.hanako.wordDictionary.lines.find((line) => line.from === input.argv[0]);
+        const word = this.hanako.wordDictionary.lines.find((line) => line.from === input.args.from);
 
         // 単語が見つからない
         if (!word) {

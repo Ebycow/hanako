@@ -47,6 +47,8 @@ describe('ActionHandler', () => {
         settingsActionRepo = {
             postMaxCountUpdate: sinon.stub().resolves(),
             postSpeakerUpdate: sinon.stub().resolves(),
+            postSeNormalizeUpdate: sinon.stub().resolves(),
+            postTextCommandsUpdate: sinon.stub().resolves(),
         };
 
         handler = new ActionHandler(
@@ -74,6 +76,8 @@ describe('ActionHandler', () => {
             foley_rename: foleyActionRepo.postFoleyRename,
             max_count_update: settingsActionRepo.postMaxCountUpdate,
             speaker_update: settingsActionRepo.postSpeakerUpdate,
+            se_normalize_update: settingsActionRepo.postSeNormalizeUpdate,
+            text_commands_update: settingsActionRepo.postTextCommandsUpdate,
         };
         allRepoStubs = Object.values(dispatchTargets);
     });
@@ -186,6 +190,18 @@ describe('ActionHandler', () => {
                 const action = { type: 'speaker_update' };
                 await handler.handle(action);
                 assertExclusiveDispatch(dispatchTargets.speaker_update, action);
+            });
+
+            specify('se_normalize_updateはsettingsActionRepo.postSeNormalizeUpdateを呼ぶ', async () => {
+                const action = { type: 'se_normalize_update' };
+                await handler.handle(action);
+                assertExclusiveDispatch(dispatchTargets.se_normalize_update, action);
+            });
+
+            specify('text_commands_updateはsettingsActionRepo.postTextCommandsUpdateを呼ぶ', async () => {
+                const action = { type: 'text_commands_update' };
+                await handler.handle(action);
+                assertExclusiveDispatch(dispatchTargets.text_commands_update, action);
             });
         });
 

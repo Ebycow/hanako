@@ -57,6 +57,17 @@ describe('FoleyReader', () => {
                 result.should.have.lengthOf(1);
                 result[0].type.should.equal('plain');
             });
+
+            specify('半角カナや全角英数字で登録したSE名も、文字種統一済みの読み上げ文と照合できる', () => {
+                const line1 = foleyDictionaryLineBlueprint({ id: 'fdl-1', keyword: 'ﾄﾞﾝｯ' });
+                const line2 = foleyDictionaryLineBlueprint({ id: 'fdl-2', keyword: 'ＳＥ１' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line1, line2] });
+                const reader = new FoleyReader(basicHanako({ foleyDictionary: fd }));
+                const result = reader.read(new Plain({ content: 'ドンッとSE1' }));
+
+                const foleyIds = result.filter((r) => r.type === 'foley').map((r) => r.foleyId);
+                foleyIds.should.deep.equal(['fdl-1', 'fdl-2']);
+            });
         });
 
         context('エッジケース', () => {

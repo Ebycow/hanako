@@ -4,8 +4,9 @@ const assert = require('assert').strict;
 const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
 const IDiscordChatRepo = require('../../domain/repo/i_discord_chat_repo');
+const { missingBotPermissions, describeMissingPermissions } = require('./bot_permissions');
 
-const { ChannelType } = require('discord.js');
+const { ChannelType, PermissionFlagsBits } = require('discord.js');
 
 // unused
 logger;
@@ -42,6 +43,16 @@ class DiscordSendMessageManager {
         const channel = this.client.channels.resolve(chat.channelId);
         if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildVoice)) {
             return errors.unexpected(`no-such-text-channel ${chat}`);
+        }
+
+        // 花子自身の権限を確認（送れない場合はスラッシュコマンドなら実行者にだけ理由が伝わる）
+        const missing = missingBotPermissions(channel, [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+        ]);
+        if (missing.length > 0) {
+            const message = describeMissingPermissions(channel, missing);
+            return errors.disappointed(`missing-text-permissions ${chat}`, message);
         }
 
         const sent = await channel.send(chat.content);

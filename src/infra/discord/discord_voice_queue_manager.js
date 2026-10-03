@@ -1,7 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const uuid = require('uuidv4').uuid;
+const uuid = require('crypto').randomUUID;
 const discord = require('discord.js');
 const errors = require('../../core/errors').promises;
 const VoiceStatus = require('../../domain/entity/voice_status');
@@ -10,7 +10,9 @@ const IDiscordVoiceRepo = require('../../domain/repo/i_discord_voice_repo');
 const IDiscordVcActionRepo = require('../../domain/repo/i_discord_vc_action_repo');
 const DiscordVoiceChatModel = require('./discord_voice_chat_model');
 
-const { ChannelType } = require('discord.js');
+const { missingBotPermissions, describeMissingPermissions } = require('./bot_permissions');
+
+const { ChannelType, PermissionFlagsBits } = require('discord.js');
 
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('../../domain/entity/actions/join_voice_action')} JoinVoiceAction */
@@ -26,6 +28,13 @@ const { ChannelType } = require('discord.js');
  * @type {Map<string, DiscordVoiceChatModel>}
  */
 let cache;
+
+/**
+ * 起動してから再生キューに追加した音声の数
+ *
+ * @type {number}
+ */
+let readCount = 0;
 
 /**
  * モジュールの初回呼び出しフラグ
@@ -123,6 +132,15 @@ class DiscordVoiceQueueManager {
     }
 
     /**
+     * (impl) IVoiceStatusRepo
+     *
+     * @returns {Promise<number>}
+     */
+    async loadReadCount() {
+        return Promise.resolve(readCount);
+    }
+
+    /**
      * (impl) IDiscordVcActionRepo
      *
      * @param {JoinVoiceAction} action
@@ -134,17 +152,49 @@ class DiscordVoiceQueueManager {
         // 音声チャネルの実体を取得
         const voiceChannel = this.client.channels.resolve(action.voiceChannelId);
 
-        if (!voiceChannel || voiceChannel.type !== ChannelType.GuildVoice) {
-            return errors.unexpected(`no-such-voice-channel ${action}`);
+        if (!voiceChannel) {
+            return errors.unexpected(
+                `no-such-voice-channel ${action}`,
+                '参加先のボイスチャンネルが見つからなかったよ :sob:'
+            );
+        }
+        if (voiceChannel.type !== ChannelType.GuildVoice) {
+            const message = 'ステージチャンネルには参加できないの、ごめんね :sob:';
+            return errors.disappointed(`unsupported-voice-channel ${action}`, message);
         }
 
         // テキストチャネルの実体を取得
         const textChannel = this.client.channels.resolve(action.textChannelId);
-        if (
-            !textChannel ||
-            (textChannel.type !== ChannelType.GuildText && textChannel.type !== ChannelType.GuildVoice)
-        ) {
-            return errors.unexpected(`no-such-text-channel ${action}`);
+        if (!textChannel) {
+            return errors.unexpected(
+                `no-such-text-channel ${action}`,
+                '読み上げるチャンネルが見つからなかったよ :sob:'
+            );
+        }
+        if (textChannel.type !== ChannelType.GuildText && textChannel.type !== ChannelType.GuildVoice) {
+            const message = 'このチャンネルは読み上げに対応していないの、ごめんね（スレッド等は非対応） :sob:';
+            return errors.disappointed(`unsupported-text-channel ${action}`, message);
+        }
+
+        // 花子自身の権限を確認
+        const missing = missingBotPermissions(voiceChannel, [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.Connect,
+            PermissionFlagsBits.Speak,
+        ]);
+        if (missing.length > 0) {
+            const message = describeMissingPermissions(voiceChannel, missing);
+            return errors.disappointed(`missing-voice-permissions ${action}`, message);
+        }
+        if (!voiceChannel.joinable) {
+            // 権限は足りていて参加できないのは、花子がタイムアウト中か人数制限に達しているとき
+            // Note: joinable は管理者権限があればタイムアウト中でも true になるため、joinable が false のときだけ判定する
+            if (voiceChannel.guild.members.me.isCommunicationDisabled()) {
+                const message = 'はなこがタイムアウト中だからボイスチャンネルに入れないよ :sob:';
+                return errors.disappointed(`bot-is-timed-out ${action}`, message);
+            }
+            const message = `<#${voiceChannel.id}> が満員で入れないよ :sob:`;
+            return errors.disappointed(`voice-channel-is-full ${action}`, message);
         }
 
         const serverId = voiceChannel.guild.id;
@@ -237,6 +287,7 @@ class DiscordVoiceQueueManager {
 
         // キューに追加
         vc.push(voice.stream);
+        readCount++;
 
         return Promise.resolve();
     }

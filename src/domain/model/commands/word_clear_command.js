@@ -4,6 +4,8 @@ const assert = require('assert').strict;
 const WordClearAction = require('../../entity/actions/word_clear_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').PermissionName} PermissionName */
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -28,6 +30,39 @@ class WordClearCommand {
     }
 
     /**
+     * 実行に必要な権限（スラッシュコマンドの初期値と、テキストで実行されたときの確認に使う）
+     *
+     * @type {PermissionName}
+     */
+    static get requiredPermission() {
+        return 'manageGuild';
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     * Note: テキストの --force の代わりに、確認ボタンで確定する
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'dictionary-clear',
+            description: '教育した単語をすべて忘却します',
+            options: [],
+        };
+    }
+
+    /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {force: boolean}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        return { args: { force: input.argc === 1 && input.argv[0] === '--force' } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -45,17 +80,19 @@ class WordClearCommand {
         logger.info(`教育単語初期化コマンドを受理 ${input}`);
 
         if (this.hanako.wordDictionary.lines.length === 0) {
+            const example = input.usage('@hanako 教育 雷 いかずち', '/teach from:雷 to:いかずち');
             return input.newChatResponse(
-                '辞書にはまだなにも登録されていません。\n教育コマンドを使って単語と読み方を登録できます！ 例:`@hanako 教育 雷 いかずち`',
+                `辞書にはまだなにも登録されていません。\n教育コマンドを使って単語と読み方を登録できます！ 例:\`${example}\``,
                 'error'
             );
         }
 
-        if (input.argc !== 1 || input.argv[0] !== '--force') {
-            return input.newChatResponse(
-                '**ほんとうにけすのですか？ こうかいしませんね？**\nすべての単語を削除する場合はコマンドに `--force` を付けてください。例:`@hanako 白紙 --force`',
-                'force'
+        if (!input.args.force) {
+            const how = input.usage(
+                'すべての単語を削除する場合はコマンドに `--force` を付けてください。例:`@hanako 白紙 --force`',
+                'すべての単語を削除する場合は「実行する」を押してください。'
             );
+            return input.newChatResponse('**ほんとうにけすのですか？ こうかいしませんね？**\n' + how, 'force');
         }
 
         // 教育単語初期化アクションを作成

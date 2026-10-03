@@ -2,17 +2,15 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const InteractionBuilder = require('../service/interaction_builder');
 const MessageService = require('../service/message_service');
-const ResponseHandler = require('../service/response_handler');
+const InteractionResponder = require('../service/interaction_responder');
 const HanakoLoader = require('../service/hanako_loader');
-const ChatResponse = require('../domain/entity/responses/chat_response');
-const { MessageFlags } = require('discord.js');
+const Commando = require('../domain/model/commando');
+const errors = require('../core/errors').promises;
+const sanitizeContent = require('../core/utils/sanitize_content');
+const { ApplicationCommandOptionType, MessageFlags } = require('discord.js');
 
 /** @typedef {import('discord.js').Client} discord.Client */
 /** @typedef {import('discord.js').Interaction} discord.Interaction */
-
-const SLASH_COMMAND_ALIASES = Object.freeze({
-    'se-search': 'se?',
-});
 
 /**
  * Commandコントローラ
@@ -27,7 +25,7 @@ class InteractionCtrl {
         this.client = client;
         this.builder = new InteractionBuilder();
         this.service = new MessageService();
-        this.responseHandler = new ResponseHandler();
+        this.responder = new InteractionResponder();
         this.hanakoLoader = new HanakoLoader();
 
         logger.trace('セットアップ完了');
@@ -40,92 +38,118 @@ class InteractionCtrl {
      */
     async onInteraction(interaction) {
         // バリデーション
-        // なし
-
-        // 読み上げ花子モデルを取得
-        const hanako = await this.hanakoLoader.load(interaction.guild.id);
-
-        // スラッシュコマンドのオプションを処理
-        const { content, mentionedUsers } = buildInteractionCommandContentF(hanako.prefix, interaction);
-
-        // メッセージエンティティの作成
-        const builderParam = {
-            id: interaction.id,
-            content,
-            userId: interaction.user.id,
-            userName: interaction.user.username,
-            channelId: interaction.channel.id,
-            channelName: interaction.channel.name,
-            serverId: interaction.guildId,
-            serverName: interaction.guild.name,
-            voiceChannelId: interaction.member.voice.channel ? interaction.member.voice.channel.id : null,
-            mentionedUsers,
-        };
-        const entity = await this.builder.build(hanako, builderParam);
-
-        // メッセージに対する花子のレスポンスを取得
-        // 実行者と実行内容がチャンネルで分かるように、先に実行ログを投稿する
-        const executionLog = new ChatResponse({
-            id: interaction.id,
-            content: `${interaction.user.username}が「${content}」を実行したよ！`,
-            channelId: interaction.channel.id,
-            code: 'simple',
-        });
-        try {
-            await this.responseHandler.handle(executionLog);
-        } catch (error) {
-            logger.warn(`スラッシュコマンド実行ログの投稿に失敗しました: ${content}`, error);
+        // ボタン等もこのイベントに届くが、このコントローラが扱うのはスラッシュコマンドだけ（ページ送りボタンは PagerButtonCtrl）
+        if (!interaction.isChatInputCommand()) {
+            logger.trace(`スラッシュコマンド以外のインタラクションなので無視した (type: ${interaction.type})`);
+            return errors.abort();
+        }
+        // コマンドはサーバー内でのみ使えるよう登録しているが、念のためDM等からの実行を弾く
+        if (!interaction.inCachedGuild()) {
+            await interaction.reply({
+                content: 'はなこのコマンドはサーバーの中で使ってね！',
+                flags: MessageFlags.Ephemeral,
+            });
+            return;
         }
 
-        const response = await this.service.serve(hanako, entity);
+        // 一覧や検索など本人が見たいだけのコマンドは、結果を実行者にだけ見せる
+        const K = Commando.findSlashCommand(interaction.commandName);
+        const ephemeral = Boolean(K && K.slash.ephemeral);
 
-        // リプライ必須なので握りつぶす
+        // 3秒以内に応答しないとインタラクションが失効するため、先に「考え中」の応答を返しておく
+        // Note: 公開範囲は保留した時点で決まり、後から変えられない
+        await interaction.deferReply(ephemeral ? { flags: MessageFlags.Ephemeral } : {});
+
+        const target = InteractionResponder.commandReplyTarget(interaction, ephemeral);
         try {
-            // レスポンスハンドラにレスポンス処理をさせて終了
-            await this.responseHandler.handle(response);
-            await interaction.reply({ content: 'コマンドを実行しました！😸', flags: MessageFlags.Ephemeral });
-            setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
+            const response = await processInteractionF.call(this, interaction);
+            await this.responder.respond(target, response);
         } catch (error) {
-            await interaction.reply({ content: 'コマンドの実行に失敗しました･･･😿', flags: MessageFlags.Ephemeral });
-            setTimeout(() => interaction.deleteReply().catch(() => {}), 3000);
+            await this.responder
+                .replyFailure(target, error)
+                .catch((e) => logger.warn('インタラクションの応答に失敗', e));
+            throw error;
         }
     }
 }
 
-function resolveTextCommandNameF(slashCommandName) {
-    return SLASH_COMMAND_ALIASES[slashCommandName] || slashCommandName;
+/**
+ * (private) スラッシュコマンドを実行してレスポンスを得る
+ *
+ * @this {InteractionCtrl}
+ * @param {discord.ChatInputCommandInteraction} interaction 受信したスラッシュコマンド
+ * @returns {Promise<import('../domain/entity/responses').ResponseT>} コマンドのレスポンス
+ */
+async function processInteractionF(interaction) {
+    // 読み上げ花子モデルを取得
+    const hanako = await this.hanakoLoader.load(interaction.guild.id);
+
+    // スラッシュコマンドのオプションを名前付きの引数にする
+    const commandArgs = buildCommandArgsF(interaction);
+
+    // メッセージエンティティの作成
+    const builderParam = {
+        id: interaction.id,
+        commandName: interaction.commandName,
+        commandArgs,
+        userId: interaction.user.id,
+        userName: interaction.user.username,
+        channelId: interaction.channel.id,
+        channelName: interaction.channel.name,
+        serverId: interaction.guildId,
+        serverName: interaction.guild.name,
+        voiceChannelId: interaction.member.voice.channel ? interaction.member.voice.channel.id : null,
+    };
+    const entity = await this.builder.build(hanako, builderParam);
+
+    // メッセージに対する花子のレスポンスを取得
+    // Note: 実行者と実行内容は、公開の返信にDiscordが「○○が /コマンド を使用しました」と表示する
+    return this.service.serve(hanako, entity);
 }
 
-function buildInteractionCommandContentF(prefix, interaction) {
-    const textCommandName = resolveTextCommandNameF(interaction.commandName);
-    let content = prefix + textCommandName;
-    const mentionedUsers = new Map();
+/**
+ * (private) スラッシュコマンドのオプションを名前付きの引数にする
+ * - 文字列はテキスト投稿と同じ標準化をかける
+ * - ユーザーは {id, name}、添付ファイルは attachments 配列にまとめる
+ *
+ * @param {discord.ChatInputCommandInteraction} interaction 受信したスラッシュコマンド
+ * @returns {object} 名前付きの引数
+ */
+function buildCommandArgsF(interaction) {
+    const guild = interaction.guild;
+    const resolvers = {
+        user: (id) => nameOfF(guild.members.cache.get(id), 'displayName'),
+        role: (id) => nameOfF(guild.roles.cache.get(id), 'name'),
+        channel: (id) => nameOfF(guild.channels.cache.get(id), 'name'),
+    };
 
-    const options = interaction.options && Array.isArray(interaction.options.data) ? interaction.options.data : [];
-    if (options.length === 0) {
-        return { content, mentionedUsers };
+    const args = {};
+    for (const option of interaction.options.data) {
+        switch (option.type) {
+            case ApplicationCommandOptionType.String:
+                args[option.name] = sanitizeContent(option.value, resolvers);
+                break;
+            case ApplicationCommandOptionType.User:
+                args[option.name] = {
+                    id: option.value,
+                    name: option.member ? option.member.displayName : option.user.username,
+                };
+                break;
+            case ApplicationCommandOptionType.Attachment:
+                args.attachments = (args.attachments || []).concat({
+                    name: option.attachment.title || option.attachment.name,
+                    url: option.attachment.url,
+                });
+                break;
+            default:
+                args[option.name] = option.value;
+        }
     }
+    return args;
+}
 
-    const args = options
-        .map((option) => {
-            if (option.type === 6) {
-                // USER option
-                const username = option.user ? option.user.username : `${option.value}`;
-                mentionedUsers.set(username, option.value);
-                return '@' + username;
-            }
-            if (option.value === undefined || option.value === null) {
-                return null;
-            }
-            return `${option.value}`;
-        })
-        .filter((value) => value !== null);
-
-    if (args.length > 0) {
-        content += ' ' + args.join(' ');
-    }
-
-    return { content, mentionedUsers };
+function nameOfF(entity, key) {
+    return entity ? entity[key] : undefined;
 }
 
 module.exports = InteractionCtrl;

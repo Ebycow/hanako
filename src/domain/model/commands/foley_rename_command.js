@@ -5,6 +5,7 @@ const utils = require('../../../core/utils');
 const FoleyRenameAction = require('../../entity/actions/foley_rename_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -29,6 +30,40 @@ class FoleyRenameCommand {
     }
 
     /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'se-rename',
+            description: 'SEのキーワードを変更します',
+            options: [
+                { type: 'string', name: 'old_keyword', description: '現在のキーワード', required: true },
+                { type: 'string', name: 'new_keyword', description: '新しいキーワード', required: true },
+            ],
+        };
+    }
+
+    /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {old_keyword: string, new_keyword: string}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        if (input.argc !== 2) {
+            return {
+                response: input.newChatResponse(
+                    'コマンドの形式が間違っています :sob: 例:`@hanako 音声名置換 from to`',
+                    'error'
+                ),
+            };
+        }
+        return { args: { old_keyword: input.argv[0], new_keyword: input.argv[1] } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -45,16 +80,7 @@ class FoleyRenameCommand {
         assert(typeof input === 'object');
         logger.info(`SE名置き換えコマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        if (input.argc !== 2) {
-            return input.newChatResponse(
-                'コマンドの形式が間違っています :sob: 例:`@hanako 音声名置換 from to`',
-                'error'
-            );
-        }
-
-        const keywordFrom = input.argv[0];
-        const keywordTo = input.argv[1];
+        const { old_keyword: keywordFrom, new_keyword: keywordTo } = input.args;
 
         // 存在チェック
         const exs = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keywordFrom);
@@ -62,8 +88,11 @@ class FoleyRenameCommand {
             return input.newChatResponse(`そのキーワードは存在しません･･･`, 'error');
         }
 
-        // 存在チェック
-        const dup = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keywordTo);
+        // 存在チェック（文字種をそろえると同じになるキーワードも重複とする。半角カナを全角に直すような変更は許す）
+        const dup = this.hanako.foleyDictionary.lines.find(
+            (line) =>
+                line.id !== exs.id && utils.unifyCharacterWidth(line.keyword) === utils.unifyCharacterWidth(keywordTo)
+        );
         if (dup) {
             return input.newChatResponse(`そのキーワードはすでに存在しています･･･`, 'error');
         }
@@ -74,8 +103,8 @@ class FoleyRenameCommand {
         }
 
         // 文字数上限のバリデーション
-        if (utils.countUnicode(keywordTo) >= 50) {
-            return input.newChatResponse('もじながすぎわろたwwww 50文字以上の教育はできません', 'error');
+        if (utils.countUnicode(keywordTo) > 50) {
+            return input.newChatResponse('もじながすぎわろたwwww 50文字を超える登録はできません', 'error');
         }
 
         // SE追加アクションを作成

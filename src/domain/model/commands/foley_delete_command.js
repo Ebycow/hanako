@@ -5,6 +5,7 @@ const FoleyDeleteAction = require('../../entity/actions/foley_delete_action');
 const FoleyDeleteMultipleAction = require('../../entity/actions/foley_delete_multiple_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -29,6 +30,37 @@ class FoleyDeleteCommand {
     }
 
     /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'se-del',
+            description: 'SEを削除します',
+            options: [{ type: 'string', name: 'keyword', description: '削除するSEのキーワード', required: true }],
+        };
+    }
+
+    /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {keywords: string[]}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        if (input.argc < 1) {
+            return {
+                response: input.newChatResponse(
+                    'コマンドの形式が間違っています :sob: 例:`@hanako se-del 三倍アイスクリーム` または `@hanako se-del SE名1 SE名2 SE名3`',
+                    'error'
+                ),
+            };
+        }
+        return { args: { keywords: input.argv } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -45,21 +77,16 @@ class FoleyDeleteCommand {
         assert(typeof input === 'object');
         logger.info(`SE削除コマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        if (input.argc < 1) {
-            return input.newChatResponse(
-                'コマンドの形式が間違っています :sob: 例:`@hanako se-del 三倍アイスクリーム` または `@hanako se-del SE名1 SE名2 SE名3`',
-                'error'
-            );
-        }
+        // Note: スラッシュコマンドでは1つだけ keyword で受け取る
+        const keywords = input.args.keywords || [input.args.keyword];
 
         // 複数SE削除の場合
-        if (input.argc > 1) {
-            return this.processMultipleDelete(input);
+        if (keywords.length > 1) {
+            return this.processMultipleDelete(input, keywords);
         }
 
-        // 単一SE削除（従来の処理）
-        const foley = this.hanako.foleyDictionary.lines.find((line) => line.keyword === input.argv[0]);
+        // 単一SE削除
+        const foley = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keywords[0]);
 
         // 単語が見つからない
         if (!foley) {
@@ -81,10 +108,10 @@ class FoleyDeleteCommand {
      * 複数SE削除を処理
      *
      * @param {CommandInput} input コマンド引数
+     * @param {string[]} keywords 削除するSEのキーワード
      * @returns {ResponseT} レスポンス
      */
-    processMultipleDelete(input) {
-        const keywords = input.argv;
+    processMultipleDelete(input, keywords) {
         const foundFoleys = [];
         const notFoundKeywords = [];
 

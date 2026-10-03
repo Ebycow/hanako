@@ -91,7 +91,7 @@ class ChatResponse {
     }
 
     toString() {
-        return `ChatResponse(id=${this.id}, content=${this.content}, code=${this.code}, channelId=${this.channelId})`;
+        return `ChatResponse(id=${this.id}, contentLength=${this.content.length}, code=${this.code}, channelId=${this.channelId})`;
     }
 }
 

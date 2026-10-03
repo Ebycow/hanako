@@ -2,6 +2,7 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 
@@ -22,6 +23,19 @@ class AskCommand {
      */
     static get names() {
         return ['質問', 'ask'];
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'ask',
+            description: '運を天に任せます',
+            options: [],
+        };
     }
 
     /**

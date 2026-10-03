@@ -83,6 +83,19 @@ function commandInputBlueprint(overrides = {}, dmessageOverrides = {}) {
     );
 }
 
+/**
+ * テキストで入力されたときと同じ手順（parseText → process）でコマンドを実行する
+ *
+ * @param {object} command コマンドインスタンス
+ * @param {CommandInput} input コマンド名を消費済みのコマンド引数
+ * @returns {object} レスポンス
+ */
+function processText(command, input) {
+    const K = command.constructor;
+    const parsed = typeof K.parseText === 'function' ? K.parseText(input) : { args: {} };
+    return parsed.response || command.process(input.withArgs(parsed.args));
+}
+
 function wordDictionaryLineBlueprint(overrides = {}) {
     return new WordDictionaryLine(
         Object.assign(
@@ -187,6 +200,7 @@ module.exports = {
     emptyFoleyDictionary,
     emptySilenceDictionary,
     basicHanako,
+    processText,
     // エンティティクラス再エクスポート
     DiscordMessage,
     CommandInput,

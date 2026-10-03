@@ -23,7 +23,29 @@ class Commando {
      */
     constructor(hanako) {
         const classes = Array.from(Object.values(commands));
+        this.hanako = hanako;
         this.resolvers = classes.map((K) => (name) => (K.names.includes(name) ? new K(hanako) : null));
+    }
+
+    /**
+     * スラッシュコマンド名からコマンドを解決
+     *
+     * @param {string} slashName スラッシュコマンド名
+     * @returns {?CommandT} コマンドインスタンス（見つからない場合はnull）
+     */
+    resolveSlash(slashName) {
+        const K = Commando.findSlashCommand(slashName);
+        return K ? new K(this.hanako) : null;
+    }
+
+    /**
+     * スラッシュコマンド名からコマンドクラスを探す
+     *
+     * @param {string} slashName スラッシュコマンド名
+     * @returns {?Function} コマンドクラス（見つからない場合はnull）
+     */
+    static findSlashCommand(slashName) {
+        return Object.values(commands).find((K) => K.slash && K.slash.name === slashName) || null;
     }
 
     /**

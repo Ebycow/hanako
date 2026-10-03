@@ -74,6 +74,19 @@ class FoleyDictionary {
     }
 
     /**
+     * 読み上げ文と照合するためのSEキーワード
+     * 読み上げ文は文字種統一済みなので、キーワードも文字種をそろえてから長い順に並べる。
+     * 重なる場合は長いSE名を優先する。
+     *
+     * @type {Array<{line: FoleyDictionaryLine, keyword: string}>}
+     */
+    get readingKeywords() {
+        return this.data.lines
+            .map((line) => ({ line, keyword: utils.unifyCharacterWidth(line.keyword) }))
+            .sort((a, b) => utils.countUnicode(b.keyword) - utils.countUnicode(a.keyword));
+    }
+
+    /**
      * (impl) Pager.Pageable
      *
      * @type {number}

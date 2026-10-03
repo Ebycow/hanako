@@ -4,6 +4,8 @@ const assert = require('assert').strict;
 const SeNormalizeUpdateAction = require('../../entity/actions/se_normalize_update_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').PermissionName} PermissionName */
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -28,6 +30,57 @@ class SeNormalizeCommand {
     }
 
     /**
+     * 実行に必要な権限（スラッシュコマンドの初期値と、テキストで実行されたときの確認に使う）
+     *
+     * @type {PermissionName}
+     */
+    static get requiredPermission() {
+        return 'manageGuild';
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'se-normalize',
+            description: 'SEの音量を正規化するレベルを設定します（0〜100、0で無効化）',
+            options: [
+                {
+                    type: 'integer',
+                    name: 'level',
+                    description: '正規化レベル（0〜100、デフォルト50）',
+                    required: true,
+                    minValue: 0,
+                    maxValue: 100,
+                },
+            ],
+        };
+    }
+
+    /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {level: number}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        const parsed = Number.parseInt(input.argv[0], 10);
+        const isDecimal = input.argv[0] && input.argv[0].includes('.');
+        if (input.argc !== 1 || !Number.isInteger(parsed) || isDecimal) {
+            return {
+                response: input.newChatResponse(
+                    'コマンドの形式が間違っています :sob: 例:`@hanako se-normalize 80`',
+                    'error'
+                ),
+            };
+        }
+        return { args: { level: parsed } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -44,14 +97,7 @@ class SeNormalizeCommand {
         assert(typeof input === 'object');
         logger.info(`SE音量正規化コマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        const parsed = Number.parseInt(input.argv[0], 10);
-        const isDecimal = input.argv[0] && input.argv[0].includes('.');
-        if (input.argc !== 1 || !Number.isInteger(parsed) || isDecimal) {
-            return input.newChatResponse('コマンドの形式が間違っています :sob: 例:`@hanako se-normalize 80`', 'error');
-        }
-
-        const newSeNormalizePercent = parsed;
+        const newSeNormalizePercent = input.args.level;
 
         // 設定値範囲のバリデーション (0-100)
         if (newSeNormalizePercent < 0 || newSeNormalizePercent > 100) {

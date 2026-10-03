@@ -5,6 +5,7 @@ const {
     commandInputBlueprint,
     silenceDictionaryLineBlueprint,
     SilenceDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -44,7 +45,7 @@ describe('SilenceClearCommand', () => {
                 const sd = new SilenceDictionary({ id: 'sd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint({ argc: 1, argv: ['--force'] });
                 const sub = new SilenceClearCommand(basicHanako({ silenceDictionary: sd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('silence_clear');
@@ -56,7 +57,7 @@ describe('SilenceClearCommand', () => {
             specify('沈黙ユーザーがいなければエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['--force'] });
                 const sub = new SilenceClearCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -67,7 +68,7 @@ describe('SilenceClearCommand', () => {
                 const sd = new SilenceDictionary({ id: 'sd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint({ argc: 0, argv: [] });
                 const sub = new SilenceClearCommand(basicHanako({ silenceDictionary: sd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('force');

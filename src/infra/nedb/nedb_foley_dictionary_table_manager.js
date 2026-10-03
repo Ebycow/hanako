@@ -1,13 +1,14 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const uuid = require('uuidv4').uuid;
+const uuid = require('crypto').randomUUID;
 const prettyBytes = require('pretty-bytes');
 const axios = require('axios').default;
 const prism = require('prism-media');
 const FileType = require('file-type');
-const Readable = require('stream').Readable;
+const { Readable, Transform } = require('stream');
 const errors = require('../../core/errors').promises;
+const { publicOnlyRequestConfig, isForbiddenAddressError } = require('../http/public_address_guard');
 
 async function fileTypeFromBuffer(buffer) {
     const detectFromBuffer = FileType.fileTypeFromBuffer || FileType.fromBuffer;
@@ -15,6 +16,128 @@ async function fileTypeFromBuffer(buffer) {
         return errors.unexpected('file-type-from-buffer-not-available');
     }
     return detectFromBuffer(buffer);
+}
+
+/**
+ * FFmpegが入力を読み切る前に終了したときに、残りの入力を書き込もうとして出るエラーかどうか
+ * （Windowsでは EOF、それ以外では EPIPE になる）
+ *
+ * @param {any} err
+ * @returns {boolean}
+ */
+function isClosedPipeError(err) {
+    return err.code === 'EOF' || err.code === 'EPIPE' || err.code === 'ERR_STREAM_DESTROYED';
+}
+
+/** 変換後のPCM（48kHz・16bit・ステレオ）の1秒あたりのバイト数 */
+const PCM_BYTES_PER_SECOND = 48000 * 2 * 2;
+
+/**
+ * ダウンロードした音声をFFmpegでPCMに変換するストリームを作る
+ * - 変換結果が空なら 'foley-ffmpeg-empty-output' でエラーにする（変換できない音声）
+ * - 変換結果が maxBytes を超えたら 'foley-audio-too-long' でエラーにする（長すぎる音声は切らずに登録しない）
+ *
+ * FFmpegは -fs の出力上限に達したときや、変換できない音声だったときに入力を読み切らずに終了する。
+ * そのとき残りの入力の書き込みがエラーになるが、これを放置すると捕捉されない例外でプロセスが落ちる。
+ * 書き込み側のこのエラーは無視し、変換結果で成否を判断する。
+ *
+ * @param {Buffer} data ダウンロードした音声
+ * @param {string[]} args FFmpegの引数（-fs で maxBytes より少し大きい上限を付けておく）
+ * @param {number} maxBytes 変換後のPCMの最大バイト数
+ * @returns {Readable} PCMのストリーム
+ */
+function toPcmStream(data, args, maxBytes) {
+    const ffmpeg = new prism.FFmpeg({ args });
+
+    let outputSize = 0;
+    const output = new Transform({
+        transform(chunk, _encoding, callback) {
+            outputSize += chunk.length;
+            if (outputSize > maxBytes) {
+                // 残りを変換しても無駄なのでFFmpegを止める
+                ffmpeg.destroy();
+                callback(new Error('foley-audio-too-long'));
+                return;
+            }
+            callback(null, chunk);
+        },
+        flush(callback) {
+            callback(outputSize === 0 ? new Error('foley-ffmpeg-empty-output') : null);
+        },
+    });
+
+    ffmpeg.on('error', (err) => {
+        if (isClosedPipeError(err)) {
+            logger.info(`FFmpegが入力を読み切る前に終了した (code=${err.code})`);
+            return;
+        }
+        output.destroy(err);
+    });
+
+    Readable.from(data, { objectMode: false }).pipe(ffmpeg).pipe(output);
+    return output;
+}
+
+/** SE音源ダウンロード1回あたりの制限時間（ミリ秒） */
+const FOLEY_DOWNLOAD_TIMEOUT_MS = 30000;
+
+/** SE音源ダウンロードの最大試行回数 */
+const FOLEY_DOWNLOAD_MAX_ATTEMPTS = 3;
+
+/**
+ * リトライで回復しうるダウンロードエラーかどうか
+ * （制限時間切れ・接続断・サーバー側エラー。容量超過や 4xx は対象外）
+ *
+ * @param {any} err
+ * @returns {boolean}
+ */
+function isRetryableDownloadError(err) {
+    if (err.code === 'ERR_CANCELED' || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') return true;
+    if (err.code === 'ECONNABORTED' && !String(err.message).startsWith('maxContentLength')) return true;
+    return Boolean(err.response && err.response.status >= 500);
+}
+
+/**
+ * SE音源をダウンロードする。
+ * Discord CDN が不調だと応答が数分〜十数分止まることがあるため、
+ * 1回ごとに全体の制限時間を設け、回復しうるエラーは数回リトライする。
+ *
+ * @param {string} url
+ * @param {number} maxContentLength
+ * @returns {Promise<import('axios').AxiosResponse>}
+ */
+async function downloadFoley(url, maxContentLength) {
+    for (let attempt = 1; ; attempt++) {
+        try {
+            return await axios.get(url, {
+                // 利用者が指定したURLなので、内部ネットワークへは接続させない
+                ...publicOnlyRequestConfig(url),
+                responseType: 'arraybuffer',
+                maxContentLength,
+                // axios の timeout はソケット無通信時間しか見ないため、全体の期限は signal で設ける
+                signal: AbortSignal.timeout(FOLEY_DOWNLOAD_TIMEOUT_MS),
+            });
+        } catch (err) {
+            if (attempt < FOLEY_DOWNLOAD_MAX_ATTEMPTS && isRetryableDownloadError(err)) {
+                logger.warn(
+                    `SE音源のダウンロードに失敗。リトライします (${attempt}/${FOLEY_DOWNLOAD_MAX_ATTEMPTS})`,
+                    err
+                );
+                continue;
+            }
+            throw err;
+        }
+    }
+}
+
+/**
+ * ダウンロードが制限時間切れで失敗したかどうか
+ *
+ * @param {any} err
+ * @returns {boolean}
+ */
+function isDownloadTimeout(err) {
+    return err.code === 'ERR_CANCELED' || err.code === 'ETIMEDOUT';
 }
 
 const AppSettings = require('../../core/app_settings');
@@ -106,7 +229,7 @@ async function loadSharedData(serverId) {
                     dict = dict.map((data) => {
                         if (typeof data[2] === 'undefined') {
                             data[2] = uuid();
-                            logger.info(`migrate: ${data}`);
+                            logger.info(`migrate: id=${data[2]}`);
                         }
                         return data;
                     });
@@ -230,11 +353,26 @@ class NedbFoleyDictionaryTableManager {
         this.settingsRepo = settingsRepo;
         this.ffmpegOptions = ['-analyzeduration', '0', '-loglevel', '0', '-f', 's16le', '-ar', '48000', '-ac', '2'];
 
-        // FFmpeg 出力ファイルサイズ制限を適用する
-        // See: https://www.ffmpeg.org/ffmpeg.html#Main-options
+        // 変換後のPCMの最大バイト数（これを超える長さの音声は登録しない）
         // Note: size(bytes) = seconds * frames/sec(48kHz) * bytes/frame(16-bit) * channels(Stereo)
-        const maxOutputSize = (appSettings.foleyMaxAudioSeconds * 48000 * 2 * 2) >>> 0;
-        this.ffmpegOptions.push('-fs', `${maxOutputSize}`);
+        this.maxOutputSize = (appSettings.foleyMaxAudioSeconds * PCM_BYTES_PER_SECOND) >>> 0;
+
+        // 長すぎる音声を最後まで変換しないよう、FFmpeg 出力ファイルサイズ制限を少し大きめに適用する
+        // （上限をちょうどにすると、上限ぴったりの音声と長すぎる音声を区別できない）
+        // See: https://www.ffmpeg.org/ffmpeg.html#Main-options
+        this.ffmpegOptions.push('-fs', `${this.maxOutputSize + PCM_BYTES_PER_SECOND}`);
+    }
+
+    /**
+     * SE音源の保存容量が上限に達しているかどうか
+     * Note: 登録のたびにファイルサイズを合計する。重くなったらレコードにサイズを持たせる方式に切り替える
+     *
+     * @param {string} serverId
+     * @returns {Promise<boolean>}
+     */
+    async isStorageFull(serverId) {
+        const usedSize = await this.objectStorageRepo.getTotalSize(serverId, 'pcm');
+        return usedSize >= this.appSettings.foleyMaxStorageByteSize;
     }
 
     /**
@@ -267,25 +405,35 @@ class NedbFoleyDictionaryTableManager {
 
         if (records.some((record) => action.keyword === record[0])) {
             const message = 'すでに登録されてるみたい... :sob:';
-            return errors.disappointed(`keyword-already-exists ${action} ${records}`, message);
+            return errors.disappointed(`keyword-already-exists ${action}`, message);
+        }
+
+        if (await this.isStorageFull(action.serverId)) {
+            const maxSize = prettyBytes(this.appSettings.foleyMaxStorageByteSize).replace(/\s/, '');
+            const message = `SEの保存容量がいっぱい（上限${maxSize}）にゃ… いらないSEを消してから試してね :sob:`;
+            return errors.disappointed('foley-storage-full', message);
         }
 
         let response;
         try {
-            response = await axios.get(action.url, {
-                responseType: 'arraybuffer',
-                maxContentLength: this.appSettings.foleyMaxDownloadByteSize,
-            });
+            response = await downloadFoley(action.url, this.appSettings.foleyMaxDownloadByteSize);
         } catch (err) {
             // AXIOS null やめて
             // cf. https://github.com/axios/axios/blob/v0.19.1/lib/adapters/http.js#L219-L220
-            if (err.message.startsWith('maxContentLength size of ')) {
+            if (isForbiddenAddressError(err)) {
+                const message = 'そのURLからは取得できないにゃ :sob:';
+                return errors.unexpected('foley-http-forbidden-address', message);
+            } else if (err.message.startsWith('maxContentLength size of ')) {
                 const maxSize = prettyBytes(this.appSettings.foleyMaxDownloadByteSize).replace(/\s/, '');
                 const message = `${maxSize}以上のデータは大きすぎて入らないにゃ :sob:`;
                 return errors.unexpected('foley-http-data-too-large', message);
             } else if (err.response && err.response.status >= 400) {
                 const message = 'URLのファイルが見つからないにゃ :sob:';
                 return errors.unexpected('foley-http-file-not-found', message);
+            } else if (isDownloadTimeout(err)) {
+                const message =
+                    'ファイルのダウンロードに時間がかかりすぎたにゃ… 少し時間をおいてもう一度試してね :sob:';
+                return errors.unexpected('foley-http-timeout', message);
             } else {
                 return Promise.reject(err);
             }
@@ -298,14 +446,26 @@ class NedbFoleyDictionaryTableManager {
         }
 
         try {
-            const args = this.ffmpegOptions.slice();
-            const ffmpeg = new prism.FFmpeg({ args });
-            const stream = Readable.from(response.data, { objectMode: false }).pipe(ffmpeg);
+            const stream = toPcmStream(response.data, this.ffmpegOptions.slice(), this.maxOutputSize);
             const objectKey = Buffer.from(action.keyword).toString('base64');
             // Note: 辞書登録を遅延できるのはsaveFileが同じKeyのレコード挿入を受け付けないため
             //       先着一名様以外はここで不整合エラーになる
             await this.objectStorageRepo.saveFile(action.serverId, objectKey, 'pcm', stream);
         } catch (err) {
+            // ダウンロード待ちの間に同じキーワードが別の登録で先に登録された
+            if (records.some((record) => action.keyword === record[0])) {
+                const message = 'すでに登録されてるみたい... :sob:';
+                return errors.disappointed(`keyword-already-exists ${action}`, message);
+            }
+            if (err.message === 'foley-audio-too-long') {
+                const seconds = this.appSettings.foleyMaxAudioSeconds;
+                const message = `${seconds}秒より長い音声は登録できないにゃ… 短くしてから試してね :sob:`;
+                return errors.unexpected('foley-audio-too-long', message);
+            }
+            if (err.message === 'foley-ffmpeg-empty-output') {
+                const message = 'この音声ファイルは変換できなかったにゃ… mp3 か wav で試してみてね :sob:';
+                return errors.unexpected('foley-ffmpeg-empty-output', message);
+            }
             return Promise.reject(err);
         }
 
@@ -326,46 +486,66 @@ class NedbFoleyDictionaryTableManager {
         const succeededKeywords = [];
 
         // 各アイテムを順次処理
-        for (const item of action.items) {
+        for (const [index, item] of action.items.entries()) {
+            // ログにはキーワードを出さず、何件目のアイテムかで追う
+            const itemLabel = `${index + 1}/${action.items.length}`;
+
             // 重複チェック（既に処理済みのアイテムも含む）
             if (records.some((record) => item.keyword === record[0])) {
-                logger.warn(`キーワード重複をスキップ: ${item.keyword}`);
+                logger.warn(`キーワード重複をスキップ (item: ${itemLabel})`);
                 failedItems.push(`${item.keyword}: すでに登録済みです`);
+                continue;
+            }
+
+            if (await this.isStorageFull(action.serverId)) {
+                logger.warn(`保存容量の上限によりスキップ (item: ${itemLabel})`);
+                const maxSize = prettyBytes(this.appSettings.foleyMaxStorageByteSize).replace(/\s/, '');
+                failedItems.push(`${item.keyword}: SEの保存容量がいっぱいです（上限${maxSize}）`);
                 continue;
             }
 
             let response;
             try {
-                response = await axios.get(item.url, {
-                    responseType: 'arraybuffer',
-                    maxContentLength: this.appSettings.foleyMaxDownloadByteSize,
-                });
+                response = await downloadFoley(item.url, this.appSettings.foleyMaxDownloadByteSize);
             } catch (err) {
-                logger.warn(`ファイルダウンロード失敗をスキップ: ${item.keyword} - ${err.message}`);
-                failedItems.push(`${item.keyword}: ダウンロードに失敗しました`);
+                logger.warn(`ファイルダウンロード失敗をスキップ (item: ${itemLabel}) - ${err.message}`);
+                const reason = isForbiddenAddressError(err)
+                    ? 'そのURLからは取得できません'
+                    : isDownloadTimeout(err)
+                      ? 'ダウンロードがタイムアウトしました'
+                      : 'ダウンロードに失敗しました';
+                failedItems.push(`${item.keyword}: ${reason}`);
                 continue;
             }
 
             const fileType = await fileTypeFromBuffer(response.data);
             if (!fileType || !fileType.mime.startsWith('audio')) {
-                logger.warn(`音声ファイル以外をスキップ: ${item.keyword}`);
+                logger.warn(`音声ファイル以外をスキップ (item: ${itemLabel})`);
                 failedItems.push(`${item.keyword}: 音声ファイルではありません`);
                 continue;
             }
 
             try {
-                const args = this.ffmpegOptions.slice();
-                const ffmpeg = new prism.FFmpeg({ args });
-                const stream = Readable.from(response.data, { objectMode: false }).pipe(ffmpeg);
+                const stream = toPcmStream(response.data, this.ffmpegOptions.slice(), this.maxOutputSize);
                 const objectKey = Buffer.from(item.keyword).toString('base64');
                 await this.objectStorageRepo.saveFile(action.serverId, objectKey, 'pcm', stream);
 
-                records.push([item.keyword, item.url, uuid()]);
+                const foleyId = uuid();
+                records.push([item.keyword, item.url, foleyId]);
                 succeededKeywords.push(item.keyword);
-                logger.info(`SE追加成功: ${item.keyword}`);
+                logger.info(`SE追加成功 (item: ${itemLabel}, ID: ${foleyId})`);
             } catch (err) {
-                logger.warn(`ファイル保存失敗をスキップ: ${item.keyword} - ${err.message}`);
-                failedItems.push(`${item.keyword}: 保存に失敗しました`);
+                logger.warn(`ファイル保存失敗をスキップ (item: ${itemLabel}) - ${err.message}`);
+                // ダウンロード待ちの間に同じキーワードが別の登録で先に登録された
+                const alreadyExists = records.some((record) => item.keyword === record[0]);
+                const reason = alreadyExists
+                    ? 'すでに登録済みです'
+                    : err.message === 'foley-audio-too-long'
+                      ? `${this.appSettings.foleyMaxAudioSeconds}秒より長い音声です`
+                      : err.message === 'foley-ffmpeg-empty-output'
+                        ? '音声を変換できませんでした'
+                        : '保存に失敗しました';
+                failedItems.push(`${item.keyword}: ${reason}`);
                 continue;
             }
         }
@@ -403,7 +583,7 @@ class NedbFoleyDictionaryTableManager {
 
         if (index === -1) {
             const message = 'すでに削除されてるみたい... :sob:';
-            return errors.disappointed(`foley-not-found ${action} ${records}`, message);
+            return errors.disappointed(`foley-not-found ${action}`, message);
         }
 
         const objectKey = Buffer.from(records[index][0]).toString('base64');
@@ -436,7 +616,7 @@ class NedbFoleyDictionaryTableManager {
             if (index !== -1) {
                 const deletedRecord = records.splice(index, 1)[0];
                 deletedRecords.push(deletedRecord);
-                logger.info(`SE削除: ${deletedRecord[0]} (ID: ${foleyId})`);
+                logger.info(`SE削除 (ID: ${foleyId})`);
             } else {
                 logger.warn(`SE削除対象が見つからない: ID ${foleyId}`);
             }
@@ -450,9 +630,9 @@ class NedbFoleyDictionaryTableManager {
             try {
                 const objectKey = Buffer.from(record[0]).toString('base64');
                 await this.objectStorageRepo.deleteFile(action.serverId, objectKey, 'pcm');
-                logger.info(`ファイル削除成功: ${record[0]}`);
+                logger.info(`ファイル削除成功 (ID: ${record[2]})`);
             } catch (err) {
-                logger.error(`ファイル削除失敗: ${record[0]} - ${err.message}`);
+                logger.error(`ファイル削除失敗 (ID: ${record[2]}) - ${err.message}`);
                 // ファイル削除に失敗してもエラーにはしない（既に削除済みの可能性もある）
             }
         }
@@ -514,7 +694,7 @@ class NedbFoleyDictionaryTableManager {
         const record = records.find((record) => audio.foleyId === record[2]);
 
         if (!record) {
-            return errors.disappointed(`foley-not-found ${audio} ${records}`);
+            return errors.disappointed(`foley-not-found ${audio}`);
         }
 
         const objectKey = Buffer.from(record[0]).toString('base64');

@@ -82,7 +82,7 @@ describe('ResponseHandler', () => {
                     onSuccess,
                 });
 
-                await handler.handle(response);
+                (await handler.handle(response)).should.be.true;
                 actionHandler.handle.calledOnceWith(action).should.be.true;
                 chatRepo.postChat.calledOnce.should.be.true;
                 chatRepo.postChat.firstCall.args[0].content.should.equal('成功');
@@ -112,7 +112,7 @@ describe('ResponseHandler', () => {
                 const action = { type: 'word_create' };
                 const response = new ActionResponse({ id: '1', action, onFailure });
 
-                await handler.handle(response);
+                (await handler.handle(response)).should.be.false;
                 actionHandler.handle.calledOnce.should.be.true;
                 chatRepo.postChat.calledOnce.should.be.true;
             });

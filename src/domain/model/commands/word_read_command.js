@@ -3,6 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const Pager = require('../pager');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -27,6 +28,20 @@ class WordReadCommand {
     }
 
     /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'dictionary',
+            description: '教育済みの単語一覧を表示します',
+            ephemeral: true,
+            options: [],
+        };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -44,8 +59,9 @@ class WordReadCommand {
         logger.info(`教育単語一覧コマンドを受理 ${input}`);
 
         if (this.hanako.wordDictionary.lines.length === 0) {
+            const example = input.usage('@hanako 教育 雷 いかずち', '/teach from:雷 to:いかずち');
             return input.newChatResponse(
-                '辞書にはまだなにも登録されていません。\n教育コマンドを使って単語と読み方を登録できます！ 例:`@hanako 教育 雷 いかずち`',
+                `辞書にはまだなにも登録されていません。\n教育コマンドを使って単語と読み方を登録できます！ 例:\`${example}\``,
                 'error'
             );
         }

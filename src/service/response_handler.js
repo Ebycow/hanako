@@ -29,8 +29,7 @@ class ResponseHandler {
      * レスポンスエンティティを処理する
      *
      * @param {ResponseT} response レスポンスエンティティ
-     * @param {Discord.Interaction} interaction レスポンスタイプ
-     * @returns {Promise<void>}
+     * @returns {Promise<boolean>} アクションが失敗して onFailure を処理したときは false
      */
     async handle(response) {
         assert(typeof response === 'object');
@@ -38,16 +37,18 @@ class ResponseHandler {
 
         if (response.type === 'voice') {
             // VoiceResponseはそのままDiscordに投げる
-            return this.voiceRepo.postVoice(response);
+            await this.voiceRepo.postVoice(response);
+            return true;
         } else if (response.type === 'chat') {
             // ChatResponseはそのままDiscordに投げる
-            return this.chatRepo.postChat(response);
+            await this.chatRepo.postChat(response);
+            return true;
         } else if (response.type === 'action') {
             // ActionResponseは複雑なので専用のメソッドに委譲
             return handleActionResponseF.call(this, response);
         } else if (response.type === 'silent') {
             // SilentResponseはそのまま終了する
-            return Promise.resolve();
+            return true;
         } else {
             throw new Error('unreachable');
         }
@@ -59,7 +60,7 @@ class ResponseHandler {
  *
  * @this {ResponseHandler}
  * @param {ActionResponse} response
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} アクションが失敗して onFailure を処理したときは false
  */
 async function handleActionResponseF(response) {
     // ActionHandlerにアクションを処理させてPromise<void>を取得
@@ -88,7 +89,8 @@ async function handleActionResponseF(response) {
         return this.handle(response.onSuccess);
     } else {
         // onFailureを再帰的に処理する
-        return this.handle(onFailure);
+        await this.handle(onFailure);
+        return false;
     }
 }
 

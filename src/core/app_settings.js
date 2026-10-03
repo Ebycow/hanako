@@ -2,8 +2,26 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const fs = require('fs');
-const camelCase = require('camel-case').camelCase;
 const YAML = require('yaml');
+
+/**
+ * 名前をキャメルケースに変換
+ *
+ * @param {string} name 変換する名前 (例: discord_bot_token)
+ * @returns {string} 変換された名前 (例: discordBotToken)
+ */
+function camelCase(name) {
+    return name
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+        .split(/[^A-Za-z0-9]+/)
+        .filter((word) => word.length > 0)
+        .map((word, i) => {
+            const lower = word.toLowerCase();
+            return i === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join('');
+}
 
 /**
  * オブジェクトキーをキャメルケースに固定
@@ -38,6 +56,12 @@ class AppSettings {
             override = {};
         }
         const data = Object.assign({}, base, override);
+        if (process.env.EBYROID_STREAM_API_URL) {
+            data.ebyroidStreamApiUrl = process.env.EBYROID_STREAM_API_URL;
+        }
+        if (process.env.EBYROID_STREAM_API_MODE) {
+            data.ebyroidStreamApiMode = process.env.EBYROID_STREAM_API_MODE;
+        }
         return new AppSettings(data);
     }
 
@@ -50,8 +74,10 @@ class AppSettings {
      * @param {string} data.discordClientId
      * @param {string} data.discordGuildId
      * @param {string} data.ebyroidStreamApiUrl
+     * @param {string} [data.ebyroidStreamApiMode='auto']
      * @param {number} data.foleyMaxDownloadByteSize
      * @param {number} data.foleyMaxAudioSeconds
+     * @param {number} data.foleyMaxStorageByteSize
      * @param {number} data.foleyNormalizeTargetPeak
      */
     constructor(data) {
@@ -61,8 +87,11 @@ class AppSettings {
         assert(typeof data.discordClientId === 'string');
         assert(typeof data.discordGuildId === 'string');
         assert(typeof data.ebyroidStreamApiUrl === 'string');
+        const streamApiMode = data.ebyroidStreamApiMode || 'auto';
+        assert(['auto', 'legacy-get', 'streaming-post'].includes(streamApiMode));
         assert(typeof data.foleyMaxDownloadByteSize === 'number');
         assert(typeof data.foleyMaxAudioSeconds === 'number');
+        assert(typeof data.foleyMaxStorageByteSize === 'number');
         assert(typeof data.foleyNormalizeTargetPeak === 'number');
         assert(
             data.foleyNormalizeTargetPeak >= 0.0 && data.foleyNormalizeTargetPeak <= 1.0,
@@ -70,7 +99,7 @@ class AppSettings {
         );
 
         Object.defineProperty(this, 'data', {
-            value: Object.assign({}, data),
+            value: Object.assign({}, data, { ebyroidStreamApiMode: streamApiMode }),
             writable: false,
             enumerable: false,
             configurable: false,
@@ -105,7 +134,7 @@ class AppSettings {
     }
 
     /**
-     * スラッシュコマンドを適用するGuildId
+     * 以前ギルド単位でスラッシュコマンドを登録していたGuildId（任意、旧コマンドの削除に使う）
      *
      * @type {string}
      */
@@ -120,6 +149,15 @@ class AppSettings {
      */
     get ebyroidStreamApiUrl() {
         return this.data.ebyroidStreamApiUrl;
+    }
+
+    /**
+     * Ebyroid API transport mode.
+     *
+     * @type {'auto'|'legacy-get'|'streaming-post'}
+     */
+    get ebyroidStreamApiMode() {
+        return this.data.ebyroidStreamApiMode;
     }
 
     /**
@@ -138,6 +176,15 @@ class AppSettings {
      */
     get foleyMaxAudioSeconds() {
         return this.data.foleyMaxAudioSeconds;
+    }
+
+    /**
+     * 1サーバーが保存できるSE音源の合計バイト数
+     *
+     * @type {number}
+     */
+    get foleyMaxStorageByteSize() {
+        return this.data.foleyMaxStorageByteSize;
     }
 
     /**

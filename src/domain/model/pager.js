@@ -22,6 +22,7 @@ const assert = require('assert').strict;
  * ドメインモデル
  * ページ管理
  */
+// TODO: リアクション式ページャは使いにくく、実行者以外も操作・連打できる。実行者にだけ見える返信＋ボタン式への作り直しを検討
 class Pager {
     /**
      * Pagerモデルを構築する

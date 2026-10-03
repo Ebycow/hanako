@@ -4,6 +4,8 @@ const assert = require('assert').strict;
 const SilenceClearAction = require('../../entity/actions/silence_clear_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').PermissionName} PermissionName */
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../../model/hanako')} Hanako */
@@ -28,6 +30,38 @@ class SilenceClearCommand {
     }
 
     /**
+     * 実行に必要な権限（スラッシュコマンドの初期値と、テキストで実行されたときの確認に使う）
+     *
+     * @type {PermissionName}
+     */
+    static get requiredPermission() {
+        return 'manageGuild';
+    }
+
+    /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'blacklist-clear',
+            description: 'ブラックリストをすべてクリアします',
+            options: [],
+        };
+    }
+
+    /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {force: boolean}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        return { args: { force: input.argc === 1 && input.argv[0] === '--force' } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -45,17 +79,19 @@ class SilenceClearCommand {
         logger.info(`沈黙ユーザー初期化コマンドを受理 ${input}`);
 
         if (this.hanako.silenceDictionary.lines.length === 0) {
+            const example = input.usage('@hanako 沈黙 @Ebycow', '/blacklist-add user:@Ebycow');
             return input.newChatResponse(
-                '読み上げ停止中のユーザーはいません。\n沈黙コマンドを使うと個別に読み上げを停止できます。 例:`@hanako 沈黙 @Ebycow`',
+                `読み上げ停止中のユーザーはいません。\n沈黙コマンドを使うと個別に読み上げを停止できます。 例:\`${example}\``,
                 'error'
             );
         }
 
-        if (input.argc !== 1 || input.argv[0] !== '--force') {
-            return input.newChatResponse(
-                '**ほんとうにけすのですか？ こうかいしませんね？**\n読み上げ停止中のユーザーを全て解除する場合はコマンドに `--force` を付けてください。例:`@hanako 大赦 --force`',
-                'force'
+        if (!input.args.force) {
+            const how = input.usage(
+                '読み上げ停止中のユーザーを全て解除する場合はコマンドに `--force` を付けてください。例:`@hanako 大赦 --force`',
+                '読み上げ停止中のユーザーを全て解除する場合は「実行する」を押してください。'
             );
+            return input.newChatResponse('**ほんとうにけすのですか？ こうかいしませんね？**\n' + how, 'force');
         }
 
         // 沈黙初期化アクションを作成

@@ -3,6 +3,7 @@ const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const errors = require('../../core/errors').promises;
 const Commando = require('../model/commando');
+const PERMISSION_LABELS = require('../model/permission_labels');
 
 /** @typedef {import('../entity/command_input')} CommandInput */
 /** @typedef {import('../entity/responses').ResponseT} ResponseT */
@@ -28,19 +29,84 @@ class CommandInvoker {
         // コマンドーモデルを構築
         const commando = new Commando(hanako);
 
-        // 引数に対応するコマンドを取得
-        const [command, input] = commando.resolve(commandInput);
-        if (!command) {
-            logger.info(`コマンドが見当たらない ${input}`);
-            return errors.abort();
-        }
-
         // コマンドを実行
-        const response = command.process(input);
+        const response =
+            commandInput.source === 'slash'
+                ? invokeSlashF(commando, commandInput)
+                : invokeTextF(hanako, commando, commandInput);
 
         // レスポンスを返す
         return Promise.resolve(response);
     }
+}
+
+/**
+ * (private) テキストで入力されたコマンドを実行する
+ *
+ * @param {Hanako} hanako 読み上げ花子モデル
+ * @param {Commando} commando コマンドーモデル
+ * @param {CommandInput} commandInput コマンド引数
+ * @returns {Promise<ResponseT>} 実行結果
+ */
+function invokeTextF(hanako, commando, commandInput) {
+    // 引数に対応するコマンドを取得
+    const [command, input] = commando.resolve(commandInput);
+    if (!command) {
+        // Note: 利用者は「>」+ 文章で投稿して読み上げを回避する使い方をしている。
+        //       未知のコマンドは読み上げにフォールバックせず黙って abort することで、この用途が成り立つ。
+        logger.trace(`コマンドが見当たらない ${input}`);
+        return errors.abort();
+    }
+
+    // テキストコマンドを無効にしているサーバーでは、既知のコマンドでも黙って無視する
+    // Note: 「>」などを他のBotのために空けたいサーバーのため、案内も返さない
+    if (!hanako.settings.textCommands) {
+        logger.trace(`テキストコマンドが無効なサーバーなので実行しない ${input}`);
+        return errors.abort();
+    }
+
+    // 実行に必要な権限を確認する
+    // Note: スラッシュコマンドはDiscordが登録時の初期値（または管理者が連携サービスで変えた設定）で弾くが、
+    //       テキストには届かないので、同じ初期値の権限をこちらで確認する。
+    //       連携サービスでの上書きは反映されないため、管理者が初期値より広げた場合はテキストの方が厳しく、
+    //       狭めた場合（特定のロールやチャンネルに限定など）はテキストの方が緩くなる。
+    //       連携サービスの設定をそのまま効かせたいサーバーは、テキストコマンドを無効にする。
+    const K = command.constructor;
+    if (K.requiredPermission && !input.memberPermissions.includes(K.requiredPermission)) {
+        logger.info(`権限がないためコマンドを実行しない ${input}`);
+        const label = PERMISSION_LABELS[K.requiredPermission];
+        return Promise.resolve(
+            input.newChatResponse(`このコマンドは「${label}」の権限を持っている人だけが使えるよ :lock:`, 'error')
+        );
+    }
+
+    // テキストの引数を名前付きの引数に変換（形式が間違っていればその案内を返す）
+    // Note: 引数を取らないコマンドは parseText を持たない
+    const parsed = typeof K.parseText === 'function' ? K.parseText(input) : { args: {} };
+    if (parsed.response) {
+        return Promise.resolve(parsed.response);
+    }
+
+    return Promise.resolve(command.process(input.withArgs(parsed.args)));
+}
+
+/**
+ * (private) スラッシュコマンドを実行する
+ * - 引数はDiscordがオプションの型と必須を保証しているので、名前付きの引数のまま渡す
+ *
+ * @param {Commando} commando コマンドーモデル
+ * @param {CommandInput} commandInput コマンド引数（argv[0]がスラッシュコマンド名）
+ * @returns {Promise<ResponseT>} 実行結果
+ */
+function invokeSlashF(commando, commandInput) {
+    const command = commando.resolveSlash(commandInput.argv[0]);
+    if (!command) {
+        // Note: 登録済みのスラッシュコマンドがBotの更新で消えた場合など
+        logger.warn(`スラッシュコマンドが見当たらない ${commandInput}`);
+        return errors.abort();
+    }
+
+    return Promise.resolve(command.process(commandInput));
 }
 
 module.exports = CommandInvoker;

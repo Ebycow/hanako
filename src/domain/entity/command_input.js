@@ -16,6 +16,7 @@ class CommandInput {
      * @param {number} data.argc 引数の数
      * @param {string[]} data.argv 引数の配列
      * @param {DiscordMessage} data.origin 元となったDiscordMessageエンティティ
+     * @param {object} [data.args={}] 名前付きの引数（テキストはparseText、スラッシュはオプションから作る）
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -23,9 +24,10 @@ class CommandInput {
         assert(Array.isArray(data.argv) && data.argv.length === data.argc);
         assert(data.argv.every((x) => typeof x === 'string'));
         assert(typeof data.origin === 'object');
+        assert(typeof data.args === 'undefined' || (typeof data.args === 'object' && data.args !== null));
 
         Object.defineProperty(this, 'data', {
-            value: Object.assign({}, data),
+            value: Object.assign({}, data, { args: Object.freeze(Object.assign({}, data.args)) }),
             writable: false,
             enumerable: true,
             configurable: false,
@@ -57,6 +59,36 @@ class CommandInput {
      */
     get argv() {
         return this.data.argv.slice();
+    }
+
+    /**
+     * 名前付きの引数
+     *
+     * @type {object}
+     */
+    get args() {
+        return this.data.args;
+    }
+
+    /**
+     * コマンドの入力元（'>'などのテキスト投稿か、スラッシュコマンドか）
+     *
+     * @type {'text'|'slash'}
+     */
+    get source() {
+        return this.data.origin.type === 'interaction' ? 'slash' : 'text';
+    }
+
+    /**
+     * 入力元に合わせたコマンドの書き方を返す
+     * 案内や例に、テキスト投稿とスラッシュコマンドのどちらの書き方を見せるか選ぶために使う
+     *
+     * @param {string} text テキスト投稿での書き方 例: '@hanako 教育 雷 いかずち'
+     * @param {string} slash スラッシュコマンドでの書き方 例: '/teach from:雷 to:いかずち'
+     * @returns {string} 入力元に合わせた書き方
+     */
+    usage(text, slash) {
+        return this.source === 'slash' ? slash : text;
     }
 
     /**
@@ -105,6 +137,15 @@ class CommandInput {
     }
 
     /**
+     * 送信者が持っている花子の権限名
+     *
+     * @type {string[]}
+     */
+    get memberPermissions() {
+        return this.data.origin.memberPermissions;
+    }
+
+    /**
      * 元のDiscordメッセージの添付ファイル
      *
      * @type {Array<{name: string, url: string}>}
@@ -127,6 +168,23 @@ class CommandInput {
             argc: this.argc - 1,
             argv: this.argv.slice(1),
             origin: this.data.origin,
+            args: this.args,
+        });
+    }
+
+    /**
+     * 名前付きの引数を持たせた新しいエンティティを返す
+     *
+     * @param {object} args 名前付きの引数
+     * @returns {CommandInput} 引数を持ったCommandInput
+     */
+    withArgs(args) {
+        return new CommandInput({
+            id: this.id,
+            argc: this.argc,
+            argv: this.data.argv,
+            origin: this.data.origin,
+            args,
         });
     }
 
@@ -150,8 +208,9 @@ class CommandInput {
     }
 
     toString() {
-        const mentionedUsersJson = JSON.stringify(Object.fromEntries(this.mentionedUsers.entries()));
-        return `CommandInput(id=${this.id}, argc=${this.argc}, argv=${this.argv}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId}, mentionedUsers=${mentionedUsersJson})`;
+        // ログに出るので表示名は含めず、IDだけにする
+        const mentionedUserIds = Array.from(this.mentionedUsers.values()).join(',');
+        return `CommandInput(id=${this.id}, argc=${this.argc}, serverId=${this.serverId}, channelId=${this.channelId}, voiceChannelId=${this.voiceChannelId}, mentionedUserIds=[${mentionedUserIds}])`;
     }
 }
 

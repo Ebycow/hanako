@@ -2,10 +2,24 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const fs = require('fs');
-const glob = require('glob');
-const snakeCase = require('snake-case').snakeCase;
 const YAML = require('yaml');
 const Injector = require('./injector');
+
+/**
+ * クラス名をスネークケースのファイル名に変換
+ *
+ * @param {string} name 変換する名前 (例: DiscordServerInfoManager)
+ * @returns {string} 変換された名前 (例: discord_server_info_manager)
+ */
+function snakeCase(name) {
+    return name
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1_$2')
+        .split(/[^A-Za-z0-9]+/)
+        .filter((word) => word.length > 0)
+        .join('_')
+        .toLowerCase();
+}
 
 /**
  * 読み上げ花子アプリケーションのDIコンフィグ
@@ -76,7 +90,7 @@ class AppConfig {
         Injector.configure(this.configurations);
 
         // DIコンフィグに従って依存クラスをプリロードする
-        const allFiles = glob.sync('./src/**/*.js', { realpath: true });
+        const allFiles = fs.globSync('src/**/*.js').map((file) => fs.realpathSync(file));
         const dependentFileNames = [...new Set(this.configurations.map((c) => `${snakeCase(c.dependent)}.js`))];
         const dependentFiles = allFiles.filter((file) => dependentFileNames.some((name) => file.endsWith(name)));
 

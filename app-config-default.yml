@@ -8,8 +8,9 @@ settings:
   # Discord Bot のCLIENT_ID (必ず app-config.yml でオーバーライドしてください)
   discord_client_id: '<YOUR DISCORD CLIENT_ID HERE>'
 
-  # スラッシュコマンドを適用するGUILD_ID (必ず app-config.yml でオーバーライドしてください)
-  discord_guild_id: '<YOUR DISCORD GUILD_ID HERE>'
+  # （任意）以前ギルド単位でスラッシュコマンドを登録していたGUILD_ID
+  # スラッシュコマンドはグローバル登録される。ここに指定したギルドの旧コマンドは deploy-commands.js 実行時に削除される
+  discord_guild_id: ''
 
   # Discord Bot のコマンドプリフィックス
   default_command_prefix: '>'
@@ -17,11 +18,20 @@ settings:
   # Ebyroid AudioStream API の URL
   ebyroid_stream_api_url: 'http://localhost:4090/api/v1/audiostream'
 
+  # auto: /api/v2/audiostream ならPOSTストリーミング、それ以外は従来GET
+  # legacy-get / streaming-post で明示的に固定可能
+  ebyroid_stream_api_mode: 'auto'
+
   # SE音源を取得するときの最大ファイルサイズ（Bytes）
   foley_max_download_byte_size: 2000000
 
   # SE音源を取得するときの最大再生時間（秒）
   foley_max_audio_seconds: 60
+
+  # 1サーバーが保存できるSE音源の合計サイズ（Bytes）
+  # 超えると新しいSEを登録できなくなる（登録済みのSEは消さない）
+  # Note: SE音源は無圧縮PCMで保存される（1秒あたり約188KB）
+  foley_max_storage_byte_size: 3000000000
 
   # SE音量正規化のデフォルトターゲットピークレベル（0.0〜1.0の範囲、0で無効化）
   # 例: 0.5 = デフォルト50%（約-6dBFS）、0.0 = デフォルト無効化

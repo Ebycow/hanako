@@ -5,6 +5,7 @@ const {
     commandInputBlueprint,
     foleyDictionaryLineBlueprint,
     FoleyDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -44,7 +45,7 @@ describe('FoleyCreateCommand', () => {
             specify('正しいSE追加アクションレスポンスを返す', () => {
                 const input = commandInputBlueprint({ argc: 2, argv: ['hello', 'http://example.com/se.mp3'] });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('foley_create');
@@ -60,7 +61,7 @@ describe('FoleyCreateCommand', () => {
                 const attachments = [{ name: 'ドンッ.wav', url: 'http://cdn.example.com/don.wav' }];
                 const input = commandInputBlueprint({ argc: 0, argv: [] }, { attachments });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('foley_create_multiple');
@@ -72,7 +73,7 @@ describe('FoleyCreateCommand', () => {
                 const attachments = [{ name: 'audio.wav', url: 'http://cdn.example.com/audio.wav' }];
                 const input = commandInputBlueprint({ argc: 1, argv: ['カスタム名'] }, { attachments });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('foley_create');
@@ -86,7 +87,7 @@ describe('FoleyCreateCommand', () => {
                 ];
                 const input = commandInputBlueprint({ argc: 0, argv: [] }, { attachments });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('foley_create_multiple');
@@ -98,7 +99,7 @@ describe('FoleyCreateCommand', () => {
             specify('0ファイル+0引数 → エラー', () => {
                 const input = commandInputBlueprint({ argc: 0, argv: [] });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -107,7 +108,7 @@ describe('FoleyCreateCommand', () => {
             specify('0ファイル+1引数 → エラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['hello'] });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -116,7 +117,7 @@ describe('FoleyCreateCommand', () => {
             specify('0ファイル+3引数 → エラー', () => {
                 const input = commandInputBlueprint({ argc: 3, argv: ['a', 'b', 'c'] });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -129,7 +130,7 @@ describe('FoleyCreateCommand', () => {
                 ];
                 const input = commandInputBlueprint({ argc: 1, argv: ['SE名'] }, { attachments });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -139,7 +140,7 @@ describe('FoleyCreateCommand', () => {
                 const attachments = [{ name: 'a.wav', url: 'http://cdn.example.com/a.wav' }];
                 const input = commandInputBlueprint({ argc: 2, argv: ['a', 'b'] }, { attachments });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -150,17 +151,25 @@ describe('FoleyCreateCommand', () => {
             specify('1文字キーワード → エラー', () => {
                 const input = commandInputBlueprint({ argc: 2, argv: ['あ', 'http://example.com/se.mp3'] });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
             });
 
-            specify('50文字以上キーワード → エラー', () => {
-                const longKeyword = 'あ'.repeat(50);
+            specify('50文字キーワード → 登録できる', () => {
+                const input = commandInputBlueprint({ argc: 2, argv: ['あ'.repeat(50), 'http://example.com/se.mp3'] });
+                const sub = new FoleyCreate(basicHanako());
+                const res = processText(sub, input);
+
+                res.type.should.equal('action');
+            });
+
+            specify('51文字以上キーワード → エラー', () => {
+                const longKeyword = 'あ'.repeat(51);
                 const input = commandInputBlueprint({ argc: 2, argv: [longKeyword, 'http://example.com/se.mp3'] });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -170,7 +179,7 @@ describe('FoleyCreateCommand', () => {
                 const longUrl = 'http://example.com/' + 'a'.repeat(300);
                 const input = commandInputBlueprint({ argc: 2, argv: ['テスト', longUrl] });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -179,7 +188,7 @@ describe('FoleyCreateCommand', () => {
             specify('不正URL形式 → エラー', () => {
                 const input = commandInputBlueprint({ argc: 2, argv: ['テスト', 'これはURLではない'] });
                 const sub = new FoleyCreate(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -192,10 +201,22 @@ describe('FoleyCreateCommand', () => {
                 const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint({ argc: 2, argv: ['hello', 'http://example.com/se.mp3'] });
                 const sub = new FoleyCreate(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
+            });
+
+            specify('文字種をそろえると既存キーワードと同じになる → エラー', () => {
+                const line = foleyDictionaryLineBlueprint({ keyword: 'hello' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
+                const input = commandInputBlueprint({ argc: 2, argv: ['ｈｅｌｌｏ', 'http://example.com/se.mp3'] });
+                const sub = new FoleyCreate(basicHanako({ foleyDictionary: fd }));
+                const res = processText(sub, input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+                res.content.should.include('登録済み');
             });
 
             specify('10000件登録済み → エラー', () => {
@@ -205,8 +226,38 @@ describe('FoleyCreateCommand', () => {
                 const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines });
                 const input = commandInputBlueprint({ argc: 2, argv: ['新規SE', 'http://example.com/se.mp3'] });
                 const sub = new FoleyCreate(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+        });
+
+        context('名前付きの引数（スラッシュコマンド）', () => {
+            specify('添付ファイル1つとキーワードで登録できる', () => {
+                const input = commandInputBlueprint().withArgs({
+                    keyword: 'ドンッ',
+                    attachments: [{ name: 'don.mp3', url: 'https://cdn.discordapp.com/don.mp3' }],
+                });
+                const res = new FoleyCreate(basicHanako()).process(input);
+                res.type.should.equal('action');
+                res.action.url.should.equal('https://cdn.discordapp.com/don.mp3');
+            });
+
+            specify('URLと添付ファイルを両方指定するとエラー', () => {
+                const input = commandInputBlueprint().withArgs({
+                    keyword: 'ドンッ',
+                    url: 'https://example.com/don.mp3',
+                    attachments: [{ name: 'don.mp3', url: 'https://cdn.discordapp.com/don.mp3' }],
+                });
+                const res = new FoleyCreate(basicHanako()).process(input);
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
+            specify('URLも添付ファイルもないとエラー', () => {
+                const input = commandInputBlueprint().withArgs({ keyword: 'ドンッ' });
+                const res = new FoleyCreate(basicHanako()).process(input);
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
             });

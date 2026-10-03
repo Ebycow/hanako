@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const SpeakerUpdateAction = require('../../entity/actions/speaker_update_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../hanako')} Hanako */
@@ -28,6 +29,37 @@ class SpeakerCommand {
     }
 
     /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'speaker',
+            description: '読み上げキャラクターを変更します',
+            options: [{ type: 'string', name: 'name', description: 'キャラクター名', required: true }],
+        };
+    }
+
+    /**
+     * テキストで入力された引数を名前付きの引数に変換
+     *
+     * @param {CommandInput} input コマンド引数
+     * @returns {{args: {name: string}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
+     */
+    static parseText(input) {
+        if (input.argc !== 1) {
+            return {
+                response: input.newChatResponse(
+                    'コマンドの形式が間違っています :sob: 例:`@hanako キャラクター変更 default`',
+                    'error'
+                ),
+            };
+        }
+        return { args: { name: input.argv[0] } };
+    }
+
+    /**
      * @param {Hanako} hanako コマンド実行下の読み上げ花子
      */
     constructor(hanako) {
@@ -44,15 +76,7 @@ class SpeakerCommand {
         assert(typeof input === 'object');
         logger.info(`キャラクター変更コマンドを受理 ${input}`);
 
-        // コマンド形式のバリデーション
-        if (input.argc !== 1) {
-            return input.newChatResponse(
-                'コマンドの形式が間違っています :sob: 例:`@hanako キャラクター変更 default`',
-                'error'
-            );
-        }
-
-        const newSpeaker = input.argv[0];
+        const newSpeaker = input.args.name;
 
         // キャラクター変更アクションを作成
         const action = new SpeakerUpdateAction({
@@ -66,7 +90,7 @@ class SpeakerCommand {
             onSuccess = input.newChatResponse('読み上げるキャラクターをデフォルトに戻しました :beginner:');
         } else {
             onSuccess = input.newChatResponse(
-                `読み上げるキャラクターを${newSpeaker}に変更しました。元に戻す場合は@hanako キャラクター変更 default を入力します :microphone:`
+                `読み上げるキャラクターを${newSpeaker}に変更しました。元に戻す場合は${input.usage('@hanako キャラクター変更 default', '/speaker name:default')} を入力します :microphone:`
             );
         }
         return new ActionResponse({ id: input.id, action, onSuccess });

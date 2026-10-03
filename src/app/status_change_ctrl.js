@@ -1,16 +1,20 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
-const MessageValidator = require('../service/message_validator');
-const HanakoLoader = require('../service/hanako_loader');
+const StatusService = require('../service/status_service');
 const { ActivityType } = require('discord.js');
 
 /** @typedef {import('discord.js').Client} discord.Client */
-/** @typedef {import('discord.js').Message} discord.Message */
+
+/**
+ * ボットステータスの更新間隔（ミリ秒）
+ * プレゼンス更新にはGatewayのレート制限があるため、読み上げのたびには更新しない
+ */
+const STATUS_UPDATE_INTERVAL_MS = 60000;
 
 /**
  * Statusコントローラ
  * - ボットステータスの変更を処理する
- * - Messageイベントを受け取る
+ * - clientReadyイベントを受け取り、以降は定期的にステータスを更新する
  */
 class StatusChangeCtrl {
     /**
@@ -18,36 +22,42 @@ class StatusChangeCtrl {
      */
     constructor(client) {
         this.client = client;
-        this.validator = new MessageValidator();
-        this.hanakoLoader = new HanakoLoader();
-        this.readCount = 0;
+        this.service = new StatusService();
+        this.timer = null;
+        this.lastStatus = null;
+
         logger.trace('セットアップ完了');
     }
 
     /**
-     * Discordから受信したメッセージを包括的に処理
-     *
-     * @param {discord.Message} message 受信したDiscordのメッセージ
-     * @param {string} content 標準化済みメッセージ内容
+     * ボットステータスの定期更新を開始
      */
-    async onStatusChange(message, content) {
-        const hanako = await this.hanakoLoader.load(message.guild.id);
-        const prefix = hanako.prefix;
+    async onStatusChange() {
+        if (this.timer !== null) {
+            return;
+        }
 
-        // バリデーション
-        const validatorParam = {
-            isBot: message.author.bot,
-            content,
-            userName: message.author.username,
-            channelType: message.channel.type,
-        };
-        await this.validator.validate(validatorParam);
+        this.timer = setInterval(() => {
+            this.update().catch((e) => logger.warn('ボットステータスの更新に失敗', e));
+        }, STATUS_UPDATE_INTERVAL_MS);
+        this.timer.unref();
 
-        // 花子が読み上げたとは言ってないのでセーフ
-        this.readCount++;
-        await this.client.user.setActivity(`${prefix}help | ${this.readCount}回読んだ！`, {
-            type: ActivityType.Streaming,
-        });
+        await this.update();
+    }
+
+    /**
+     * ボットステータスが変わっていれば更新する
+     *
+     * @returns {Promise<void>}
+     */
+    async update() {
+        const status = await this.service.serve();
+        if (status === this.lastStatus) {
+            return;
+        }
+
+        this.client.user.setActivity(status, { type: ActivityType.Streaming });
+        this.lastStatus = status;
     }
 }
 

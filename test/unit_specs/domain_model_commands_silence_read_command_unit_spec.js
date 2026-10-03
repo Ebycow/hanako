@@ -5,6 +5,7 @@ const {
     commandInputBlueprint,
     silenceDictionaryLineBlueprint,
     SilenceDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -40,7 +41,7 @@ describe('SilenceReadCommand', () => {
                 const sd = new SilenceDictionary({ id: 'sd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint();
                 const sub = new SilenceReadCommand(basicHanako({ silenceDictionary: sd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('pager');
@@ -51,7 +52,7 @@ describe('SilenceReadCommand', () => {
             specify('沈黙ユーザーがいなければエラーレスポンスを返す', () => {
                 const input = commandInputBlueprint();
                 const sub = new SilenceReadCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');

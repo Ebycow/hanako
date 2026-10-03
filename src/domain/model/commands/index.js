@@ -23,6 +23,7 @@ module.exports = {
     foley_read: require('./foley_read_command'),
     foley_search: require('./foley_search_command'),
     help: require('./help_command'),
+    text_commands: require('./text_commands_command'),
 };
 
 /*******************************************************
@@ -57,4 +58,44 @@ module.exports = {
  *
  * @typedef CommandT
  * @type {Ask|Join|Leave|Seibai|Limit|Speaker|SeNormalize|WordCreate|WordRead|WordDelete|SilenceCreate|SilenceRead|SilenceDelete|SilenceClear|FoleyCreate|FoleyDelete|FoleyRename|FoleyRead|FoleySearch}
+ */
+
+/**
+ * コマンドの実行に必要な権限の名前
+ * - manageGuild: サーバー管理
+ * - moderateMembers: メンバーをタイムアウト（モデレーター）
+ *
+ * コマンドクラスの static requiredPermission に書く。書かないコマンドは誰でも実行できる。
+ * スラッシュコマンドでは登録時の初期値（サーバー管理者が連携サービスの設定で変えられる）になり、
+ * テキストで実行されたときはこちらで実行者の権限を確認する。
+ *
+ * @typedef PermissionName
+ * @type {'manageGuild'|'moderateMembers'}
+ */
+
+/**
+ * スラッシュコマンドのオプション定義
+ *
+ * @typedef SlashCommandOption
+ * @type {object}
+ *
+ * @property {'string'|'integer'|'boolean'|'user'|'attachment'} type オプションの型
+ * @property {string} name オプション名（コマンドの名前付き引数の名前になる）
+ * @property {string} description 説明
+ * @property {boolean} required 必須かどうか
+ * @property {number} [minValue] 最小値（integerのみ）
+ * @property {number} [maxValue] 最大値（integerのみ）
+ */
+
+/**
+ * スラッシュコマンドの定義
+ * Discordに依存しないよう、登録時と実行時にアプリケーション層で変換して使う
+ *
+ * @typedef SlashCommandDefinition
+ * @type {object}
+ *
+ * @property {string} name コマンド名
+ * @property {string} description 説明
+ * @property {SlashCommandOption[]} options オプション
+ * @property {boolean} [ephemeral] 結果を実行者にだけ見せるか（一覧や検索など、本人が見たいだけの参照系で true）
  */

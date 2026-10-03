@@ -5,6 +5,7 @@ const {
     commandInputBlueprint,
     foleyDictionaryLineBlueprint,
     FoleyDictionary,
+    processText,
 } = require('../helpers/blueprints');
 
 /************************************************************************
@@ -40,7 +41,7 @@ describe('FoleyDeleteCommand', () => {
                 const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint({ argc: 1, argv: ['ドンッ'] });
                 const sub = new FoleyDeleteCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('foley_delete');
@@ -55,7 +56,7 @@ describe('FoleyDeleteCommand', () => {
                 const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line1, line2] });
                 const input = commandInputBlueprint({ argc: 2, argv: ['ドンッ', 'バシッ'] });
                 const sub = new FoleyDeleteCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.action.type.should.equal('foley_delete_multiple');
@@ -67,7 +68,7 @@ describe('FoleyDeleteCommand', () => {
                 const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
                 const input = commandInputBlueprint({ argc: 2, argv: ['ドンッ', '存在しない'] });
                 const sub = new FoleyDeleteCommand(basicHanako({ foleyDictionary: fd }));
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('action');
                 res.onSuccess.content.should.include('ドンッ');
@@ -79,7 +80,7 @@ describe('FoleyDeleteCommand', () => {
             specify('引数なしはエラー', () => {
                 const input = commandInputBlueprint({ argc: 0, argv: [] });
                 const sub = new FoleyDeleteCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -88,7 +89,7 @@ describe('FoleyDeleteCommand', () => {
             specify('単一削除で存在しないSEはエラー', () => {
                 const input = commandInputBlueprint({ argc: 1, argv: ['存在しない'] });
                 const sub = new FoleyDeleteCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');
@@ -97,7 +98,7 @@ describe('FoleyDeleteCommand', () => {
             specify('複数削除で全て見つからない場合はエラー', () => {
                 const input = commandInputBlueprint({ argc: 2, argv: ['無い1', '無い2'] });
                 const sub = new FoleyDeleteCommand(basicHanako());
-                const res = sub.process(input);
+                const res = processText(sub, input);
 
                 res.type.should.equal('chat');
                 res.code.should.equal('error');

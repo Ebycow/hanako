@@ -4,6 +4,7 @@ const assert = require('assert').strict;
 const JoinVoiceAction = require('../../entity/actions/join_voice_action');
 const ActionResponse = require('../../entity/responses/action_response');
 
+/** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 
@@ -27,6 +28,19 @@ class JoinCommand {
     }
 
     /**
+     * スラッシュコマンドの定義
+     *
+     * @type {SlashCommandDefinition}
+     */
+    static get slash() {
+        return {
+            name: 'plz',
+            description: 'はなこがボイスチャットを読み上げてくれます',
+            options: [],
+        };
+    }
+
+    /**
      * VC参加コマンドを処理
      *
      * @param {CommandInput} input コマンド引数
@@ -47,7 +61,8 @@ class JoinCommand {
             textChannelId: input.channelId,
         });
         const onSuccess = input.newChatResponse(`<#${input.channelId}>に参加したよ、よろしくね`);
-        return new ActionResponse({ id: input.id, action, onSuccess });
+        const onFailure = input.newChatResponse('ボイスチャンネルに参加できなかったよ', 'error');
+        return new ActionResponse({ id: input.id, action, onSuccess, onFailure });
     }
 }
 
