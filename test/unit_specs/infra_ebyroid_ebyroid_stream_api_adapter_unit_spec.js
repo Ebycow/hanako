@@ -144,4 +144,52 @@ describe('EbyroidStreamApiAdapter', () => {
             sinon.assert.calledOnce(axios.post);
         });
     });
+
+    describe('timeouts', () => {
+        const url = 'http://localhost:4090/api/v2/audiostream';
+        let clock;
+
+        beforeEach(() => {
+            clock = sinon.useFakeTimers();
+        });
+
+        afterEach(() => {
+            clock.restore();
+        });
+
+        it('gives up when the response does not start within 15 seconds', async () => {
+            axios.post.callsFake(hangUntilAborted);
+            const adapter = new EbyroidStreamApiAdapter({ ebyroidStreamApiUrl: url });
+
+            const result = adapter.getVoiceroidStream({ content: 'slow', speaker: 'default' }).catch((err) => err);
+            await clock.tickAsync(14999);
+            sinon.assert.calledOnce(axios.post);
+            await clock.tickAsync(1);
+
+            expect((await result).message).to.include('15000ms');
+        });
+
+        it('keeps the response alive after the response deadline once the response has started', async () => {
+            const adapter = new EbyroidStreamApiAdapter({ ebyroidStreamApiUrl: url });
+
+            await adapter.getVoiceroidStream({ content: 'ok', speaker: 'default' });
+            await clock.tickAsync(20000);
+
+            expect(axios.post.firstCall.args[2].signal.aborted).to.equal(false);
+        });
+
+        it('destroys the HTTP response when PCM stops arriving while it is being read', async () => {
+            const body = new Readable({ read() {} });
+            axios.post.resolves({ ...response(), data: body });
+            const adapter = new EbyroidStreamApiAdapter({ ebyroidStreamApiUrl: url });
+
+            const stream = await adapter.getVoiceroidStream({ content: 'stalled', speaker: 'default' });
+            const failed = new Promise((resolve) => stream.once('error', resolve));
+            stream.resume();
+            await clock.tickAsync(10000);
+
+            expect((await failed).message).to.include('10000ms');
+            expect(body.destroyed).to.equal(true);
+        });
+    });
 });
