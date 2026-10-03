@@ -243,8 +243,8 @@ class FoleyCreateCommand {
         }
 
         // 文字数上限のバリデーション
-        if (utils.countUnicode(keyword) >= 50) {
-            return '50文字以上の教育はできません';
+        if (utils.countUnicode(keyword) > 50) {
+            return '50文字を超える登録はできません';
         }
 
         // URL長さのバリデーション

@@ -100,8 +100,8 @@ class FoleyRenameCommand {
         }
 
         // 文字数上限のバリデーション
-        if (utils.countUnicode(keywordTo) >= 50) {
-            return input.newChatResponse('もじながすぎわろたwwww 50文字以上の教育はできません', 'error');
+        if (utils.countUnicode(keywordTo) > 50) {
+            return input.newChatResponse('もじながすぎわろたwwww 50文字を超える登録はできません', 'error');
         }
 
         // SE追加アクションを作成

@@ -157,8 +157,16 @@ describe('FoleyCreateCommand', () => {
                 res.code.should.equal('error');
             });
 
-            specify('50文字以上キーワード → エラー', () => {
-                const longKeyword = 'あ'.repeat(50);
+            specify('50文字キーワード → 登録できる', () => {
+                const input = commandInputBlueprint({ argc: 2, argv: ['あ'.repeat(50), 'http://example.com/se.mp3'] });
+                const sub = new FoleyCreate(basicHanako());
+                const res = processText(sub, input);
+
+                res.type.should.equal('action');
+            });
+
+            specify('51文字以上キーワード → エラー', () => {
+                const longKeyword = 'あ'.repeat(51);
                 const input = commandInputBlueprint({ argc: 2, argv: [longKeyword, 'http://example.com/se.mp3'] });
                 const sub = new FoleyCreate(basicHanako());
                 const res = processText(sub, input);

@@ -92,10 +92,20 @@ describe('FoleyRenameCommand', () => {
                 res.code.should.equal('error');
             });
 
-            specify('変更先が50文字以上だとエラー', () => {
+            specify('変更先が50文字なら変更できる', () => {
                 const line = foleyDictionaryLineBlueprint({ keyword: 'ドンッ' });
                 const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
-                const longStr = 'あ'.repeat(50);
+                const input = commandInputBlueprint({ argc: 2, argv: ['ドンッ', 'あ'.repeat(50)] });
+                const sub = new FoleyRenameCommand(basicHanako({ foleyDictionary: fd }));
+                const res = processText(sub, input);
+
+                res.type.should.equal('action');
+            });
+
+            specify('変更先が51文字以上だとエラー', () => {
+                const line = foleyDictionaryLineBlueprint({ keyword: 'ドンッ' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
+                const longStr = 'あ'.repeat(51);
                 const input = commandInputBlueprint({ argc: 2, argv: ['ドンッ', longStr] });
                 const sub = new FoleyRenameCommand(basicHanako({ foleyDictionary: fd }));
                 const res = processText(sub, input);
