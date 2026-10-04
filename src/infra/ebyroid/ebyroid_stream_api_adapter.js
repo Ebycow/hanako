@@ -1,5 +1,4 @@
 const axios = require('axios').default;
-const SampleRate = require('node-libsamplerate');
 const transforms = require('../../library/transforms');
 const AppSettings = require('../../core/app_settings');
 const IVoiceroidStreamRepo = require('../../domain/repo/i_voiceroid_stream_repo');
@@ -115,13 +114,12 @@ class EbyroidStreamApiAdapter {
         }
 
         // TODO リサンプル処理をEbyroidに移行
-        const resample = new SampleRate({
-            type: SampleRate.SRC_SINC_MEDIUM_QUALITY,
+        const resample = new transforms.SampleRateConverter({
+            type: transforms.SampleRateConverter.SRC_SINC_MEDIUM_QUALITY,
             channels: 2,
             fromRate: sampleRate,
             fromDepth: bitDepth,
             toRate: 48000,
-            toDepth: 16,
         });
         // Propagate HTTP/transform failures and preserve backpressure across
         // the complete response -> channel conversion -> resampling pipeline.

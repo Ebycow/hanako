@@ -117,8 +117,8 @@
 * npm (latest compatible version)
 
 ## System Dependencies
-* **FFmpeg**: オーディオ形式変換・処理 (ffmpeg-staticに含まれる)
-* Windows x64環境ではprebuiltバイナリを同梱しているため、C++ Build Tools・CMake・libsamplerateのインストールは不要です
+* **FFmpeg**: オーディオ形式変換・処理 (ffmpeg-staticに含まれる。取得できなかった場合はPATH上の`ffmpeg`を使う)
+* ネイティブモジュールのビルドは不要です（C++ Build Tools・CMake・Pythonのインストールは不要）
 
 ## Discord Integration
 * Discord Bot Token
@@ -136,14 +136,13 @@
   * `GET /api/v1/audiostream?text=&name=`（従来互換）
 
 ## Special Dependencies
-* **node-libsamplerate**: ローカルカスタム依存関係 (`vendor/node-libsamplerate-prebuilt`)
-  * libsamplerateのnativeバインディング
-  * Windows x64向けprebuiltバイナリを同梱済み
+* **@alexanderolsen/libsamplerate-js**: 音声のサンプリングレート変換
+  * libsamplerateのWebAssembly版のため、OSやCPUを問わず動作します
 
 # Install
 ## 0.前提条件
 * **Node.js 24.21.0** — [Volta](https://volta.sh/)を使用している場合、`package.json`の設定により自動的にバージョンが固定されます
-* **Windows x64** — prebuiltバイナリを同梱しているため、そのまま動作します
+* **Windows / Linux / macOS**
 
 ## 1.BOTの作成
 Discord Developer Portalよりアプリケーションを作成し、ボットのTOKENとCLIENT_IDを取得する必要があります
@@ -230,7 +229,7 @@ npm run debug
 | Runtime | Node.js 24.21.0 |
 | Discord | discord.js 14, @discordjs/voice, opusscript |
 | Database | NeDB (組み込みドキュメントDB) |
-| Audio | prism-media, ffmpeg-static, node-libsamplerate |
+| Audio | prism-media, ffmpeg-static, libsamplerate-js (WebAssembly) |
 | Logging | log4js (ファイルローテーション付き) |
 | Config | YAML (app-config-default.yml + app-config.yml) |
 
