@@ -8,7 +8,11 @@ on:
 
 jobs:
   lint-and-test:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +32,26 @@ jobs:
         run: npm test
 
       - name: Upload coverage
+        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage/
+
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t hanako .
+
+      - name: Load runtime dependencies in the image
+        run: >
+          docker run --rm hanako node -e "
+          const prism = require('prism-media');
+          new prism.opus.Encoder({ rate: 48000, channels: 2, frameSize: 960 });
+          require('@alexanderolsen/libsamplerate-js');
+          require('@snazzah/davey');
+          console.log('ffmpeg: ' + prism.FFmpeg.getInfo().command);"
