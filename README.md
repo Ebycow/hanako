@@ -142,7 +142,7 @@
 # Install
 ## 0.前提条件
 * **Node.js 24.21.0** — [Volta](https://volta.sh/)を使用している場合、`package.json`の設定により自動的にバージョンが固定されます
-* **Windows / Linux / macOS**（x64・arm64）
+* **Windows / Linux / macOS**（x64・arm64）— Dockerで動かす場合は [Docker Composeで動かす](#docker-composeで動かす) を参照
 
 ## 1.BOTの作成
 Discord Developer Portalよりアプリケーションを作成し、ボットのTOKENとCLIENT_IDを取得する必要があります
@@ -220,6 +220,43 @@ node index
 デバッグモードで起動する場合:
 ```
 npm run debug
+```
+
+## Docker Composeで動かす
+Node.jsを入れずに、Docker Composeで動かすこともできます。音声サーバ（Ebyroid）はVoiceroidが動くWindowsマシンで別に起動しておきます
+
+`.env.example` をコピーして `.env` を作り、トークンなどを設定します
+```
+cp .env.example .env
+```
+
+| 環境変数 | 内容 |
+|---|---|
+| `DISCORD_BOT_TOKEN` | Discord Botのトークン（必須） |
+| `DISCORD_CLIENT_ID` | Discord BotのCLIENT_ID（必須） |
+| `DISCORD_GUILD_ID` | （任意）以前ギルド単位でスラッシュコマンドを登録していたGUILD_ID |
+| `EBYROID_STREAM_API_URL` | 音声サーバのURL。同じマシンなら `host.docker.internal`、別のマシンならそのIPアドレスを書く |
+| `EBYROID_STREAM_API_MODE` | （任意）`auto` / `legacy-get` / `streaming-post` |
+
+これらの環境変数は、Dockerを使わない場合も `app-config.yml` より優先されます
+
+スラッシュコマンドを登録してから起動します
+```
+docker compose run --rm hanako node deploy-commands.js
+docker compose up -d --build
+```
+
+ログは `docker compose logs -f hanako` で確認できます。辞書・SEなどのデータはDockerのボリューム（`db`・`files`・`log`）に保存され、コンテナを作り直しても残ります
+
+それ以外の設定を変えるときは、`app-config.yml` を作ってから `compose.yaml` の `./app-config.yml` の行を有効にします
+
+**既存のデータを移す場合:** 一度 `docker compose up -d` でコンテナを作ってから、次のようにコピーして再起動します
+```
+docker compose stop
+docker compose cp ./db/. hanako:/app/db
+docker compose cp ./files/. hanako:/app/files
+docker compose run --rm --user root hanako chown -R node:node /app/db /app/files
+docker compose start
 ```
 
 # Architecture

@@ -1,0 +1,28 @@
+services:
+  hanako:
+    build: .
+    image: hanako
+    restart: unless-stopped
+    # ffmpeg の子プロセスを回収し、停止時の SIGTERM を確実に届ける
+    init: true
+    environment:
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:?.env に DISCORD_BOT_TOKEN を設定してください}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:?.env に DISCORD_CLIENT_ID を設定してください}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
+      EBYROID_STREAM_API_URL: ${EBYROID_STREAM_API_URL:-http://host.docker.internal:4090/api/v1/audiostream}
+      EBYROID_STREAM_API_MODE: ${EBYROID_STREAM_API_MODE:-auto}
+      LOG_LEVEL: ${LOG_LEVEL:-}
+    # Linux でも host.docker.internal でホストの音声サーバに届くようにする
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - db:/app/db
+      - files:/app/files
+      - log:/app/log
+      # その他の設定を変えるときは app-config.yml を作ってから有効にする
+      # - ./app-config.yml:/app/app-config.yml:ro
+
+volumes:
+  db:
+  files:
+  log:
