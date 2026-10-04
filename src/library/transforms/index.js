@@ -4,6 +4,7 @@
 module.exports = {
     Mono2StereoConverter: require('./mono_2_stereo_converter'),
     StereoByteAdjuster: require('./stereo_byte_adjuster'),
+    SampleRateConverter: require('./sample_rate_converter'),
     StallGuard: require('./stall_guard'),
     TrailingSilenceTrimmer: require('./trailing_silence_trimmer'),
     WaveFileHeaderTrimmmer: require('./wave_file_header_trimmer'),
