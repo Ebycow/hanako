@@ -1,5 +1,8 @@
 const { expect } = require('chai');
+const sinon = require('sinon');
 const { Readable } = require('stream');
+const LibSampleRate = require('@alexanderolsen/libsamplerate-js');
+const proxyquire = require('proxyquire');
 const SampleRateConverter = require('../../src/library/transforms/sample_rate_converter');
 
 /************************************************************************
@@ -8,6 +11,7 @@ const SampleRateConverter = require('../../src/library/transforms/sample_rate_co
  * 機能：PCMストリームのサンプリングレート変換
  * 期待動作：16bit/32bitのPCMを、16bitの指定レートへ変換する
  * 備考：ネイティブアドオンを使わないため、OSを問わず動作する
+ *       変換器は破棄後に取っておき、同じ設定のストリームで使い回す
  ***********************************************************************/
 
 describe('SampleRateConverter', () => {
@@ -44,6 +48,8 @@ describe('SampleRateConverter', () => {
     async function consume(stream) {
         const chunks = [];
         for await (const chunk of stream) chunks.push(chunk);
+        // 読み終えた後の自動破棄（変換器を返す処理）を待つ
+        await new Promise(setImmediate);
         return Buffer.concat(chunks);
     }
 
@@ -124,5 +130,54 @@ describe('SampleRateConverter', () => {
         await converter.ready;
 
         expect(converter.src).to.be.null;
+    });
+
+    describe('使い回し', () => {
+        let create;
+        let Converter;
+
+        beforeEach(() => {
+            // ライブラリの create は書き換えられないため、包んだものを渡す
+            create = sinon.spy((...args) => LibSampleRate.create(...args));
+            Converter = proxyquire.noPreserveCache()('../../src/library/transforms/sample_rate_converter', {
+                '@alexanderolsen/libsamplerate-js': { create, ConverterType: LibSampleRate.ConverterType },
+            });
+        });
+
+        specify('使い終わった変換器を、同じ設定の次のストリームで使い回す', async () => {
+            await consume(chunked(sine16(22050, 2205), 4096).pipe(new Converter(opts())));
+            await consume(chunked(sine16(22050, 2205), 4096).pipe(new Converter(opts())));
+
+            sinon.assert.calledOnce(create);
+        });
+
+        specify('使い回しても、前のストリームの音が残らない', async () => {
+            const input = sine16(22050, 22050);
+            const first = await consume(chunked(input, 4096).pipe(new Converter(opts())));
+            // 別の音を流した変換器が使い回される
+            await consume(chunked(sine16(44100, 22050), 4096).pipe(new Converter(opts())));
+
+            const again = await consume(chunked(input, 4096).pipe(new Converter(opts())));
+
+            sinon.assert.calledOnce(create);
+            expect(again.equals(first)).to.be.true;
+        });
+
+        specify('設定が違うストリームには使い回さない', async () => {
+            await consume(chunked(sine16(22050, 2205), 4096).pipe(new Converter(opts())));
+            await consume(chunked(sine16(44100, 4410), 4096).pipe(new Converter(opts({ fromRate: 44100 }))));
+
+            sinon.assert.calledTwice(create);
+            sinon.assert.calledWithMatch(create.secondCall, 2, 44100, 48000);
+        });
+
+        specify('同時に使っている変換器は、ほかのストリームに渡さない', async () => {
+            await Promise.all([
+                consume(chunked(sine16(22050, 2205), 4096).pipe(new Converter(opts()))),
+                consume(chunked(sine16(22050, 2205), 4096).pipe(new Converter(opts()))),
+            ]);
+
+            sinon.assert.calledTwice(create);
+        });
     });
 });
