@@ -2,9 +2,9 @@ name: Node.js CI
 
 on:
   push:
-    branches: [master, slashbros]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   lint-and-test:
