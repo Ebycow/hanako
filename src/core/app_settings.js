@@ -36,6 +36,19 @@ function coerceCase(obj) {
 }
 
 /**
+ * 設定を上書きする環境変数と、上書きする設定の名前
+ *
+ * @type {Array<[string, string]>}
+ */
+const ENV_OVERRIDES = [
+    ['DISCORD_BOT_TOKEN', 'discordBotToken'],
+    ['DISCORD_CLIENT_ID', 'discordClientId'],
+    ['DISCORD_GUILD_ID', 'discordGuildId'],
+    ['EBYROID_STREAM_API_URL', 'ebyroidStreamApiUrl'],
+    ['EBYROID_STREAM_API_MODE', 'ebyroidStreamApiMode'],
+];
+
+/**
  * 読み上げ花子アプリケーション全体の設定
  */
 class AppSettings {
@@ -56,11 +69,11 @@ class AppSettings {
             override = {};
         }
         const data = Object.assign({}, base, override);
-        if (process.env.EBYROID_STREAM_API_URL) {
-            data.ebyroidStreamApiUrl = process.env.EBYROID_STREAM_API_URL;
-        }
-        if (process.env.EBYROID_STREAM_API_MODE) {
-            data.ebyroidStreamApiMode = process.env.EBYROID_STREAM_API_MODE;
+        // 環境変数があれば設定ファイルより優先する（Docker などで設定ファイルを置かずに動かすため）
+        for (const [envName, key] of ENV_OVERRIDES) {
+            if (process.env[envName]) {
+                data[key] = process.env[envName];
+            }
         }
         return new AppSettings(data);
     }
