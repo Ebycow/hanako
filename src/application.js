@@ -13,6 +13,7 @@ const ReadyCtrl = require('./app/ready_ctrl');
 const PagerReactionCtrl = require('./app/pager_reaction_ctrl');
 const AutoLeaveCtrl = require('./app/auto_leave_ctrl');
 const StatusChangeCtrl = require('./app/status_change_ctrl');
+const HeartbeatCtrl = require('./app/heartbeat_ctrl');
 const MessageSanitizeMiddleWare = require('./app/message_sanitize_middle_ware');
 const PagerReactionFilterMiddleWare = require('./app/pager_reaction_filter_middle_ware');
 const VoiceChatActionMiddleWare = require('./app/voice_chat_action_middle_ware');
@@ -80,6 +81,7 @@ class Application {
         // コントローラの登録
         this.bind('clientReady', ReadyCtrl);
         this.bind('clientReady', StatusChangeCtrl);
+        this.bind('clientReady', HeartbeatCtrl);
         this.bind('interactionCreate', InteractionCtrl);
         this.bind('interactionCreate', PagerButtonCtrl);
         this.bind('interactionCreate', ConfirmButtonCtrl);
