@@ -74,6 +74,8 @@ describe('TtshubStreamApiAdapter', () => {
             text: 'こんにちは',
             voice: speaker,
             format: { codec: 'pcm_s16le', sample_rate: 48000, channels: 2 },
+            // 待てる時間は ttshub に任せる
+            deadline_ms: 8000,
         });
     });
 

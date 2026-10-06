@@ -25,8 +25,8 @@ const OPUS_FRAME_MS = 20;
 // SEをはさむ発言では、SEを再生している間に次の区切りの音声を取りに行くため、
 // 長文の合成（VOICEVOXは一括で返す）を待つと数秒途切れる。既定の5フレーム（100ms）では
 // そこで再生が止められ、残りが読まれずに次の発言へ進んでしまう。
-// 取得の失敗は各アダプタの期限（ttshubは応答開始まで30秒）でストリームが破棄されて分かるため、それより長くする。
-const MAX_PLAYBACK_GAP_MS = 35000;
+// 取得の失敗は各アダプタの期限（応答開始まで、Ebyroidは15秒・ttshubは10秒）でストリームが破棄されて分かるため、それより長くする。
+const MAX_PLAYBACK_GAP_MS = 17000;
 
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('discord.js').VoiceChannel} discord.VoiceChannel */

@@ -219,9 +219,9 @@ describe('DiscordVoiceChatModel', () => {
             const vc = new DiscordVoiceChatModel('guild-1');
             await vc.join(voiceChannel());
 
-            // SEの後の長文をVOICEVOXが合成し終えるまで、途切れても止めない（20ms × フレーム数）
+            // 次の区切りの取得をあきらめるまで（各アダプタの応答開始の期限。最長は Ebyroid の15秒）、途切れても止めない（20ms × フレーム数）
             const { maxMissedFrames } = createAudioPlayer.firstCall.args[0].behaviors;
-            (maxMissedFrames * 20).should.be.at.least(30000);
+            (maxMissedFrames * 20).should.be.above(15000);
         });
     });
 });

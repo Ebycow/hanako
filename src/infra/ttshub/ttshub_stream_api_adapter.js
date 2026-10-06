@@ -7,9 +7,11 @@ const { compose } = require('stream');
 const { randomUUID } = require('crypto');
 
 const logger = log4js.getLogger(require('path').basename(__filename));
-// 応答が始まるまでの上限。ttshub はエンジンごとの上限で先に打ち切り、代わりの声で読むため、それより少し長くする。
-// VOICEVOX は音声を一括で返すため、長文だと応答開始まで時間がかかる
-const RESPONSE_TIMEOUT_MS = 30000;
+// 読み上げの音声が始まるまでに待てる時間。これ以上待たせると読み上げとして使い物にならない。
+// ttshub に渡し、ttshub はこの中で（間に合わなければ代わりの声で）音声を返し始めるか、あきらめてエラーを返す
+const DEADLINE_MS = 8000;
+// 応答が始まるまでの上限。期限は ttshub が守るので、ここは ttshub が応答しなくなったときの備えとして少し長くする
+const RESPONSE_TIMEOUT_MS = DEADLINE_MS + 2000;
 // 応答が始まった後、読み手が待っているのにPCMが届かない時間の上限
 const BODY_STALL_TIMEOUT_MS = 10000;
 // Discordに送る形式。ttshub がこの形式に変換して返す
@@ -60,7 +62,7 @@ class TtshubStreamApiAdapter {
      * @returns {Promise<Readable>}
      */
     async getVoiceroidStream(audio, signal) {
-        const body = { text: audio.content, voice: audio.speaker, format: OUTPUT_FORMAT };
+        const body = { text: audio.content, voice: audio.speaker, format: OUTPUT_FORMAT, deadline_ms: DEADLINE_MS };
         // ttshub のログと突き合わせるための ID。ttshub はこの ID で受付から終了までを記録する
         // 本文はログに書かない（文字数だけ）
         const id = randomUUID();
