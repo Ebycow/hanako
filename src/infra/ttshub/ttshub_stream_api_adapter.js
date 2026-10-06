@@ -3,7 +3,7 @@ const transforms = require('../../library/transforms');
 const AppSettings = require('../../core/app_settings');
 const IVoiceroidStreamRepo = require('../../domain/repo/i_voiceroid_stream_repo');
 const log4js = require('log4js');
-const { compose } = require('stream');
+const composeStreams = require('../../library/compose_streams');
 const { randomUUID } = require('crypto');
 
 const logger = log4js.getLogger(require('path').basename(__filename));
@@ -121,7 +121,7 @@ class TtshubStreamApiAdapter {
         }
 
         // ttshub が Discord 向けの形式に変換済みなので、ここでは届かなくなったときの監視だけ行う
-        const stream = compose(response.data, new transforms.StallGuard(BODY_STALL_TIMEOUT_MS));
+        const stream = composeStreams(response.data, new transforms.StallGuard(BODY_STALL_TIMEOUT_MS));
         stream.on('error', (err) => {
             // 読み上げをやめて破棄したときのエラーは記録しない
             if ((signal && signal.aborted) || err.name === 'AbortError') return;

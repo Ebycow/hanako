@@ -1,7 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const { compose } = require('stream');
+const composeStreams = require('../../library/compose_streams');
 const Injector = require('../../core/injector');
 const IVoiceroidStreamRepo = require('../repo/i_voiceroid_stream_repo');
 const IFoleyStreamRepo = require('../repo/i_foley_stream_repo');
@@ -49,7 +49,7 @@ class StreamFetcher {
                 // VOICEROIDが付加する長い末尾無音を、単一音声を含め常に除去する。
                 // 除去しないと、声が聞こえ終わった後も次のキューが約800ms待たされる。
                 // pipeでは破棄が上流へ伝わらずHTTPレスポンスが残るため、composeでつなぐ。
-                return compose(stream, new transforms.TrailingSilenceTrimmer());
+                return composeStreams(stream, new transforms.TrailingSilenceTrimmer());
             } else if (audio.type === 'foley') {
                 return this.foleyStreamRepo.getFoleyStream(audio);
             } else {
