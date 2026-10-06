@@ -12,9 +12,6 @@ const Interface = require('../../core/interface');
  * @property {?string} engine 音声エンジンの名前（わからなければ null）
  * @property {?string} credit 必要なクレジット表記（不要なら null）
  * @property {?string} [termsUrl] 利用規約の URL（わからなければ null）
- * @property {?string} [character] キャラ名（わからなければ null）
- * @property {?string} [style] スタイル名（わからなければ null）
- * @property {boolean} [available] 音声エンジンが動いていて読み上げに使えるか（わからなければ true）
  */
 
 /**
@@ -31,13 +28,14 @@ const Interface = require('../../core/interface');
  */
 class IVoiceCatalogRepo extends Interface {
     /**
-     * 話者を検索する
+     * 入力中の文字列から話者を検索する
+     * 入力にパラメータ（`?speed=1.2` など）が付いていれば、見つかった話者の指定と表示名にも付ける
      *
-     * @param {string} query 検索語（空なら先頭から）
+     * @param {string} input 入力中の文字列（空なら先頭から）
      * @param {number} limit 最大件数
      * @returns {Promise<Array<VoiceInfo>>} 見つかった話者
      */
-    async searchVoices(query, limit) {}
+    async searchVoices(input, limit) {}
 
     /**
      * 利用者の入力（あいまいでもよい）を話者に照合する
@@ -49,8 +47,7 @@ class IVoiceCatalogRepo extends Interface {
 
     /**
      * 話者の一覧を読み込む
-     * 発言などのイベントのたびに呼ばれるため、遠くへの問い合わせを待たずに返す。
-     * 一覧を取得できていなければ失敗せず、取得できなかった一覧を返す
+     * - 一覧を持たない環境か、取得できなかったとき errors.disappointed
      *
      * @returns {Promise<VoiceCatalog>} 話者の一覧
      */

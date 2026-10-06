@@ -22,10 +22,11 @@ module.exports = {};
 /** @typedef {import('./foley_rename_action')} FoleyRename */
 /** @typedef {import('./max_count_update_action')} MaxCountUpdateAction */
 /** @typedef {import('./speaker_update_action')} SpeakerUpdateAction */
+/** @typedef {import('./voice_catalog_load_action')} VoiceCatalogLoadAction */
 
 /**
  * アクションエンティティ直和型
  *
  * @typedef ActionT
- * @type {JoinVoice|LeaveVoice|SeibaiAction|WordCreate|WordDelete|WordClear|SilenceCreate|SilenceDelete|SilenceClear|FoleyCreate|FoleyCreateMultiple|FoleyDelete|FoleyDeleteMultiple|FoleyRename|MaxCountUpdateAction|SpeakerUpdateAction}
+ * @type {JoinVoice|LeaveVoice|SeibaiAction|WordCreate|WordDelete|WordClear|SilenceCreate|SilenceDelete|SilenceClear|FoleyCreate|FoleyCreateMultiple|FoleyDelete|FoleyDeleteMultiple|FoleyRename|MaxCountUpdateAction|SpeakerUpdateAction|VoiceCatalogLoadAction}
  */

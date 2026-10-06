@@ -58,6 +58,7 @@ describe('ActionHandler', () => {
                 voice: { address: query, displayName: query, engine: null, credit: null },
                 suggestions: [],
             })),
+            loadVoiceCatalog: sinon.stub().resolves({ lines: [] }),
         };
         handler = new ActionHandler(
             vcActionRepo,
@@ -87,6 +88,7 @@ describe('ActionHandler', () => {
             speaker_update: settingsActionRepo.postSpeakerUpdate,
             se_normalize_update: settingsActionRepo.postSeNormalizeUpdate,
             text_commands_update: settingsActionRepo.postTextCommandsUpdate,
+            voice_catalog_load: voiceCatalogRepo.loadVoiceCatalog,
         };
         allRepoStubs = Object.values(dispatchTargets);
     });
@@ -211,6 +213,18 @@ describe('ActionHandler', () => {
                 const action = { type: 'text_commands_update' };
                 await handler.handle(action);
                 assertExclusiveDispatch(dispatchTargets.text_commands_update, action);
+            });
+        });
+
+        context('読み上げキャラクター一覧', () => {
+            specify('voice_catalog_loadはvoiceCatalogRepo.loadVoiceCatalogを呼び、一覧を返す', async () => {
+                const action = { type: 'voice_catalog_load' };
+                const result = await handler.handle(action);
+                sinon.assert.calledOnceWithExactly(voiceCatalogRepo.loadVoiceCatalog);
+                allRepoStubs
+                    .filter((stub) => stub !== voiceCatalogRepo.loadVoiceCatalog)
+                    .forEach((stub) => sinon.assert.notCalled(stub));
+                result.should.deep.equal({ lines: [] });
             });
         });
 

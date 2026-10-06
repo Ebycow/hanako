@@ -2,11 +2,14 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const Pager = require('../pager');
+const VoiceCatalogLoadAction = require('../../entity/actions/voice_catalog_load_action');
+const ActionResponse = require('../../entity/responses/action_response');
 
 /** @typedef {import('./index').SlashCommandDefinition} SlashCommandDefinition */
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../hanako')} Hanako */
+/** @typedef {import('../../entity/voice_catalog')} VoiceCatalog */
 
 /**
  * ドメインモデル
@@ -58,19 +61,29 @@ class SpeakersCommand {
         assert(typeof input === 'object');
         logger.info(`キャラクター一覧コマンドを受理 ${input}`);
 
-        const catalog = this.hanako.voiceCatalog;
-        if (!catalog || !catalog.available || catalog.lines.length === 0) {
-            return input.newChatResponse(
-                'キャラクターの一覧を表示できません :sob: 音声エンジンが一覧に対応していないか、一覧を取得できませんでした',
-                'error'
-            );
-        }
-
-        // ページ会話レスポンス。1ページ目の上に使い方を添える
-        const usage = input.usage('@hanako キャラクター変更 voicevox:ずんだもん/あまあま', '/speaker name:');
-        const pager = new Pager(catalog);
-        return input.newChatResponse(`${pager.show()}\n変更するには ${usage}`, 'pager');
+        // 一覧は花子モデルに持たせず、表示するときに読み込む
+        const action = new VoiceCatalogLoadAction({ id: input.id });
+        const onSuccess = (catalog) => showCatalog(input, catalog);
+        const onFailure = input.newChatResponse('キャラクターの一覧を表示できません :sob:', 'error');
+        return new ActionResponse({ id: input.id, action, onSuccess, onFailure });
     }
+}
+
+/**
+ * 読み込んだ一覧をページ送りで表示するレスポンス
+ *
+ * @param {CommandInput} input コマンド引数
+ * @param {VoiceCatalog} catalog 読み込んだ一覧
+ * @returns {ResponseT}
+ */
+function showCatalog(input, catalog) {
+    if (catalog.lines.length === 0) {
+        return input.newChatResponse('キャラクターの一覧を表示できません :sob: 一覧が空でした', 'error');
+    }
+    // ページ会話レスポンス。1ページ目の上に使い方を添える
+    const usage = input.usage('@hanako キャラクター変更 voicevox:ずんだもん/あまあま', '/speaker name:');
+    const pager = new Pager(catalog);
+    return input.newChatResponse(`${pager.show()}\n変更するには ${usage}`, 'pager');
 }
 
 module.exports = SpeakersCommand;

@@ -1,6 +1,5 @@
 require('chai').should();
 const http = require('http');
-const sinon = require('sinon');
 const TtshubVoiceCatalogAdapter = require('../../src/infra/ttshub/ttshub_voice_catalog_adapter');
 const PassthroughVoiceCatalog = require('../../src/infra/passthrough/passthrough_voice_catalog');
 
@@ -42,18 +41,20 @@ describe('TtshubVoiceCatalogAdapter', () => {
     const adapter = () => new TtshubVoiceCatalogAdapter({ ttshubUrl: `http://127.0.0.1:${port}/` });
 
     describe('#searchVoices', () => {
+        const zundamonJson = {
+            address: 'voicevox:ずんだもん/ノーマル',
+            kind: 'voice',
+            engine: 'voicevox',
+            display_name: 'ずんだもん（ノーマル）',
+            credit: 'VOICEVOX:ずんだもん',
+            terms_url: 'https://zunko.jp/con_ongen_kiyaku.html',
+            available: true,
+        };
+
         specify('話者・別名・プリセットを VoiceInfo にする', async () => {
             routes['/v1/voices'] = () => ({
                 voices: [
-                    {
-                        address: 'voicevox:ずんだもん/ノーマル',
-                        kind: 'voice',
-                        engine: 'voicevox',
-                        display_name: 'ずんだもん（ノーマル）',
-                        credit: 'VOICEVOX:ずんだもん',
-                        terms_url: 'https://zunko.jp/con_ongen_kiyaku.html',
-                        available: true,
-                    },
+                    zundamonJson,
                     {
                         address: 'preset:早口ずんだもん',
                         kind: 'preset',
@@ -74,9 +75,6 @@ describe('TtshubVoiceCatalogAdapter', () => {
                     engine: 'voicevox',
                     credit: 'VOICEVOX:ずんだもん',
                     termsUrl: 'https://zunko.jp/con_ongen_kiyaku.html',
-                    character: null,
-                    style: null,
-                    available: true,
                 },
                 {
                     address: 'preset:早口ずんだもん',
@@ -84,82 +82,70 @@ describe('TtshubVoiceCatalogAdapter', () => {
                     engine: 'voicevox',
                     credit: null,
                     termsUrl: null,
-                    character: null,
-                    style: null,
-                    available: true,
                 },
             ]);
+        });
+
+        specify('入力のパラメータは検索に使わず、候補の指定と表示名に付ける', async () => {
+            routes['/v1/voices'] = () => ({ voices: [zundamonJson] });
+            const [voice] = await adapter().searchVoices('ずんだ?speed=1.4', 25);
+
+            requests[0].query.q.should.equal('ずんだ');
+            voice.address.should.equal('voicevox:ずんだもん/ノーマル?speed=1.4');
+            voice.displayName.should.equal('ずんだもん（ノーマル） ?speed=1.4');
         });
     });
 
     describe('#loadVoiceCatalog', () => {
+        const voiceJson = (address, character, style, available = true) => ({
+            address,
+            kind: 'voice',
+            engine: address.split(':')[0],
+            character,
+            style,
+            available,
+        });
         const page1 = {
             voices: [
-                {
-                    address: 'voicevox:ずんだもん/ノーマル',
-                    kind: 'voice',
-                    engine: 'voicevox',
-                    character: 'ずんだもん',
-                    style: 'ノーマル',
-                    display_name: 'ずんだもん（ノーマル）',
-                },
+                voiceJson('ebyroid:kiritan', 'kiritan', null),
+                voiceJson('voicevox:ずんだもん/ノーマル', 'ずんだもん', 'ノーマル'),
+                voiceJson('voicevox:ずんだもん/あまあま', 'ずんだもん', 'あまあま'),
             ],
-            next_cursor: '1',
+            next_cursor: '3',
         };
         const page2 = {
-            voices: [{ address: 'zundamon', kind: 'alias', engine: 'voicevox', target: 'voicevox:ずんだもん' }],
+            voices: [
+                voiceJson('voicevox:小夜-sayo/ノーマル', '小夜/SAYO', 'ノーマル', false),
+                { address: 'zundamon', kind: 'alias', engine: 'voicevox', target: 'voicevox:ずんだもん' },
+            ],
             next_cursor: null,
         };
 
-        specify('全ページを取得し、話者と別名・プリセットに分ける', async () => {
-            routes['/v1/voices'] = (q) => (q.get('cursor') === '1' ? page2 : page1);
-            const sub = adapter();
-            await sub.loadVoiceCatalog();
-            await sub.refreshing;
-            const catalog = await sub.loadVoiceCatalog();
+        specify('全ページを取得し、キャラごとにまとめ、別名・プリセットを分ける', async () => {
+            routes['/v1/voices'] = (q) => (q.get('cursor') === '3' ? page2 : page1);
+            const catalog = await adapter().loadVoiceCatalog();
 
-            catalog.available.should.be.true;
-            catalog.voices
-                .map((v) => [v.address, v.character, v.style])
-                .should.deep.equal([['voicevox:ずんだもん/ノーマル', 'ずんだもん', 'ノーマル']]);
+            requests.map((r) => r.query.cursor).should.deep.equal([undefined, '3']);
+            catalog.characters.should.deep.equal([
+                { address: 'ebyroid:kiritan', name: null, styles: [], available: true },
+                { address: 'voicevox:ずんだもん', name: null, styles: ['ノーマル', 'あまあま'], available: true },
+                // 指定に使う名前と元の名前が違えば元の名前を残す。止まっているエンジンのキャラも外さない
+                { address: 'voicevox:小夜-sayo', name: '小夜/SAYO', styles: ['ノーマル'], available: false },
+            ]);
             catalog.named.should.deep.equal([{ name: 'zundamon', target: 'voicevox:ずんだもん' }]);
         });
 
-        specify('一覧がまだなければ取得を待たずに取得できなかった一覧を返し、裏で取得を始める', async () => {
-            routes['/v1/voices'] = (q) => (q.get('cursor') === '1' ? page2 : page1);
-            const sub = adapter();
-            (await sub.loadVoiceCatalog()).available.should.be.false;
-            sub.refreshing.should.be.a('promise');
-            await sub.refreshing;
-            (await sub.loadVoiceCatalog()).available.should.be.true;
-        });
-
-        specify('取得した一覧を使い回し、古くなったら前回の一覧を返しながら裏で取り直す', async () => {
-            routes['/v1/voices'] = (q) => (q.get('cursor') === '1' ? page2 : page1);
-            const sub = adapter();
-            const clock = sinon.useFakeTimers({ now: 0, toFake: ['Date'] });
-            try {
-                await sub.loadVoiceCatalog();
-                await sub.refreshing;
-                const first = await sub.loadVoiceCatalog();
-                (await sub.loadVoiceCatalog()).should.equal(first);
-                requests.length.should.equal(2);
-
-                clock.tick(60000);
-                (await sub.loadVoiceCatalog()).should.equal(first);
-                await sub.refreshing;
-                requests.length.should.equal(4);
-                (await sub.loadVoiceCatalog()).should.not.equal(first);
-            } finally {
-                clock.restore();
-            }
-        });
-
-        specify('取得できなければ失敗せず、取得できなかった一覧を返す', async () => {
+        specify('取得できなければ、利用者に伝わるエラーにする', async () => {
             const unreachable = new TtshubVoiceCatalogAdapter({ ttshubUrl: 'http://127.0.0.1:1' });
-            (await unreachable.loadVoiceCatalog()).available.should.be.false;
-            await unreachable.refreshing.catch(() => {});
-            (await unreachable.loadVoiceCatalog()).available.should.be.false;
+
+            let error;
+            try {
+                await unreachable.loadVoiceCatalog();
+            } catch (e) {
+                error = e;
+            }
+            error.eby.should.be.true;
+            error.message.should.include('声の一覧を取得できなかった');
         });
     });
 
@@ -226,6 +212,15 @@ describe('PassthroughVoiceCatalog', () => {
         (await catalog.searchVoices('ずんだ', 25)).should.deep.equal([]);
         const { voice } = await catalog.resolveVoice(' kiritan ');
         voice.should.deep.equal({ address: 'kiritan', displayName: 'kiritan', engine: null, credit: null });
-        (await catalog.loadVoiceCatalog()).available.should.be.false;
+    });
+
+    specify('一覧は持たないので、利用者に伝わるエラーにする', async () => {
+        let error;
+        try {
+            await new PassthroughVoiceCatalog().loadVoiceCatalog();
+        } catch (e) {
+            error = e;
+        }
+        error.eby.should.be.true;
     });
 });

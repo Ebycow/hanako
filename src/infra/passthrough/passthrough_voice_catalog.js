@@ -1,8 +1,9 @@
+const errors = require('../../core/errors').promises;
 const IVoiceCatalogRepo = require('../../domain/repo/i_voice_catalog_repo');
-const VoiceCatalog = require('../../domain/entity/voice_catalog');
 
 /** @typedef {import('../../domain/repo/i_voice_catalog_repo').VoiceInfo} VoiceInfo */
 /** @typedef {import('../../domain/repo/i_voice_catalog_repo').VoiceResolution} VoiceResolution */
+/** @typedef {import('../../domain/entity/voice_catalog')} VoiceCatalog */
 
 /**
  * 話者一覧を持たない環境（Ebyroid に直接つなぐ場合）の話者一覧
@@ -14,11 +15,11 @@ class PassthroughVoiceCatalog {
     /**
      * (impl) IVoiceCatalogRepo
      *
-     * @param {string} query
+     * @param {string} input
      * @param {number} limit
      * @returns {Promise<Array<VoiceInfo>>}
      */
-    async searchVoices(query, limit) {
+    async searchVoices(input, limit) {
         return [];
     }
 
@@ -35,11 +36,12 @@ class PassthroughVoiceCatalog {
 
     /**
      * (impl) IVoiceCatalogRepo
+     * 一覧を持たないので、常に errors.disappointed
      *
      * @returns {Promise<VoiceCatalog>}
      */
     async loadVoiceCatalog() {
-        return VoiceCatalog.unavailable();
+        return errors.disappointed('voice-catalog-unsupported', '今の音声エンジンは声の一覧に対応していないよ');
     }
 }
 

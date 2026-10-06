@@ -43,7 +43,7 @@ class ActionHandler {
      * アクションエンティティを処理
      *
      * @param {ActionT} action アクションエンティティ
-     * @returns {Promise<void>}
+     * @returns {Promise<*>} アクションの結果（照合した話者や読み込んだ一覧など。ほとんどのアクションは結果を持たない）
      */
     async handle(action) {
         assert(typeof action === 'object');
@@ -82,6 +82,8 @@ class ActionHandler {
             return this.settingsActionRepo.postMaxCountUpdate(action);
         } else if (type === 'speaker_update') {
             return updateSpeakerF.call(this, action);
+        } else if (type === 'voice_catalog_load') {
+            return this.voiceCatalogRepo.loadVoiceCatalog();
         } else if (type === 'se_normalize_update') {
             return this.settingsActionRepo.postSeNormalizeUpdate(action);
         } else if (type === 'text_commands_update') {

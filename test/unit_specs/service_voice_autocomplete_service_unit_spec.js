@@ -28,13 +28,11 @@ describe('VoiceAutocompleteService', () => {
         ]);
     });
 
-    specify('入力のパラメータは検索に使わず、候補の値に付ける', async () => {
-        const repo = { searchVoices: sinon.stub().resolves([zundamon]) };
-        const choices = await new VoiceAutocompleteService(repo).suggest('ずんだ?speed=1.4');
+    specify('入力は分解せずにリポジトリへ渡す（パラメータの扱いはリポジトリに任せる）', async () => {
+        const repo = { searchVoices: sinon.stub().resolves([]) };
+        await new VoiceAutocompleteService(repo).suggest('ずんだ?speed=1.4');
 
-        sinon.assert.calledOnceWithExactly(repo.searchVoices, 'ずんだ', 25);
-        choices[0].value.should.equal('voicevox:ずんだもん/ノーマル?speed=1.4');
-        choices[0].name.should.include('?speed=1.4');
+        sinon.assert.calledOnceWithExactly(repo.searchVoices, 'ずんだ?speed=1.4', 25);
     });
 
     specify('100文字を超える値の候補は除き、長い名前は切り詰める', async () => {
