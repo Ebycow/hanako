@@ -116,10 +116,27 @@ function successMessage(input, voice) {
     const name = voice.displayName === voice.address ? voice.address : `${voice.displayName}（${voice.address}）`;
     const revert = input.usage('@hanako キャラクター変更 default', '/speaker name:default');
     let message = `読み上げるキャラクターを${name}に変更しました。元に戻す場合は${revert} を入力します :microphone:`;
+    const terms = voice.termsUrl ? `[利用規約](<${linkUrl(voice.termsUrl)}>)` : null;
     if (voice.credit) {
-        message += `\n音声: ${voice.credit}`;
+        message += `\n音声: ${voice.credit}` + (terms ? `（${terms}）` : '');
+    } else if (terms) {
+        message += `\n音声の${terms}`;
     }
     return message;
+}
+
+/**
+ * Discord のリンクにできる形の URL にする（日本語のドメインやパスを含む規約の URL があるため）
+ *
+ * @param {string} url
+ * @returns {string}
+ */
+function linkUrl(url) {
+    try {
+        return new URL(url).href;
+    } catch {
+        return url;
+    }
 }
 
 module.exports = SpeakerCommand;

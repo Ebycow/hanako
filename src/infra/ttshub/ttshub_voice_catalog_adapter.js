@@ -45,6 +45,7 @@ function toVoiceInfo(v) {
         displayName: v.display_name || v.address,
         engine: v.engine && !NAMED_ENGINES.includes(v.engine) ? v.engine : null,
         credit: v.credit || null,
+        termsUrl: v.terms_url || null,
         character: v.character || null,
         style: v.style || null,
         available: v.available !== false,
