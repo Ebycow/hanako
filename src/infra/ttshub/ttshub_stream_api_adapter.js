@@ -4,6 +4,7 @@ const AppSettings = require('../../core/app_settings');
 const IVoiceroidStreamRepo = require('../../domain/repo/i_voiceroid_stream_repo');
 const log4js = require('log4js');
 const { compose } = require('stream');
+const { randomUUID } = require('crypto');
 
 const logger = log4js.getLogger(require('path').basename(__filename));
 // 応答が始まるまでの上限。ttshub はエンジンごとの上限で先に打ち切り、代わりの声で読むため、それより少し長くする。
@@ -60,6 +61,12 @@ class TtshubStreamApiAdapter {
      */
     async getVoiceroidStream(audio, signal) {
         const body = { text: audio.content, voice: audio.speaker, format: OUTPUT_FORMAT };
+        // ttshub のログと突き合わせるための ID。ttshub はこの ID で受付から終了までを記録する
+        // 本文はログに書かない（文字数だけ）
+        const id = randomUUID();
+        const started = Date.now();
+        const describe = () =>
+            `id=${id}, 文字数=${Array.from(audio.content).length}, 声=${audio.speaker}, 経過=${Date.now() - started}ms`;
 
         // 応答が始まるまでの期限。応答を受け取ったら解除する
         const responseTimeout = new AbortController();
@@ -73,9 +80,21 @@ class TtshubStreamApiAdapter {
         try {
             response = await axios.post(this.url, body, {
                 responseType: 'stream',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-Request-Id': id },
                 signal: requestSignal,
             });
+        } catch (err) {
+            if (responseTimeout.signal.aborted) {
+                logger.warn(`ttshubの応答が始まらなかった (${describe()}): ${responseTimeout.signal.reason.message}`);
+            } else if (signal && signal.aborted) {
+                // スキップや退出で読み上げをやめただけ
+                logger.debug(`ttshubへの合成を中断した (${describe()})`);
+            } else {
+                // AxiosError の message や code には本文は含まれない（本文は送ったデータの側にある）
+                const reason = err.response ? `HTTP ${err.response.status}` : err.code || err.message;
+                logger.warn(`ttshubで合成できなかった (${describe()}): ${reason}`);
+            }
+            throw err;
         } finally {
             clearTimeout(timer);
         }
@@ -84,21 +103,29 @@ class TtshubStreamApiAdapter {
         const channels = parseInt(response.headers['x-tts-pcm-channels'], 10);
         if (sampleRate !== OUTPUT_FORMAT.sample_rate || channels !== OUTPUT_FORMAT.channels) {
             response.data.destroy();
-            throw new Error(`ttshubが要求と違う形式を返した (${sampleRate}Hz ${channels}ch)`);
+            throw new Error(`ttshubが要求と違う形式を返した (${sampleRate}Hz ${channels}ch, id=${id})`);
         }
 
         const fallback = response.headers['x-tts-fallback'];
         if (fallback && fallback !== 'none') {
             const resolved = decodeExtValue(response.headers['x-tts-resolved-voice']);
-            logger.warn(`ttshubが代わりの声で読んだ (要求=${audio.speaker}, 実際=${resolved}, 理由=${fallback})`);
+            logger.warn(
+                `ttshubが代わりの声で読んだ (要求=${audio.speaker}, 実際=${resolved}, 理由=${fallback}, id=${id})`
+            );
         }
         const warning = response.headers['x-tts-warning'];
         if (warning) {
-            logger.info(`ttshubからの警告: ${warning}`);
+            logger.info(`ttshubからの警告: ${warning} (id=${id})`);
         }
 
         // ttshub が Discord 向けの形式に変換済みなので、ここでは届かなくなったときの監視だけ行う
-        return compose(response.data, new transforms.StallGuard(BODY_STALL_TIMEOUT_MS));
+        const stream = compose(response.data, new transforms.StallGuard(BODY_STALL_TIMEOUT_MS));
+        stream.on('error', (err) => {
+            // 読み上げをやめて破棄したときのエラーは記録しない
+            if ((signal && signal.aborted) || err.name === 'AbortError') return;
+            logger.warn(`ttshubからの音声が途中で途切れた (${describe()}): ${err.message}`);
+        });
+        return stream;
     }
 }
 

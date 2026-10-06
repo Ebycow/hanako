@@ -1,5 +1,6 @@
 require('chai').should();
 const http = require('http');
+const log4js = require('log4js');
 const TtshubStreamApiAdapter = require('../../src/infra/ttshub/ttshub_stream_api_adapter');
 const AppConfig = require('../../src/core/app_config');
 const VoiceroidAudio = require('../../src/domain/entity/audios/voiceroid_audio');
@@ -41,7 +42,11 @@ describe('TtshubStreamApiAdapter', () => {
             const chunks = [];
             req.on('data', (c) => chunks.push(c));
             req.on('end', () => {
-                requests.push({ url: req.url, body: JSON.parse(Buffer.concat(chunks).toString('utf8')) });
+                requests.push({
+                    url: req.url,
+                    requestId: req.headers['x-request-id'],
+                    body: JSON.parse(Buffer.concat(chunks).toString('utf8')),
+                });
                 respond(res);
             });
         });
@@ -104,6 +109,72 @@ describe('TtshubStreamApiAdapter', () => {
             error = err;
         }
         error.response.status.should.equal(503);
+    });
+
+    specify('ttshub のログと突き合わせられるよう、リクエストごとに別の ID を送る', async () => {
+        for (let i = 0; i < 2; i++) {
+            await readAll(
+                await adapter().getVoiceroidStream(new VoiceroidAudio({ content: 'あ', speaker: 'default' }))
+            );
+        }
+        requests.map((r) => r.requestId).forEach((id) => id.should.match(/^[A-Za-z0-9_-]{1,64}$/));
+        requests[0].requestId.should.not.equal(requests[1].requestId);
+    });
+
+    describe('ログ', () => {
+        let recording;
+
+        beforeEach(() => {
+            log4js.configure({
+                appenders: { rec: { type: 'recording' } },
+                categories: { default: { appenders: ['rec'], level: 'all' } },
+            });
+            recording = require('log4js/lib/appenders/recording');
+            recording.reset();
+        });
+
+        afterEach(() => {
+            // test/setup.js と同じ設定（ログを出さない）に戻す
+            log4js.configure({
+                appenders: { out: { type: 'stdout' } },
+                categories: { default: { appenders: ['out'], level: 'off' } },
+            });
+        });
+
+        const logged = () => recording.replay().map((e) => e.data.map(String).join(' '));
+
+        specify('合成できなかったら、送った ID を付けて記録し、本文は記録しない', async () => {
+            respond = (res) => {
+                res.writeHead(503, { 'Content-Type': 'application/json' });
+                res.end('{"error":{"code":"unavailable","message":"x"}}');
+            };
+            const secret = 'ひみつの本文';
+            await adapter()
+                .getVoiceroidStream(new VoiceroidAudio({ content: secret, speaker: 'default' }))
+                .catch(() => {});
+
+            const lines = logged().filter((l) => l.includes('合成できなかった'));
+            lines.length.should.equal(1);
+            lines[0].should.include(`id=${requests[0].requestId}`);
+            lines[0].should.include('文字数=6');
+            lines[0].should.include('HTTP 503');
+            logged().forEach((l) => l.should.not.include(secret));
+        });
+
+        specify('読み上げをやめて中断したときは、失敗として記録しない', async () => {
+            respond = () => {}; // 応答しない
+            const controller = new AbortController();
+            const pending = adapter().getVoiceroidStream(
+                new VoiceroidAudio({ content: 'あ', speaker: 'default' }),
+                controller.signal
+            );
+            await new Promise((resolve) => setTimeout(resolve, 20));
+            controller.abort();
+            await pending.catch(() => {});
+
+            logged().filter((l) => l.includes('合成できなかった') || l.includes('応答が始まらなかった')).should.be
+                .empty;
+        });
     });
 
     specify('RFC 8187 形式のヘッダ値を読む', () => {
