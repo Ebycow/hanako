@@ -1,15 +1,41 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const { compose } = require('stream');
+const { compose, Readable } = require('stream');
 const Injector = require('../../core/injector');
 const IVoiceroidStreamRepo = require('../repo/i_voiceroid_stream_repo');
 const IFoleyStreamRepo = require('../repo/i_foley_stream_repo');
 const EbyStream = require('../../library/ebystream');
 const transforms = require('../../library/transforms');
 
+// 1つの発言の中で、再生中の区切りより先に取得しておく数
+// SEの後の長文など、合成に時間がかかる区切りを前の区切りの再生中に取り始め、途切れを短くする。
+// ttshub の同時合成数の枠（既定3）を、再生待ちの次の発言の先頭と合わせて超えない数にする。
+const LOOKAHEAD = 2;
+
 /** @typedef {import('../entity/audios').AudioT} AudioT */
-/** @typedef {import('stream').Readable} Readable */
+
+/**
+ * 再生を待たずにストリームを最後まで受け取り、受け取った分をメモリに溜めて渡す
+ * ttshub は音声を流し終えるまで同時合成数の枠を持ち続けるため、先に受け取り切って早く手放す。
+ *
+ * @param {Readable} source
+ * @returns {Readable}
+ */
+function receiveEagerly(source) {
+    const received = new Readable({
+        read() {},
+        destroy(err, callback) {
+            // 受け取り終えた後に破棄すると、composeが後段へ受け手のいないAbortErrorを投げるため、途中のときだけ破棄する
+            if (!source.readableEnded) source.destroy();
+            callback(err);
+        },
+    });
+    source.on('data', (chunk) => received.push(chunk));
+    source.once('end', () => received.push(null));
+    source.once('error', (err) => received.destroy(err));
+    return received;
+}
 
 /**
  * ドメインサービス
@@ -45,7 +71,7 @@ class StreamFetcher {
                 // VOICEROIDが付加する長い末尾無音を、単一音声を含め常に除去する。
                 // 除去しないと、声が聞こえ終わった後も次のキューが約800ms待たされる。
                 // pipeでは破棄が上流へ伝わらずHTTPレスポンスが残るため、composeでつなぐ。
-                return compose(stream, new transforms.TrailingSilenceTrimmer());
+                return receiveEagerly(compose(stream, new transforms.TrailingSilenceTrimmer()));
             } else if (audio.type === 'foley') {
                 return this.foleyStreamRepo.getFoleyStream(audio);
             } else {
@@ -55,7 +81,7 @@ class StreamFetcher {
 
         // EbyStreamを使ってひとつなぎのStreamとして返却
         // 取得は再生の直前（先読み）か読み取り開始時に始まり、破棄されると中断される
-        const stream = new EbyStream(streamFactories);
+        const stream = new EbyStream(streamFactories, { lookahead: LOOKAHEAD });
         // 取得は返却後に進むため、先読み中に失敗しても uncaughtException にならないよう常に受けておく
         // （再生中の失敗は AudioPlayer の error でも拾われ、次の音声へ進む）
         stream.on('error', (err) => logger.warn('音声ストリームの取得に失敗', err));

@@ -123,6 +123,55 @@ describe('EbyStream', () => {
         });
     });
 
+    describe('先読みの数', () => {
+        function counting(calls, name) {
+            return async () => {
+                calls.push(name);
+                return createDataStream(name);
+            };
+        }
+
+        specify('startだけでは、lookaheadによらず先頭の生成関数しか呼ばない', async () => {
+            const calls = [];
+            const stream = new EbyStream([counting(calls, 'a'), counting(calls, 'b'), counting(calls, 'c')], {
+                lookahead: 2,
+            });
+            stream.start();
+            await new Promise((resolve) => setImmediate(resolve));
+            calls.should.deep.equal(['a']);
+            stream.destroy();
+        });
+
+        specify('読み取りが始まると、再生中のものよりlookahead個先まで取得する', () => {
+            const calls = [];
+            const stream = new EbyStream(
+                [
+                    async () => {
+                        calls.push('a');
+                        return new Promise(() => {}); // 先頭の取得が終わらなくても先を取りに行く
+                    },
+                    counting(calls, 'b'),
+                    counting(calls, 'c'),
+                    counting(calls, 'd'),
+                ],
+                { lookahead: 2 }
+            );
+            stream.read(0);
+            calls.should.deep.equal(['a', 'b', 'c']);
+            stream.destroy();
+        });
+
+        specify('lookaheadを指定しても、すべてのストリームを順番どおりに連結する', async () => {
+            const delayed = (data, ms) => () =>
+                new Promise((resolve) => setTimeout(() => resolve(createDataStream(data)), ms));
+            const stream = new EbyStream([delayed('aaa', 30), delayed('bbb', 0), delayed('ccc', 10)], {
+                lookahead: 2,
+            });
+            const result = await consumeStream(stream);
+            result.toString().should.equal('aaabbbccc');
+        });
+    });
+
     describe('エラー伝搬', () => {
         specify('子ストリームのerrorがEbyStreamに伝搬する', (done) => {
             const errStream = new Readable({

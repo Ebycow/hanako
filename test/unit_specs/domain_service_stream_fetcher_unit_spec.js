@@ -164,6 +164,24 @@ describe('StreamFetcher', () => {
                 response.destroyed.should.be.true;
             });
 
+            specify('再生を待たずに、取得したレスポンスを最後まで受け取る', async () => {
+                // ttshub は流し終えるまで同時合成数の枠を持ち続けるため、読み手が遅くても受け取り切る
+                const chunk = Buffer.alloc(3840, 0x40);
+                let sent = 0;
+                const response = new Readable({
+                    read() {
+                        this.push(sent++ < 500 ? chunk : null); // 約10秒分
+                    },
+                });
+                vrStreamRepo.getVoiceroidStream.resolves(response);
+                const stream = await fetcher.fetch([{ type: 'voiceroid', content: 'テスト', speaker: 'kiritan' }]);
+                stream.start();
+                for (let i = 0; i < 20; i++) await new Promise((resolve) => setImmediate(resolve));
+
+                response.readableEnded.should.be.true;
+                stream.destroy();
+            });
+
             specify(
                 '先読み済みで再生前のレスポンスがエラーになっても、uncaughtExceptionにならずerrorとして伝搬する',
                 async () => {

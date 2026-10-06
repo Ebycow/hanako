@@ -14,17 +14,22 @@ function ensure(s) {
  *
  * 構築しただけでは取得を始めない。読み取りが始まるか start() を呼んだときに取得を始めるため、
  * 再生待ちに並んでいる間は音声生成のリクエストを送らない。
+ * start() だけでは先頭のストリームしか取得せず、読み取りが始まってから lookahead 個先まで取得する。
  */
 class EbyStream extends Readable {
     /**
      * @param {Array<Readable|function(AbortSignal):Promise<Readable>>} streams
      *   生成関数には中断の合図を渡す。EbyStreamが破棄されると中断される。
+     * @param {object} [options={}]
+     * @param {number} [options.lookahead=1] 読み取り中に、再生中のものより先に取得しておくストリームの数
      */
-    constructor(streams) {
+    constructor(streams, { lookahead = 1 } = {}) {
         super();
         this._drained = false;
         this._current = null;
-        this._pending = null;
+        this._pendings = [];
+        this._lookahead = Math.max(1, lookahead);
+        this._reading = false;
         this._started = false;
         this._abortController = new AbortController();
 
@@ -38,12 +43,16 @@ class EbyStream extends Readable {
     start() {
         if (this._started || this.destroyed) return;
         this._started = true;
-        this._prefetch();
+        this._prefetch(1);
         this._next();
     }
 
     _read() {
-        this.start();
+        if (!this._reading) {
+            this._reading = true;
+            this.start();
+            this._prefetch();
+        }
         this._drained = true;
         this._forward();
     }
@@ -65,11 +74,11 @@ class EbyStream extends Readable {
             if (typeof candidate !== 'function' && candidate.destroy) candidate.destroy();
         }
         this._cue = [];
-        const pending = this._pending;
-        this._pending = null;
+        const pendings = this._pendings;
+        this._pendings = [];
 
         if (this._current && this._current.destroy) this._current.destroy();
-        if (pending) {
+        for (const pending of pendings) {
             if (pending.stream) {
                 pending.stream.destroy();
             } else {
@@ -81,8 +90,10 @@ class EbyStream extends Readable {
 
     _next() {
         this._current = null;
-        const pending = this._pending;
-        this._pending = null;
+        if (this._pendings.length === 0) this._prefetch(1);
+        const pending = this._pendings.shift();
+        // 読み取り中なら、取り出した分を補って lookahead 個先まで取得しておく
+        if (this._reading) this._prefetch();
         if (!pending) {
             this.push(null);
             return;
@@ -93,7 +104,6 @@ class EbyStream extends Readable {
                 return;
             }
             this._gotNextStream(stream);
-            this._prefetch();
         };
         if (pending.stream) {
             activate(pending.stream);
@@ -106,16 +116,24 @@ class EbyStream extends Readable {
             .catch((err) => this.destroy(err));
     }
 
-    _prefetch() {
-        if (this._pending || this._cue.length === 0 || this.destroyed) return;
-        const candidate = this._cue.shift();
+    /**
+     * 取得済み（取得中を含む）のストリームが limit 個になるまで取得を始める
+     *
+     * @param {number} [limit=this._lookahead]
+     */
+    _prefetch(limit = this._lookahead) {
+        while (this._pendings.length < limit && this._cue.length > 0 && !this.destroyed) {
+            this._pendings.push(this._fetch(this._cue.shift()));
+        }
+    }
+
+    _fetch(candidate) {
         // 先読みしたストリームのエラーは、再生の順番が来る前でも受ける。
         // 受け手がいないと、中断や通信エラーで uncaughtException になる。
         if (typeof candidate !== 'function') {
             const stream = ensure(candidate);
             this._attachErrorListener(stream);
-            this._pending = { stream, promise: Promise.resolve(stream) };
-            return;
+            return { stream, promise: Promise.resolve(stream) };
         }
         const promise = Promise.resolve(candidate(this._abortController.signal))
             .then(ensure)
@@ -125,7 +143,7 @@ class EbyStream extends Readable {
             });
         // 失敗は _next で拾うが、それまでは処理が付かないため unhandledRejection にならないよう印を付けておく
         promise.catch(() => {});
-        this._pending = { stream: null, promise };
+        return { stream: null, promise };
     }
 
     _gotNextStream(stream) {
