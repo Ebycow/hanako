@@ -47,13 +47,20 @@ describe('TtshubVoiceCatalogAdapter', () => {
                 voices: [
                     {
                         address: 'voicevox:ずんだもん/ノーマル',
+                        kind: 'voice',
                         engine: 'voicevox',
                         display_name: 'ずんだもん（ノーマル）',
                         credit: 'VOICEVOX:ずんだもん',
                         terms_url: 'https://zunko.jp/con_ongen_kiyaku.html',
                         available: true,
                     },
-                    { address: 'preset:早口ずんだもん', engine: 'preset', display_name: 'preset:早口ずんだもん' },
+                    {
+                        address: 'preset:早口ずんだもん',
+                        kind: 'preset',
+                        engine: 'voicevox',
+                        display_name: 'preset:早口ずんだもん',
+                        target: 'voicevox:ずんだもん?speed=1.4',
+                    },
                 ],
             });
             const voices = await adapter().searchVoices('ずんだ', 25);
@@ -74,7 +81,7 @@ describe('TtshubVoiceCatalogAdapter', () => {
                 {
                     address: 'preset:早口ずんだもん',
                     displayName: 'preset:早口ずんだもん',
-                    engine: null,
+                    engine: 'voicevox',
                     credit: null,
                     termsUrl: null,
                     character: null,
@@ -90,6 +97,7 @@ describe('TtshubVoiceCatalogAdapter', () => {
             voices: [
                 {
                     address: 'voicevox:ずんだもん/ノーマル',
+                    kind: 'voice',
                     engine: 'voicevox',
                     character: 'ずんだもん',
                     style: 'ノーマル',
@@ -99,7 +107,7 @@ describe('TtshubVoiceCatalogAdapter', () => {
             next_cursor: '1',
         };
         const page2 = {
-            voices: [{ address: 'zundamon', engine: 'alias', target: 'voicevox:ずんだもん' }],
+            voices: [{ address: 'zundamon', kind: 'alias', engine: 'voicevox', target: 'voicevox:ずんだもん' }],
             next_cursor: null,
         };
 

@@ -13,8 +13,8 @@ const RESOLVE_TIMEOUT_MS = 5000;
 const CATALOG_TTL_MS = 60000;
 // 一覧を取得するときの 1 回あたりの件数（ttshub の上限）
 const CATALOG_PAGE_SIZE = 200;
-// ttshub の一覧で、話者ではなく別名・プリセットを表すエンジン名
-const NAMED_ENGINES = ['alias', 'preset'];
+// ttshub の一覧で、話者ではなく別名・プリセットを表す kind
+const NAMED_KINDS = ['alias', 'preset'];
 
 /** @typedef {import('../../domain/repo/i_voice_catalog_repo').VoiceInfo} VoiceInfo */
 /** @typedef {import('../../domain/repo/i_voice_catalog_repo').VoiceResolution} VoiceResolution */
@@ -41,7 +41,8 @@ function toVoiceInfo(v) {
     return {
         address: v.address,
         displayName: v.display_name || v.address,
-        engine: v.engine && !NAMED_ENGINES.includes(v.engine) ? v.engine : null,
+        // 別名・プリセットでは指す先の話者のエンジン
+        engine: v.engine || null,
         credit: v.credit || null,
         termsUrl: v.terms_url || null,
         character: v.character || null,
@@ -184,7 +185,7 @@ async function fetchCatalogF() {
             timeout: RESOLVE_TIMEOUT_MS,
         });
         for (const v of res.data.voices) {
-            if (NAMED_ENGINES.includes(v.engine)) {
+            if (NAMED_KINDS.includes(v.kind)) {
                 named.push({ name: v.address, target: v.target });
             } else {
                 voices.push(toVoiceInfo(v));
