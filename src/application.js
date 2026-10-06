@@ -5,6 +5,7 @@ const { GatewayIntentBits } = require('discord.js');
 const Injector = require('./core/injector');
 const AppConfig = require('./core/app_config');
 const AppSettings = require('./core/app_settings');
+const IVoiceCatalogRepo = require('./domain/repo/i_voice_catalog_repo');
 const InteractionCtrl = require('./app/interaction_ctrl');
 const PagerButtonCtrl = require('./app/pager_button_ctrl');
 const ConfirmButtonCtrl = require('./app/confirm_button_ctrl');
@@ -78,6 +79,11 @@ class Application {
         Injector.registerSingleton(AppConfig, this.appConfig);
         Injector.registerSingleton(AppSettings, this.appSettings);
         Injector.registerSingleton(discord.Client, this.client);
+        // 話者一覧のキャッシュをアプリ全体で1つにする（Injector.resolve は呼ぶたびに作り直すため）
+        // 最初の /speakers に間に合うよう、起動時に取得を始めておく
+        const voiceCatalogRepo = Injector.resolve(IVoiceCatalogRepo);
+        Injector.registerSingleton(IVoiceCatalogRepo, voiceCatalogRepo);
+        voiceCatalogRepo.loadVoiceCatalog();
 
         // コントローラの登録
         this.bind('clientReady', ReadyCtrl);

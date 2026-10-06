@@ -105,7 +105,10 @@ describe('TtshubVoiceCatalogAdapter', () => {
 
         specify('全ページを取得し、話者と別名・プリセットに分ける', async () => {
             routes['/v1/voices'] = (q) => (q.get('cursor') === '1' ? page2 : page1);
-            const catalog = await adapter().loadVoiceCatalog();
+            const sub = adapter();
+            await sub.loadVoiceCatalog();
+            await sub.refreshing;
+            const catalog = await sub.loadVoiceCatalog();
 
             catalog.available.should.be.true;
             catalog.voices
@@ -114,11 +117,22 @@ describe('TtshubVoiceCatalogAdapter', () => {
             catalog.named.should.deep.equal([{ name: 'zundamon', target: 'voicevox:ずんだもん' }]);
         });
 
+        specify('一覧がまだなければ取得を待たずに取得できなかった一覧を返し、裏で取得を始める', async () => {
+            routes['/v1/voices'] = (q) => (q.get('cursor') === '1' ? page2 : page1);
+            const sub = adapter();
+            (await sub.loadVoiceCatalog()).available.should.be.false;
+            sub.refreshing.should.be.a('promise');
+            await sub.refreshing;
+            (await sub.loadVoiceCatalog()).available.should.be.true;
+        });
+
         specify('取得した一覧を使い回し、古くなったら前回の一覧を返しながら裏で取り直す', async () => {
             routes['/v1/voices'] = (q) => (q.get('cursor') === '1' ? page2 : page1);
             const sub = adapter();
             const clock = sinon.useFakeTimers({ now: 0, toFake: ['Date'] });
             try {
+                await sub.loadVoiceCatalog();
+                await sub.refreshing;
                 const first = await sub.loadVoiceCatalog();
                 (await sub.loadVoiceCatalog()).should.equal(first);
                 requests.length.should.equal(2);
@@ -135,6 +149,8 @@ describe('TtshubVoiceCatalogAdapter', () => {
 
         specify('取得できなければ失敗せず、取得できなかった一覧を返す', async () => {
             const unreachable = new TtshubVoiceCatalogAdapter({ ttshubUrl: 'http://127.0.0.1:1' });
+            (await unreachable.loadVoiceCatalog()).available.should.be.false;
+            await unreachable.refreshing.catch(() => {});
             (await unreachable.loadVoiceCatalog()).available.should.be.false;
         });
     });

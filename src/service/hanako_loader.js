@@ -57,7 +57,7 @@ class HanakoLoader {
         const wordDictionary = await this.wordDictRepo.loadWordDictionary(serverId);
         const silenceDictionary = await this.silenceDictRepo.loadSilenceDictionary(serverId);
         const foleyDictionary = await this.foleyDictRepo.loadFoleyDictionary(serverId);
-        // サーバーによらない一覧。取得できなくても失敗しない（読み上げを止めないため）
+        // サーバーによらない一覧。通信を待たず、取得できていなければ取得できなかった一覧になる（読み上げを止めないため）
         const voiceCatalog = await this.voiceCatalogRepo.loadVoiceCatalog();
 
         // 花子モデルを生成して返却
