@@ -279,11 +279,13 @@ docker compose up -d --build
 
 本番の `.env` には `HANAKO_TAG=latest` を書きます。開発では既定の `dev` タグのままにして、本番のイメージを上書きしないようにします
 
-本番へは、本番のチェックアウトで `deploy.sh` を実行して出します。作業ブランチを fast-forward で取り込み、イメージのビルド、スラッシュコマンドの登録、起動を行い、healthy になるまで待ちます。失敗したら前のコミットとイメージに戻します
+本番へは、本番のチェックアウトで `deploy.sh` を実行して出します。出すコミットをチェックアウトし（ブランチには固定せず detached HEAD で指します）、イメージのビルド、スラッシュコマンドの登録、起動を行い、healthy になるまで待ちます。失敗したら前のコミットとイメージに戻します
 ```
-./deploy.sh              # origin/porting の内容を出す
-./deploy.sh <作業ブランチ>  # 開発用 worktree のブランチの内容を出す
+./deploy.sh                  # origin/master の内容を出す
+./deploy.sh origin/porting   # 指定した ref の内容を出す（開発用 worktree のブランチ名やコミット ID も使える）
 ```
+
+Docker 化より前のコミット（`compose.yaml` などがないもの）は出せません。指定するとなにもせずに止まります
 
 # Architecture
 ## 技術スタック
