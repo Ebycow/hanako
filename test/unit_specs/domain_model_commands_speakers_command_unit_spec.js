@@ -55,6 +55,22 @@ describe('VoiceCatalog', () => {
             ]);
     });
 
+    specify('エンジンが止まっているキャラには停止中と書き、一覧からは外さない', () => {
+        const stopped = (address, character, style) =>
+            Object.assign(voice(address, character, style), { available: false });
+        new VoiceCatalog({
+            available: true,
+            voices: [
+                voice('ebyroid:kiritan', 'kiritan', null, 'ebyroid'),
+                stopped('voicevox:ずんだもん/ノーマル', 'ずんだもん', 'ノーマル'),
+                stopped('voicevox:ずんだもん/あまあま', 'ずんだもん', 'あまあま'),
+            ],
+            named: [],
+        }).lines
+            .map((l) => l.line)
+            .should.deep.equal(['`ebyroid:kiritan`', '`voicevox:ずんだもん` ノーマル / あまあま （停止中）']);
+    });
+
     specify('ページ送りのディスクリプタは speakers', () => {
         sampleCatalog().descriptor.should.equal('speakers');
         VoiceCatalog.unavailable().available.should.be.false;

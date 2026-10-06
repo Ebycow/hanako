@@ -50,13 +50,15 @@ describe('TtshubVoiceCatalogAdapter', () => {
                         engine: 'voicevox',
                         display_name: 'ずんだもん（ノーマル）',
                         credit: 'VOICEVOX:ずんだもん',
+                        available: true,
                     },
                     { address: 'preset:早口ずんだもん', engine: 'preset', display_name: 'preset:早口ずんだもん' },
                 ],
             });
             const voices = await adapter().searchVoices('ずんだ', 25);
 
-            requests[0].query.should.deep.equal({ q: 'ずんだ', limit: '25' });
+            // 補完の候補には、エンジンが止まっている声を出さない
+            requests[0].query.should.deep.equal({ q: 'ずんだ', limit: '25', available: 'true' });
             voices.should.deep.equal([
                 {
                     address: 'voicevox:ずんだもん/ノーマル',
@@ -65,6 +67,7 @@ describe('TtshubVoiceCatalogAdapter', () => {
                     credit: 'VOICEVOX:ずんだもん',
                     character: null,
                     style: null,
+                    available: true,
                 },
                 {
                     address: 'preset:早口ずんだもん',
@@ -73,6 +76,7 @@ describe('TtshubVoiceCatalogAdapter', () => {
                     credit: null,
                     character: null,
                     style: null,
+                    available: true,
                 },
             ]);
         });

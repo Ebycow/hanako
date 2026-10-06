@@ -13,6 +13,7 @@ const Interface = require('../../core/interface');
  * @property {?string} credit 必要なクレジット表記（不要なら null）
  * @property {?string} [character] キャラ名（わからなければ null）
  * @property {?string} [style] スタイル名（わからなければ null）
+ * @property {boolean} [available] 音声エンジンが動いていて読み上げに使えるか（わからなければ true）
  */
 
 /**

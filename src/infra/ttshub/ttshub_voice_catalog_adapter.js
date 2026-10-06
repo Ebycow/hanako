@@ -47,6 +47,7 @@ function toVoiceInfo(v) {
         credit: v.credit || null,
         character: v.character || null,
         style: v.style || null,
+        available: v.available !== false,
     };
 }
 
@@ -77,8 +78,9 @@ class TtshubVoiceCatalogAdapter {
      * @returns {Promise<Array<VoiceInfo>>}
      */
     async searchVoices(query, limit) {
+        // 補完の候補には、エンジンが止まっていて今は読めない声を出さない
         const res = await axios.get(`${this.base}/v1/voices`, {
-            params: { q: query, limit },
+            params: { q: query, limit, available: true },
             timeout: SEARCH_TIMEOUT_MS,
         });
         return res.data.voices.map(toVoiceInfo);
