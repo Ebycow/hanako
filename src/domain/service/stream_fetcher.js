@@ -1,7 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
-const { compose, Readable } = require('stream');
+const { compose } = require('stream');
 const Injector = require('../../core/injector');
 const IVoiceroidStreamRepo = require('../repo/i_voiceroid_stream_repo');
 const IFoleyStreamRepo = require('../repo/i_foley_stream_repo');
@@ -10,32 +10,10 @@ const transforms = require('../../library/transforms');
 
 // 1つの発言の中で、再生中の区切りより先に取得しておく数
 // SEの後の長文など、合成に時間がかかる区切りを前の区切りの再生中に取り始め、途切れを短くする。
-// ttshub の同時合成数の枠（既定3）を、再生待ちの次の発言の先頭と合わせて超えない数にする。
 const LOOKAHEAD = 2;
 
 /** @typedef {import('../entity/audios').AudioT} AudioT */
-
-/**
- * 再生を待たずにストリームを最後まで受け取り、受け取った分をメモリに溜めて渡す
- * ttshub は音声を流し終えるまで同時合成数の枠を持ち続けるため、先に受け取り切って早く手放す。
- *
- * @param {Readable} source
- * @returns {Readable}
- */
-function receiveEagerly(source) {
-    const received = new Readable({
-        read() {},
-        destroy(err, callback) {
-            // 受け取り終えた後に破棄すると、composeが後段へ受け手のいないAbortErrorを投げるため、途中のときだけ破棄する
-            if (!source.readableEnded) source.destroy();
-            callback(err);
-        },
-    });
-    source.on('data', (chunk) => received.push(chunk));
-    source.once('end', () => received.push(null));
-    source.once('error', (err) => received.destroy(err));
-    return received;
-}
+/** @typedef {import('stream').Readable} Readable */
 
 /**
  * ドメインサービス
@@ -71,7 +49,7 @@ class StreamFetcher {
                 // VOICEROIDが付加する長い末尾無音を、単一音声を含め常に除去する。
                 // 除去しないと、声が聞こえ終わった後も次のキューが約800ms待たされる。
                 // pipeでは破棄が上流へ伝わらずHTTPレスポンスが残るため、composeでつなぐ。
-                return receiveEagerly(compose(stream, new transforms.TrailingSilenceTrimmer()));
+                return compose(stream, new transforms.TrailingSilenceTrimmer());
             } else if (audio.type === 'foley') {
                 return this.foleyStreamRepo.getFoleyStream(audio);
             } else {
