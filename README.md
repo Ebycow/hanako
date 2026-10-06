@@ -259,6 +259,25 @@ docker compose run --rm --user root hanako chown -R node:node /app/db /app/files
 docker compose start
 ```
 
+### 本番と開発を同じマシンで動かす
+本番のチェックアウトは編集せず、git で更新するだけにします。開発は `git worktree` で作った別のディレクトリで行います。Composeのプロジェクト名はディレクトリ名になるため、コンテナとボリューム（辞書・SEなど）は本番と開発で自動的に分かれます
+
+```
+git worktree add ../hanako-dev -b <作業ブランチ> porting   # 開発用のディレクトリを作る
+cd ../hanako-dev
+cp .env.example .env    # 開発用Botのトークンを書く。HANAKO_TAG は dev のまま
+docker compose run --rm hanako node deploy-commands.js
+docker compose up -d --build
+```
+
+本番の `.env` には `HANAKO_TAG=latest` を書きます。開発では既定の `dev` タグのままにして、本番のイメージを上書きしないようにします
+
+本番へは、本番のチェックアウトで `deploy.sh` を実行して出します。作業ブランチを fast-forward で取り込み、イメージのビルド、スラッシュコマンドの登録、起動を行い、healthy になるまで待ちます。失敗したら前のコミットとイメージに戻します
+```
+./deploy.sh              # origin/porting の内容を出す
+./deploy.sh <作業ブランチ>  # 開発用 worktree のブランチの内容を出す
+```
+
 # Architecture
 ## 技術スタック
 | カテゴリ | 技術 |

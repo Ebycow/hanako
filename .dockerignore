@@ -16,3 +16,4 @@ app-config.yml
 *.bat
 Dockerfile
 compose.yaml
+deploy.sh

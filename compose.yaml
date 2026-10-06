@@ -1,7 +1,9 @@
 services:
   hanako:
     build: .
-    image: hanako
+    # 本番は .env で HANAKO_TAG=latest にし、deploy.sh が作ったイメージを使う
+    # 開発では既定の dev のままにして、本番のイメージを上書きしないようにする
+    image: hanako:${HANAKO_TAG:-dev}
     restart: unless-stopped
     # ffmpeg の子プロセスを回収し、停止時の SIGTERM を確実に届ける
     init: true
