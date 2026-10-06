@@ -34,6 +34,7 @@
 | ブラックリスト一覧 | 名簿 blacklist-show | /blacklist-show | メンバーをタイムアウト | @hanako blacklist-show |
 | ブラックリスト全削除 | 大赦 blacklist-clear | /blacklist-clear | サーバー管理 | @hanako blacklist-clear --force |
 | 読み上げキャラ変更 | キャラクター変更 speaker | /speaker | - | @hanako speaker kiritan |
+| 読み上げキャラ一覧 | キャラクター一覧 speakers | /speakers | - | @hanako speakers |
 | ヘルプ | 使い方 help | /help | - | @hanako help |
 | 質問 | 質問 ask | /ask | - | @hanako ask 今日は晴れ？ |
 | テキストコマンドの有効・無効 | （スラッシュコマンドのみ） | /text-commands | サーバー管理 | /text-commands enabled:False |
@@ -106,6 +107,12 @@
 ## 読み上げキャラクター変更
 `@hanako speaker キャラクター名` で音声サーバの設定に従って、サーバの読み上げキャラクターを変更する
 `@hanako speaker default` でデフォルトキャラクターに戻す
+
+音声サーバに ttshub（複数の音声エンジンを束ねるゲートウェイ）を使っている場合（`TTSHUB_URL` を設定した場合）は、次のこともできます
+* `/speaker` の入力中にキャラクターの候補が出る
+* `@hanako speaker ずんだもん あまあま` のようにあいまいに書いても、一番近いキャラクターに変更する。見つからなければ候補を案内する
+* `voicevox:ずんだもん/あまあま?speed=1.2` のように、話す速さなどを指定できる
+* `@hanako speakers`（`/speakers`）でキャラクターの一覧を表示する
 
 ## サーバごとの独立管理
 辞書・SE・ブラックリスト・設定はすべてDiscordサーバ（ギルド）ごとに独立して管理されます

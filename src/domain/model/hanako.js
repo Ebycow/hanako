@@ -6,6 +6,7 @@ const assert = require('assert').strict;
 /** @typedef {import('../entity/word_dictionary')} WordDictionary */
 /** @typedef {import('../entity/silence_dictionary')} SilenceDictionary */
 /** @typedef {import('../entity/foley_dictionary')} FoleyDictionary */
+/** @typedef {import('../entity/voice_catalog')} VoiceCatalog */
 
 /**
  * ドメインモデル
@@ -21,14 +22,24 @@ class Hanako {
      * @param {WordDictionary} wordDictionary 教育単語辞書
      * @param {SilenceDictionary} silenceDictionary 沈黙ユーザー辞書
      * @param {FoleyDictionary} foleyDictionary SE辞書
+     * @param {?VoiceCatalog} [voiceCatalog=null] 読み上げキャラクターの一覧
      */
-    constructor(settings, serverStatus, voiceStatus, wordDictionary, silenceDictionary, foleyDictionary) {
+    constructor(
+        settings,
+        serverStatus,
+        voiceStatus,
+        wordDictionary,
+        silenceDictionary,
+        foleyDictionary,
+        voiceCatalog = null
+    ) {
         assert(typeof settings === 'object');
         assert(typeof serverStatus === 'object');
         assert(typeof voiceStatus === 'object');
         assert(typeof wordDictionary === 'object');
         assert(typeof silenceDictionary === 'object');
         assert(typeof foleyDictionary === 'object');
+        assert(typeof voiceCatalog === 'object');
 
         /**
          * 読み上げ花子の設定
@@ -65,6 +76,9 @@ class Hanako {
          */
         this.foleyDictionary = foleyDictionary;
         Object.defineProperty(this, 'foleyDictionary', { writable: false });
+
+        this.voiceCatalog = voiceCatalog;
+        Object.defineProperty(this, 'voiceCatalog', { writable: false });
     }
 
     /**
@@ -92,7 +106,7 @@ class Hanako {
      * 花子が持つページ管理可能データの配列
      */
     get pageables() {
-        return [this.wordDictionary, this.silenceDictionary, this.foleyDictionary];
+        return [this.wordDictionary, this.silenceDictionary, this.foleyDictionary, this.voiceCatalog].filter(Boolean);
     }
 
     /**

@@ -1,5 +1,7 @@
 const Interface = require('../../core/interface');
 
+/** @typedef {import('../entity/voice_catalog')} VoiceCatalog */
+
 /**
  * 読み上げキャラクター（話者）
  *
@@ -9,6 +11,8 @@ const Interface = require('../../core/interface');
  * @property {string} displayName 表示名
  * @property {?string} engine 音声エンジンの名前（わからなければ null）
  * @property {?string} credit 必要なクレジット表記（不要なら null）
+ * @property {?string} [character] キャラ名（わからなければ null）
+ * @property {?string} [style] スタイル名（わからなければ null）
  */
 
 /**
@@ -40,6 +44,14 @@ class IVoiceCatalogRepo extends Interface {
      * @returns {Promise<VoiceResolution>} 照合結果
      */
     async resolveVoice(query) {}
+
+    /**
+     * 話者の一覧を読み込む
+     * 読み上げのたびに呼ばれるため、一覧を取得できなくても失敗せず、取得できなかった一覧を返す
+     *
+     * @returns {Promise<VoiceCatalog>} 話者の一覧
+     */
+    async loadVoiceCatalog() {}
 }
 
 module.exports = IVoiceCatalogRepo;

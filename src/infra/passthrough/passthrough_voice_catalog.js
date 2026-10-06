@@ -1,4 +1,5 @@
 const IVoiceCatalogRepo = require('../../domain/repo/i_voice_catalog_repo');
+const VoiceCatalog = require('../../domain/entity/voice_catalog');
 
 /** @typedef {import('../../domain/repo/i_voice_catalog_repo').VoiceInfo} VoiceInfo */
 /** @typedef {import('../../domain/repo/i_voice_catalog_repo').VoiceResolution} VoiceResolution */
@@ -30,6 +31,15 @@ class PassthroughVoiceCatalog {
     async resolveVoice(query) {
         const address = query.trim();
         return { voice: { address, displayName: address, engine: null, credit: null }, suggestions: [] };
+    }
+
+    /**
+     * (impl) IVoiceCatalogRepo
+     *
+     * @returns {Promise<VoiceCatalog>}
+     */
+    async loadVoiceCatalog() {
+        return VoiceCatalog.unavailable();
     }
 }
 

@@ -1,11 +1,20 @@
+const path = require('path');
+const logger = require('log4js').getLogger(path.basename(__filename));
 const axios = require('axios').default;
 const errors = require('../../core/errors').promises;
 const AppSettings = require('../../core/app_settings');
 const IVoiceCatalogRepo = require('../../domain/repo/i_voice_catalog_repo');
+const VoiceCatalog = require('../../domain/entity/voice_catalog');
 
 // スラッシュコマンドの自動補完は3秒以内に応答する必要がある
 const SEARCH_TIMEOUT_MS = 2000;
 const RESOLVE_TIMEOUT_MS = 5000;
+// 一覧は読み上げのたびに読み込まれるため、取得した一覧をこの間は使い回す（過ぎたら裏で取り直す）
+const CATALOG_TTL_MS = 60000;
+// 一覧がまだないときに取得を待つ上限（読み上げを遅らせないよう短くする）
+const CATALOG_TIMEOUT_MS = 2000;
+// 一覧を取得するときの 1 回あたりの件数（ttshub の上限）
+const CATALOG_PAGE_SIZE = 200;
 // ttshub の一覧で、話者ではなく別名・プリセットを表すエンジン名
 const NAMED_ENGINES = ['alias', 'preset'];
 
@@ -36,6 +45,8 @@ function toVoiceInfo(v) {
         displayName: v.display_name || v.address,
         engine: v.engine && !NAMED_ENGINES.includes(v.engine) ? v.engine : null,
         credit: v.credit || null,
+        character: v.character || null,
+        style: v.style || null,
     };
 }
 
@@ -52,6 +63,10 @@ class TtshubVoiceCatalogAdapter {
      */
     constructor(appSettings) {
         this.base = appSettings.ttshubUrl.replace(/\/+$/, '');
+        /** @type {?{catalog: VoiceCatalog, fetchedAt: number}} */
+        this.cache = null;
+        /** @type {?Promise<VoiceCatalog>} */
+        this.refreshing = null;
     }
 
     /**
@@ -111,6 +126,82 @@ class TtshubVoiceCatalogAdapter {
         const voice = data.voice ? toVoiceInfo(data.voice) : toVoiceInfo({ address: data.match });
         return { voice: Object.assign(voice, { address: data.match + params }), suggestions: [] };
     }
+
+    /**
+     * (impl) IVoiceCatalogRepo
+     * 取得した一覧を使い回し、古くなったら裏で取り直す。取得できなければ前回の一覧（なければ空の一覧）を返す
+     *
+     * @returns {Promise<VoiceCatalog>}
+     */
+    async loadVoiceCatalog() {
+        if (this.cache) {
+            if (Date.now() - this.cache.fetchedAt >= CATALOG_TTL_MS) {
+                this.refresh().catch(() => {});
+            }
+            return this.cache.catalog;
+        }
+        let timer;
+        const timeout = new Promise((resolve) => {
+            timer = setTimeout(resolve, CATALOG_TIMEOUT_MS, VoiceCatalog.unavailable());
+        });
+        try {
+            return await Promise.race([this.refresh().catch(() => VoiceCatalog.unavailable()), timeout]);
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    /**
+     * 一覧を取り直す。取り直している最中に呼ばれたら、同じ取得を待つ
+     *
+     * @returns {Promise<VoiceCatalog>}
+     * @private
+     */
+    refresh() {
+        if (!this.refreshing) {
+            this.refreshing = fetchCatalogF
+                .call(this)
+                .then((catalog) => {
+                    this.cache = { catalog, fetchedAt: Date.now() };
+                    return catalog;
+                })
+                .catch((err) => {
+                    logger.warn('ttshubから話者の一覧を取得できなかった', err.message);
+                    throw err;
+                })
+                .finally(() => {
+                    this.refreshing = null;
+                });
+        }
+        return this.refreshing;
+    }
+}
+
+/**
+ * (private) ttshub から一覧を全件取得する
+ *
+ * @this {TtshubVoiceCatalogAdapter}
+ * @returns {Promise<VoiceCatalog>}
+ */
+async function fetchCatalogF() {
+    const voices = [];
+    const named = [];
+    let cursor = null;
+    do {
+        const res = await axios.get(`${this.base}/v1/voices`, {
+            params: Object.assign({ limit: CATALOG_PAGE_SIZE }, cursor ? { cursor } : {}),
+            timeout: RESOLVE_TIMEOUT_MS,
+        });
+        for (const v of res.data.voices) {
+            if (NAMED_ENGINES.includes(v.engine)) {
+                named.push({ name: v.address, target: v.target });
+            } else {
+                voices.push(toVoiceInfo(v));
+            }
+        }
+        cursor = res.data.next_cursor;
+    } while (cursor);
+    return new VoiceCatalog({ available: true, voices, named });
 }
 
 // IVoiceCatalogRepoの実装として登録

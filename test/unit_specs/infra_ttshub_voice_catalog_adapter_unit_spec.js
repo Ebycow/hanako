@@ -1,5 +1,6 @@
 require('chai').should();
 const http = require('http');
+const sinon = require('sinon');
 const TtshubVoiceCatalogAdapter = require('../../src/infra/ttshub/ttshub_voice_catalog_adapter');
 const PassthroughVoiceCatalog = require('../../src/infra/passthrough/passthrough_voice_catalog');
 
@@ -62,9 +63,72 @@ describe('TtshubVoiceCatalogAdapter', () => {
                     displayName: 'ずんだもん（ノーマル）',
                     engine: 'voicevox',
                     credit: 'VOICEVOX:ずんだもん',
+                    character: null,
+                    style: null,
                 },
-                { address: 'preset:早口ずんだもん', displayName: 'preset:早口ずんだもん', engine: null, credit: null },
+                {
+                    address: 'preset:早口ずんだもん',
+                    displayName: 'preset:早口ずんだもん',
+                    engine: null,
+                    credit: null,
+                    character: null,
+                    style: null,
+                },
             ]);
+        });
+    });
+
+    describe('#loadVoiceCatalog', () => {
+        const page1 = {
+            voices: [
+                {
+                    address: 'voicevox:ずんだもん/ノーマル',
+                    engine: 'voicevox',
+                    character: 'ずんだもん',
+                    style: 'ノーマル',
+                    display_name: 'ずんだもん（ノーマル）',
+                },
+            ],
+            next_cursor: '1',
+        };
+        const page2 = {
+            voices: [{ address: 'zundamon', engine: 'alias', target: 'voicevox:ずんだもん' }],
+            next_cursor: null,
+        };
+
+        specify('全ページを取得し、話者と別名・プリセットに分ける', async () => {
+            routes['/v1/voices'] = (q) => (q.get('cursor') === '1' ? page2 : page1);
+            const catalog = await adapter().loadVoiceCatalog();
+
+            catalog.available.should.be.true;
+            catalog.voices
+                .map((v) => [v.address, v.character, v.style])
+                .should.deep.equal([['voicevox:ずんだもん/ノーマル', 'ずんだもん', 'ノーマル']]);
+            catalog.named.should.deep.equal([{ name: 'zundamon', target: 'voicevox:ずんだもん' }]);
+        });
+
+        specify('取得した一覧を使い回し、古くなったら前回の一覧を返しながら裏で取り直す', async () => {
+            routes['/v1/voices'] = (q) => (q.get('cursor') === '1' ? page2 : page1);
+            const sub = adapter();
+            const clock = sinon.useFakeTimers({ now: 0, toFake: ['Date'] });
+            try {
+                const first = await sub.loadVoiceCatalog();
+                (await sub.loadVoiceCatalog()).should.equal(first);
+                requests.length.should.equal(2);
+
+                clock.tick(60000);
+                (await sub.loadVoiceCatalog()).should.equal(first);
+                await sub.refreshing;
+                requests.length.should.equal(4);
+                (await sub.loadVoiceCatalog()).should.not.equal(first);
+            } finally {
+                clock.restore();
+            }
+        });
+
+        specify('取得できなければ失敗せず、取得できなかった一覧を返す', async () => {
+            const unreachable = new TtshubVoiceCatalogAdapter({ ttshubUrl: 'http://127.0.0.1:1' });
+            (await unreachable.loadVoiceCatalog()).available.should.be.false;
         });
     });
 
@@ -131,5 +195,6 @@ describe('PassthroughVoiceCatalog', () => {
         (await catalog.searchVoices('ずんだ', 25)).should.deep.equal([]);
         const { voice } = await catalog.resolveVoice(' kiritan ');
         voice.should.deep.equal({ address: 'kiritan', displayName: 'kiritan', engine: null, credit: null });
+        (await catalog.loadVoiceCatalog()).available.should.be.false;
     });
 });

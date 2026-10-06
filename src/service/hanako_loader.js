@@ -6,6 +6,7 @@ const IVoiceStatusRepo = require('../domain/repo/i_voice_status_repo');
 const IWordDictionaryRepo = require('../domain/repo/i_word_dictionary_repo');
 const ISilenceDictionaryRepo = require('../domain/repo/i_silence_dictionary_repo');
 const IFoleyDictionaryRepo = require('../domain/repo/i_foley_dictionary_repo');
+const IVoiceCatalogRepo = require('../domain/repo/i_voice_catalog_repo');
 const Hanako = require('../domain/model/hanako');
 
 /**
@@ -20,6 +21,7 @@ class HanakoLoader {
      * @param {null} wordDictRepo DI
      * @param {null} silenceDictRepo DI
      * @param {null} foleyDictRepo DI
+     * @param {null} voiceCatalogRepo DI
      */
     constructor(
         settingsRepo = null,
@@ -27,7 +29,8 @@ class HanakoLoader {
         voiceStatusRepo = null,
         wordDictRepo = null,
         silenceDictRepo = null,
-        foleyDictRepo = null
+        foleyDictRepo = null,
+        voiceCatalogRepo = null
     ) {
         this.settingsRepo = settingsRepo || Injector.resolve(ISettingsRepo);
         this.serverStatusRepo = serverStatusRepo || Injector.resolve(IServerStatusRepo);
@@ -35,6 +38,7 @@ class HanakoLoader {
         this.wordDictRepo = wordDictRepo || Injector.resolve(IWordDictionaryRepo);
         this.silenceDictRepo = silenceDictRepo || Injector.resolve(ISilenceDictionaryRepo);
         this.foleyDictRepo = foleyDictRepo || Injector.resolve(IFoleyDictionaryRepo);
+        this.voiceCatalogRepo = voiceCatalogRepo || Injector.resolve(IVoiceCatalogRepo);
     }
 
     /**
@@ -53,6 +57,8 @@ class HanakoLoader {
         const wordDictionary = await this.wordDictRepo.loadWordDictionary(serverId);
         const silenceDictionary = await this.silenceDictRepo.loadSilenceDictionary(serverId);
         const foleyDictionary = await this.foleyDictRepo.loadFoleyDictionary(serverId);
+        // サーバーによらない一覧。取得できなくても失敗しない（読み上げを止めないため）
+        const voiceCatalog = await this.voiceCatalogRepo.loadVoiceCatalog();
 
         // 花子モデルを生成して返却
         const hanako = new Hanako(
@@ -61,7 +67,8 @@ class HanakoLoader {
             voiceStatus,
             wordDictionary,
             silenceDictionary,
-            foleyDictionary
+            foleyDictionary,
+            voiceCatalog
         );
         return Promise.resolve(hanako);
     }
