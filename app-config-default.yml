@@ -22,6 +22,10 @@ settings:
   # legacy-get / streaming-post で明示的に固定可能
   ebyroid_stream_api_mode: 'auto'
 
+  # ttshub（TTS ゲートウェイ）の URL。設定すると Ebyroid に直接つながず、ttshub で読み上げる
+  # 例: 'http://host.docker.internal:8790'
+  ttshub_url: ''
+
   # SE音源を取得するときの最大ファイルサイズ（Bytes）
   foley_max_download_byte_size: 2000000
 

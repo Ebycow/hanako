@@ -46,6 +46,7 @@ const ENV_OVERRIDES = [
     ['DISCORD_GUILD_ID', 'discordGuildId'],
     ['EBYROID_STREAM_API_URL', 'ebyroidStreamApiUrl'],
     ['EBYROID_STREAM_API_MODE', 'ebyroidStreamApiMode'],
+    ['TTSHUB_URL', 'ttshubUrl'],
 ];
 
 /**
@@ -88,6 +89,7 @@ class AppSettings {
      * @param {string} data.discordGuildId
      * @param {string} data.ebyroidStreamApiUrl
      * @param {string} [data.ebyroidStreamApiMode='auto']
+     * @param {string} [data.ttshubUrl=''] 空でなければ ttshub で読み上げる
      * @param {number} data.foleyMaxDownloadByteSize
      * @param {number} data.foleyMaxAudioSeconds
      * @param {number} data.foleyMaxStorageByteSize
@@ -102,6 +104,8 @@ class AppSettings {
         assert(typeof data.ebyroidStreamApiUrl === 'string');
         const streamApiMode = data.ebyroidStreamApiMode || 'auto';
         assert(['auto', 'legacy-get', 'streaming-post'].includes(streamApiMode));
+        const ttshubUrl = data.ttshubUrl || '';
+        assert(typeof ttshubUrl === 'string');
         assert(typeof data.foleyMaxDownloadByteSize === 'number');
         assert(typeof data.foleyMaxAudioSeconds === 'number');
         assert(typeof data.foleyMaxStorageByteSize === 'number');
@@ -112,7 +116,7 @@ class AppSettings {
         );
 
         Object.defineProperty(this, 'data', {
-            value: Object.assign({}, data, { ebyroidStreamApiMode: streamApiMode }),
+            value: Object.assign({}, data, { ebyroidStreamApiMode: streamApiMode, ttshubUrl }),
             writable: false,
             enumerable: false,
             configurable: false,
@@ -171,6 +175,15 @@ class AppSettings {
      */
     get ebyroidStreamApiMode() {
         return this.data.ebyroidStreamApiMode;
+    }
+
+    /**
+     * ttshub（TTS ゲートウェイ）の URL。空なら Ebyroid に直接つなぐ
+     *
+     * @type {string}
+     */
+    get ttshubUrl() {
+        return this.data.ttshubUrl;
     }
 
     /**

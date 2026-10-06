@@ -22,6 +22,8 @@ services:
       DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
       EBYROID_STREAM_API_URL: ${EBYROID_STREAM_API_URL:-http://host.docker.internal:4090/api/v1/audiostream}
       EBYROID_STREAM_API_MODE: ${EBYROID_STREAM_API_MODE:-auto}
+      # 設定すると Ebyroid に直接つながず、ttshub（TTS ゲートウェイ）で読み上げる
+      TTSHUB_URL: ${TTSHUB_URL:-}
       LOG_LEVEL: ${LOG_LEVEL:-}
     # Linux でも host.docker.internal でホストの音声サーバに届くようにする
     extra_hosts:
