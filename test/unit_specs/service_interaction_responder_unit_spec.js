@@ -104,6 +104,17 @@ describe('InteractionResponder', () => {
                 interaction.editReply.calledOnceWith({ content: 'できた' }).should.be.true;
             });
 
+            specify('onSuccess が関数なら、アクションの結果から作った返信をする', async () => {
+                actionHandler.handle.resolves('ずんだもん');
+                const response = new ActionResponse({
+                    id: '1',
+                    action: { type: 'x' },
+                    onSuccess: (name) => chat(`${name}に変更`),
+                });
+                await responder.respond(publicTarget(), response);
+                interaction.editReply.calledOnceWith({ content: 'ずんだもんに変更' }).should.be.true;
+            });
+
             specify('アクションが失敗したら理由付きの onFailure を実行者にだけ見せる', async () => {
                 actionHandler.handle.rejects(new EbyDisappointedError('x', '満員でした'));
                 const response = new ActionResponse({

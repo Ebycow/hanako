@@ -49,6 +49,10 @@ configurations:
 
   - interface: IVoiceroidStreamRepo
     dependent: EbyroidStreamApiAdapter
+
+  # 話者一覧（ttshub を使うときは TtshubVoiceCatalogAdapter に差し替わる）
+  - interface: IVoiceCatalogRepo
+    dependent: PassthroughVoiceCatalog
   
   - interface: IDiscordChatRepo
     dependent: DiscordSendMessageManager

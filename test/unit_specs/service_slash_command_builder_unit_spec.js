@@ -23,9 +23,11 @@ describe('slash_command_builder', () => {
                 options: [
                     { type: 'integer', name: 'n', description: '数', required: true, minValue: 0, maxValue: 10 },
                     { type: 'attachment', name: 'file', description: 'ファイル', required: false },
+                    { type: 'string', name: 's', description: '名前', required: true, autocomplete: true },
                 ],
             });
             json.name.should.equal('test');
+            json.options[2].should.include({ type: 3, name: 's', autocomplete: true });
             json.options[0].should.include({ type: 4, name: 'n', required: true, min_value: 0, max_value: 10 });
             json.options[1].should.include({ type: 11, name: 'file', required: false });
         });

@@ -23,7 +23,8 @@ class ActionResponse {
      * @param {object} data
      * @param {string} data.id エンティティID
      * @param {ActionT} data.action 実行するアクション
-     * @param {ResponseT} [data.onSuccess=SilentResponse] アクション成功時に履行するレスポンス 省略時はSilentResponse
+     * @param {ResponseT|function(*):ResponseT} [data.onSuccess=SilentResponse] アクション成功時に履行するレスポンス 省略時はSilentResponse
+     *        関数なら、アクションの結果を受け取ってレスポンスを返す
      * @param {ResponseT} [data.onFailure=SilentResponse] アクション失敗時に履行するレスポンス 省略時はSilentResponse
      */
     constructor(data) {
@@ -77,8 +78,20 @@ class ActionResponse {
         return this.data.onFailure;
     }
 
+    /**
+     * 成功時に処理するレスポンス
+     * onSuccess に関数を渡したときは、アクションの結果を渡して作る（照合した話者の名前を伝えるときなど）
+     *
+     * @param {*} result アクションの結果
+     * @returns {import('./index').ResponseT}
+     */
+    successResponse(result) {
+        return typeof this.onSuccess === 'function' ? this.onSuccess(result) : this.onSuccess;
+    }
+
     toString() {
-        return `ActionResponse(id=${this.id}, action=${this.action}, onSuccess=${this.onSuccess}, onFailure=${this.onFailure})`;
+        const onSuccess = typeof this.onSuccess === 'function' ? '(result => Response)' : this.onSuccess;
+        return `ActionResponse(id=${this.id}, action=${this.action}, onSuccess=${onSuccess}, onFailure=${this.onFailure})`;
     }
 }
 

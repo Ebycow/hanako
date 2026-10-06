@@ -8,6 +8,7 @@ const ActionResponse = require('../../entity/responses/action_response');
 /** @typedef {import('../../entity/command_input')} CommandInput */
 /** @typedef {import('../../entity/responses').ResponseT} ResponseT */
 /** @typedef {import('../hanako')} Hanako */
+/** @typedef {import('../../repo/i_voice_catalog_repo').VoiceInfo} VoiceInfo */
 
 /**
  * ドメインモデル
@@ -37,7 +38,15 @@ class SpeakerCommand {
         return {
             name: 'speaker',
             description: '読み上げキャラクターを変更します',
-            options: [{ type: 'string', name: 'name', description: 'キャラクター名', required: true }],
+            options: [
+                {
+                    type: 'string',
+                    name: 'name',
+                    description: 'キャラクター名（入力すると候補が出ます）',
+                    required: true,
+                    autocomplete: true,
+                },
+            ],
         };
     }
 
@@ -48,7 +57,8 @@ class SpeakerCommand {
      * @returns {{args: {name: string}}|{response: ResponseT}} 名前付きの引数、または形式エラーのレスポンス
      */
     static parseText(input) {
-        if (input.argc !== 1) {
+        // 「ずんだもん あまあま」のように空白を含む名前も受け付ける
+        if (input.argc < 1) {
             return {
                 response: input.newChatResponse(
                     'コマンドの形式が間違っています :sob: 例:`@hanako キャラクター変更 default`',
@@ -56,7 +66,7 @@ class SpeakerCommand {
                 ),
             };
         }
-        return { args: { name: input.argv[0] } };
+        return { args: { name: input.argv.join(' ') } };
     }
 
     /**
@@ -85,16 +95,31 @@ class SpeakerCommand {
             userId: input.userId,
             speaker: newSpeaker,
         });
-        let onSuccess;
-        if (newSpeaker === 'default') {
-            onSuccess = input.newChatResponse('読み上げるキャラクターをデフォルトに戻しました :beginner:');
-        } else {
-            onSuccess = input.newChatResponse(
-                `読み上げるキャラクターを${newSpeaker}に変更しました。元に戻す場合は${input.usage('@hanako キャラクター変更 default', '/speaker name:default')} を入力します :microphone:`
-            );
-        }
-        return new ActionResponse({ id: input.id, action, onSuccess });
+        // 入力はあいまいでもよい。照合した結果の話者で成功を伝える
+        const onSuccess = (voice) => input.newChatResponse(successMessage(input, voice));
+        const onFailure = input.newChatResponse('読み上げるキャラクターを変更できませんでした :sob:', 'error');
+        return new ActionResponse({ id: input.id, action, onSuccess, onFailure });
     }
+}
+
+/**
+ * キャラクターを変更したときのメッセージ
+ *
+ * @param {CommandInput} input コマンド引数
+ * @param {VoiceInfo} voice 照合した話者
+ * @returns {string}
+ */
+function successMessage(input, voice) {
+    if (voice.address === 'default') {
+        return '読み上げるキャラクターをデフォルトに戻しました :beginner:';
+    }
+    const name = voice.displayName === voice.address ? voice.address : `${voice.displayName}（${voice.address}）`;
+    const revert = input.usage('@hanako キャラクター変更 default', '/speaker name:default');
+    let message = `読み上げるキャラクターを${name}に変更しました。元に戻す場合は${revert} を入力します :microphone:`;
+    if (voice.credit) {
+        message += `\n音声: ${voice.credit}`;
+    }
+    return message;
 }
 
 module.exports = SpeakerCommand;

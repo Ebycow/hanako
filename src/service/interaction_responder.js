@@ -158,8 +158,9 @@ async function replyChatF(target, chat) {
  * @returns {Promise<boolean>}
  */
 async function respondActionF(target, response) {
+    let result;
     try {
-        await this.actionHandler.handle(response.action);
+        result = await this.actionHandler.handle(response.action);
     } catch (e) {
         if (e.eby && response.onFailure.type === 'chat') {
             await target.replyPrivately({ content: response.onFailure.withError(e).content });
@@ -167,7 +168,7 @@ async function respondActionF(target, response) {
         }
         throw e;
     }
-    return this.respond(target, response.onSuccess);
+    return this.respond(target, response.successResponse(result));
 }
 
 module.exports = InteractionResponder;

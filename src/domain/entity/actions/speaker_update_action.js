@@ -69,6 +69,16 @@ class SpeakerUpdateAction {
         return this.data.speaker;
     }
 
+    /**
+     * 読み上げキャラクターだけを差し替えたアクションを返す
+     *
+     * @param {string} speaker 新しい読み上げキャラクター
+     * @returns {SpeakerUpdateAction}
+     */
+    withSpeaker(speaker) {
+        return new SpeakerUpdateAction(Object.assign({}, this.data, { speaker }));
+    }
+
     toString() {
         return `SpeakerAction(id=${this.id}, serverId=${this.serverId}, userId=${this.userId}, speaker=${this.speaker})`;
     }

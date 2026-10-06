@@ -10,7 +10,9 @@ const appSettings = AppSettings.fromFile('./app-config-default.yml', './app-conf
 
 // ttshub の URL があれば、Ebyroid に直接つながず ttshub で読み上げる
 if (appSettings.ttshubUrl) {
-    appConfig = appConfig.withDependent('IVoiceroidStreamRepo', 'TtshubStreamApiAdapter');
+    appConfig = appConfig
+        .withDependent('IVoiceroidStreamRepo', 'TtshubStreamApiAdapter')
+        .withDependent('IVoiceCatalogRepo', 'TtshubVoiceCatalogAdapter');
 }
 
 new Application(appConfig, appSettings).start();

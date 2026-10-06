@@ -19,6 +19,8 @@ function addOptionF(builder, def) {
         option.setName(def.name).setDescription(def.description).setRequired(def.required);
         if (typeof def.minValue === 'number') option.setMinValue(def.minValue);
         if (typeof def.maxValue === 'number') option.setMaxValue(def.maxValue);
+        // 入力中に候補を出す（候補は AutocompleteCtrl が返す）
+        if (def.autocomplete) option.setAutocomplete(true);
         return option;
     };
 

@@ -85,6 +85,7 @@ module.exports = {
  * @property {boolean} required 必須かどうか
  * @property {number} [minValue] 最小値（integerのみ）
  * @property {number} [maxValue] 最大値（integerのみ）
+ * @property {boolean} [autocomplete] 入力中に候補を出すか（stringのみ。候補は AutocompleteCtrl が返す）
  */
 
 /**
