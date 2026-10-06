@@ -21,6 +21,12 @@ const RECONNECT_MAX_DELAY_MS = 300000;
 // ここで間を取らないと別々の発言がつながって聞こえる。
 const UTTERANCE_GAP_MS = 300;
 const OPUS_FRAME_MS = 20;
+// 再生中に音声が途切れても再生を止めずに待つ長さ。待つ間は無音が流れる。
+// SEをはさむ発言では、SEを再生している間に次の区切りの音声を取りに行くため、
+// 長文の合成（VOICEVOXは一括で返す）を待つと数秒途切れる。既定の5フレーム（100ms）では
+// そこで再生が止められ、残りが読まれずに次の発言へ進んでしまう。
+// 取得の失敗は各アダプタの期限（ttshubは応答開始まで30秒）でストリームが破棄されて分かるため、それより長くする。
+const MAX_PLAYBACK_GAP_MS = 35000;
 
 /** @typedef {import('stream').Readable} Readable */
 /** @typedef {import('discord.js').VoiceChannel} discord.VoiceChannel */
@@ -195,6 +201,7 @@ class DiscordVoiceChatModel {
         const audioPlayer = createAudioPlayer({
             behaviors: {
                 noSubscriber: NoSubscriberBehavior.Stop,
+                maxMissedFrames: Math.ceil(MAX_PLAYBACK_GAP_MS / OPUS_FRAME_MS),
             },
         });
 

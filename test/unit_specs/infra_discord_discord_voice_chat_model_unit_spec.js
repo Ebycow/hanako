@@ -211,4 +211,17 @@ describe('DiscordVoiceChatModel', () => {
             stream.start.called.should.be.false;
         });
     });
+
+    describe('audio player', () => {
+        specify('keeps playing while the next part of an utterance is still being synthesized', async () => {
+            entersState.resolves();
+
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel());
+
+            // SEの後の長文をVOICEVOXが合成し終えるまで、途切れても止めない（20ms × フレーム数）
+            const { maxMissedFrames } = createAudioPlayer.firstCall.args[0].behaviors;
+            (maxMissedFrames * 20).should.be.at.least(30000);
+        });
+    });
 });
