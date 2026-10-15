@@ -95,7 +95,7 @@ function Stop-HanakoConsole {
     }
 
     # Attempt graceful shutdown by sending WM_CLOSE to the console window.
-    # This generates CTRL_CLOSE_EVENT, allowing async-exit-hook handlers to run.
+    # This generates CTRL_CLOSE_EVENT, which Node.js receives as SIGHUP so the shutdown handlers can run.
     Write-Step "Requesting graceful shutdown (PID: $hanakoPid)."
     & taskkill /PID $hanakoPid 2>&1 | Out-Null
 

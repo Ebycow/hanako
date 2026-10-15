@@ -27,7 +27,6 @@
     "@alexanderolsen/libsamplerate-js": "^2.1.2",
     "@discordjs/voice": "^0.19.0",
     "@seald-io/nedb": "^4.1.2",
-    "async-exit-hook": "^2.0.1",
     "axios": "^1.7.9",
     "discord.js": "^14.25.1",
     "emojibase-data": "^17.0.0",
