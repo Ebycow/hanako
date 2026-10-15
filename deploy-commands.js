@@ -1,5 +1,4 @@
-const { Routes, InteractionContextType, ApplicationIntegrationType } = require('discord.js');
-const { REST } = require('@discordjs/rest');
+const { REST, Routes, InteractionContextType, ApplicationIntegrationType } = require('discord.js');
 const AppSettings = require('./src/core/app_settings');
 const { buildSlashCommandsJSON, summarizeSlashCommands } = require('./src/service/slash_command_builder');
 
