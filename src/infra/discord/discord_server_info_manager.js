@@ -49,6 +49,7 @@ class DiscordServerInfoManager {
             serverName: guild.name,
             userId: this.client.user.id,
             prefix: this.appSettings.defaultCommandPrefix,
+            helpUrl: this.appSettings.helpUrl,
         });
 
         // サーバーステータスを返却

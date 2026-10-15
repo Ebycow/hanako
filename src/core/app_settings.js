@@ -47,6 +47,7 @@ const ENV_OVERRIDES = [
     ['EBYROID_STREAM_API_URL', 'ebyroidStreamApiUrl'],
     ['EBYROID_STREAM_API_MODE', 'ebyroidStreamApiMode'],
     ['TTSHUB_URL', 'ttshubUrl'],
+    ['HELP_URL', 'helpUrl'],
 ];
 
 /**
@@ -90,6 +91,7 @@ class AppSettings {
      * @param {string} data.ebyroidStreamApiUrl
      * @param {string} [data.ebyroidStreamApiMode='auto']
      * @param {string} [data.ttshubUrl=''] 空でなければ ttshub で読み上げる
+     * @param {string} [data.helpUrl=''] 空でなければ help コマンドで案内する
      * @param {number} data.foleyMaxDownloadByteSize
      * @param {number} data.foleyMaxAudioSeconds
      * @param {number} data.foleyMaxStorageByteSize
@@ -106,6 +108,8 @@ class AppSettings {
         assert(['auto', 'legacy-get', 'streaming-post'].includes(streamApiMode));
         const ttshubUrl = data.ttshubUrl || '';
         assert(typeof ttshubUrl === 'string');
+        const helpUrl = data.helpUrl || '';
+        assert(typeof helpUrl === 'string');
         assert(typeof data.foleyMaxDownloadByteSize === 'number');
         assert(typeof data.foleyMaxAudioSeconds === 'number');
         assert(typeof data.foleyMaxStorageByteSize === 'number');
@@ -116,7 +120,7 @@ class AppSettings {
         );
 
         Object.defineProperty(this, 'data', {
-            value: Object.assign({}, data, { ebyroidStreamApiMode: streamApiMode, ttshubUrl }),
+            value: Object.assign({}, data, { ebyroidStreamApiMode: streamApiMode, ttshubUrl, helpUrl }),
             writable: false,
             enumerable: false,
             configurable: false,
@@ -184,6 +188,15 @@ class AppSettings {
      */
     get ttshubUrl() {
         return this.data.ttshubUrl;
+    }
+
+    /**
+     * help コマンドで案内する使い方のページの URL。空なら案内しない
+     *
+     * @type {string}
+     */
+    get helpUrl() {
+        return this.data.helpUrl;
     }
 
     /**

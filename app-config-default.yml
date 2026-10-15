@@ -26,6 +26,10 @@ settings:
   # 例: 'http://host.docker.internal:8790'
   ttshub_url: ''
 
+  # help コマンドで案内する使い方のページの URL（空にすると案内しない）
+  # 自分で運用している花子で独自の説明ページを用意しているなら、その URL に変える
+  help_url: 'https://github.com/Ebycow/hanako/blob/master/README.md'
+
   # SE音源を取得するときの最大ファイルサイズ（Bytes）
   foley_max_download_byte_size: 2000000
 
