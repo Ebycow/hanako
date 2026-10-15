@@ -1,6 +1,7 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const VoiceAutocompleteService = require('../service/voice_autocomplete_service');
+const HelpAutocompleteService = require('../service/help_autocomplete_service');
 const errors = require('../core/errors').promises;
 
 /** @typedef {import('discord.js').Client} discord.Client */
@@ -20,6 +21,7 @@ class AutocompleteCtrl {
     constructor(client) {
         this.client = client;
         this.voiceService = new VoiceAutocompleteService();
+        this.helpService = new HelpAutocompleteService();
 
         logger.trace('セットアップ完了');
     }
@@ -41,9 +43,11 @@ class AutocompleteCtrl {
         try {
             if (interaction.commandName === 'speaker' && focused.name === 'name') {
                 choices = await this.voiceService.suggest(focused.value);
+            } else if (interaction.commandName === 'help' && focused.name === 'command') {
+                choices = this.helpService.suggest(focused.value);
             }
         } catch (err) {
-            logger.warn('読み上げキャラクターの候補を取得できなかった', err.message);
+            logger.warn(`/${interaction.commandName} の候補を取得できなかった`, err.message);
         }
 
         // 3秒以内に応答しないと失効する。失効していても入力は続けられるので、失敗はログだけ残す

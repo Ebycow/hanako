@@ -35,7 +35,7 @@
 | ブラックリスト全削除 | 大赦 blacklist-clear | /blacklist-clear | サーバー管理 | @hanako blacklist-clear --force |
 | 読み上げキャラ変更 | キャラクター変更 speaker | /speaker | - | @hanako speaker kiritan |
 | 読み上げキャラ一覧 | キャラクター一覧 speakers | /speakers | - | @hanako speakers |
-| ヘルプ | 使い方 help | /help | - | @hanako help |
+| ヘルプ | 使い方 help | /help | - | @hanako help limit |
 | 質問 | 質問 ask | /ask | - | @hanako ask 今日は晴れ？ |
 | テキストコマンドの有効・無効 | （スラッシュコマンドのみ） | /text-commands | サーバー管理 | /text-commands enabled:False |
 
@@ -113,6 +113,12 @@
 * `@hanako speaker ずんだもん あまあま` のようにあいまいに書いても、一番近いキャラクターに変更する。見つからなければ候補を案内する
 * `voicevox:ずんだもん/あまあま?speed=1.2` のように、話す速さなどを指定できる
 * `@hanako speakers`（`/speakers`）でキャラクターの一覧を表示する
+
+## 使い方を見る
+`@hanako help`（`/help`）でコマンドの一覧を表示する
+`@hanako help limit`（`/help command:limit`）で、そのコマンドのオプション・使える人・テキストでの書き方を表示する。コマンド名はスラッシュコマンドの名前でも、`制限` のようなテキストでの名前でもよい
+
+どちらも最後に使い方のページ（`help_url` の設定。既定はこの README）を案内する。自分で運用している花子で独自の説明ページを用意しているなら、`app-config.yml` の `help_url` か環境変数 `HELP_URL` でその URL に変えられる（空にすると案内しない）
 
 ## サーバごとの独立管理
 辞書・SE・ブラックリスト・設定はすべてDiscordサーバ（ギルド）ごとに独立して管理されます
@@ -244,6 +250,7 @@ cp .env.example .env
 | `DISCORD_GUILD_ID` | （任意）以前ギルド単位でスラッシュコマンドを登録していたGUILD_ID |
 | `EBYROID_STREAM_API_URL` | 音声サーバのURL。同じマシンなら `host.docker.internal`、別のマシンならそのIPアドレスを書く |
 | `EBYROID_STREAM_API_MODE` | （任意）`auto` / `legacy-get` / `streaming-post` |
+| `HELP_URL` | （任意）help コマンドで案内する使い方のページのURL。省略するとこの README を案内する |
 
 これらの環境変数は、Dockerを使わない場合も `app-config.yml` より優先されます
 

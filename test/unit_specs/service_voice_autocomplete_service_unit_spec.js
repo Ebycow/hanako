@@ -57,9 +57,10 @@ describe('AutocompleteCtrl', () => {
         };
     }
 
-    function ctrlWith(suggest) {
+    function ctrlWith(suggest, helpSuggest = sinon.stub().returns([])) {
         const ctrl = Object.create(AutocompleteCtrl.prototype);
         ctrl.voiceService = { suggest };
+        ctrl.helpService = { suggest: helpSuggest };
         return ctrl;
     }
 
@@ -81,12 +82,24 @@ describe('AutocompleteCtrl', () => {
         sinon.assert.calledOnceWithExactly(interaction.respond, []);
     });
 
+    specify('help の command ならコマンド名の候補を返す', async () => {
+        const choices = [{ name: '/limit 読み上げる文字数の上限を設定します', value: 'limit' }];
+        const ctrl = ctrlWith(sinon.stub(), sinon.stub().returns(choices));
+        const interaction = autocompleteInteraction('help', { name: 'command', value: 'lim' });
+
+        await ctrl.onAutocomplete(interaction);
+        sinon.assert.calledOnceWithExactly(ctrl.helpService.suggest, 'lim');
+        sinon.assert.notCalled(ctrl.voiceService.suggest);
+        sinon.assert.calledOnceWithExactly(interaction.respond, choices);
+    });
+
     specify('ほかのコマンドには候補なしで応答する', async () => {
         const ctrl = ctrlWith(sinon.stub().resolves([{ name: 'x', value: 'x' }]));
-        const interaction = autocompleteInteraction('help', { name: 'name', value: '' });
+        const interaction = autocompleteInteraction('limit', { name: 'number', value: '' });
 
         await ctrl.onAutocomplete(interaction);
         sinon.assert.notCalled(ctrl.voiceService.suggest);
+        sinon.assert.notCalled(ctrl.helpService.suggest);
         sinon.assert.calledOnceWithExactly(interaction.respond, []);
     });
 
