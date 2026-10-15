@@ -2,12 +2,12 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const uuid = require('crypto').randomUUID;
-const prettyBytes = require('pretty-bytes');
 const axios = require('axios').default;
 const prism = require('prism-media');
 const FileType = require('file-type');
 const { Readable, Transform } = require('stream');
 const errors = require('../../core/errors').promises;
+const formatBytes = require('../../core/utils/format_bytes');
 const { publicOnlyRequestConfig, isForbiddenAddressError } = require('../http/public_address_guard');
 
 async function fileTypeFromBuffer(buffer) {
@@ -409,7 +409,7 @@ class NedbFoleyDictionaryTableManager {
         }
 
         if (await this.isStorageFull(action.serverId)) {
-            const maxSize = prettyBytes(this.appSettings.foleyMaxStorageByteSize).replace(/\s/, '');
+            const maxSize = formatBytes(this.appSettings.foleyMaxStorageByteSize);
             const message = `SEの保存容量がいっぱい（上限${maxSize}）にゃ… いらないSEを消してから試してね :sob:`;
             return errors.disappointed('foley-storage-full', message);
         }
@@ -424,7 +424,7 @@ class NedbFoleyDictionaryTableManager {
                 const message = 'そのURLからは取得できないにゃ :sob:';
                 return errors.unexpected('foley-http-forbidden-address', message);
             } else if (err.message.startsWith('maxContentLength size of ')) {
-                const maxSize = prettyBytes(this.appSettings.foleyMaxDownloadByteSize).replace(/\s/, '');
+                const maxSize = formatBytes(this.appSettings.foleyMaxDownloadByteSize);
                 const message = `${maxSize}以上のデータは大きすぎて入らないにゃ :sob:`;
                 return errors.unexpected('foley-http-data-too-large', message);
             } else if (err.response && err.response.status >= 400) {
@@ -499,7 +499,7 @@ class NedbFoleyDictionaryTableManager {
 
             if (await this.isStorageFull(action.serverId)) {
                 logger.warn(`保存容量の上限によりスキップ (item: ${itemLabel})`);
-                const maxSize = prettyBytes(this.appSettings.foleyMaxStorageByteSize).replace(/\s/, '');
+                const maxSize = formatBytes(this.appSettings.foleyMaxStorageByteSize);
                 failedItems.push(`${item.keyword}: SEの保存容量がいっぱいです（上限${maxSize}）`);
                 continue;
             }
