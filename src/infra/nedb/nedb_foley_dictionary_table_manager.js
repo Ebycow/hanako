@@ -4,19 +4,11 @@ const assert = require('assert').strict;
 const uuid = require('crypto').randomUUID;
 const axios = require('axios').default;
 const prism = require('prism-media');
-const FileType = require('file-type');
 const { Readable, Transform } = require('stream');
 const errors = require('../../core/errors').promises;
 const formatBytes = require('../../core/utils/format_bytes');
+const detectAudioFormat = require('../../library/detect_audio_format');
 const { publicOnlyRequestConfig, isForbiddenAddressError } = require('../http/public_address_guard');
-
-async function fileTypeFromBuffer(buffer) {
-    const detectFromBuffer = FileType.fileTypeFromBuffer || FileType.fromBuffer;
-    if (typeof detectFromBuffer !== 'function') {
-        return errors.unexpected('file-type-from-buffer-not-available');
-    }
-    return detectFromBuffer(buffer);
-}
 
 /**
  * FFmpegが入力を読み切る前に終了したときに、残りの入力を書き込もうとして出るエラーかどうか
@@ -439,8 +431,7 @@ class NedbFoleyDictionaryTableManager {
             }
         }
 
-        const fileType = await fileTypeFromBuffer(response.data);
-        if (!fileType || !fileType.mime.startsWith('audio')) {
+        if (!detectAudioFormat(response.data)) {
             const message = 'これサウンドファイルじゃなさそう :sob:';
             return errors.unexpected('foley-http-invalid-mine-type', message);
         }
@@ -518,8 +509,7 @@ class NedbFoleyDictionaryTableManager {
                 continue;
             }
 
-            const fileType = await fileTypeFromBuffer(response.data);
-            if (!fileType || !fileType.mime.startsWith('audio')) {
+            if (!detectAudioFormat(response.data)) {
                 logger.warn(`音声ファイル以外をスキップ (item: ${itemLabel})`);
                 failedItems.push(`${item.keyword}: 音声ファイルではありません`);
                 continue;
