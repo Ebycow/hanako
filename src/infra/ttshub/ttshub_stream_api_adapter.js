@@ -1,4 +1,5 @@
-const axios = require('axios').default;
+const { Readable } = require('stream');
+const { fetchOk, networkErrorCode } = require('../http/fetch_ok');
 const transforms = require('../../library/transforms');
 const AppSettings = require('../../core/app_settings');
 const IVoiceroidStreamRepo = require('../../domain/repo/i_voiceroid_stream_repo');
@@ -80,9 +81,10 @@ class TtshubStreamApiAdapter {
 
         let response;
         try {
-            response = await axios.post(this.url, body, {
-                responseType: 'stream',
+            response = await fetchOk(this.url, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Request-Id': id },
+                body: JSON.stringify(body),
                 signal: requestSignal,
             });
         } catch (err) {
@@ -92,8 +94,8 @@ class TtshubStreamApiAdapter {
                 // スキップや退出で読み上げをやめただけ
                 logger.debug(`ttshubへの合成を中断した (${describe()})`);
             } else {
-                // AxiosError の message や code には本文は含まれない（本文は送ったデータの側にある）
-                const reason = err.response ? `HTTP ${err.response.status}` : err.code || err.message;
+                // エラーの message や code には本文は含まれない（本文は送ったデータの側にある）
+                const reason = err.status ? `HTTP ${err.status}` : networkErrorCode(err) || err.message;
                 logger.warn(`ttshubで合成できなかった (${describe()}): ${reason}`);
             }
             throw err;
@@ -101,27 +103,30 @@ class TtshubStreamApiAdapter {
             clearTimeout(timer);
         }
 
-        const sampleRate = parseInt(response.headers['x-tts-pcm-sample-rate'], 10);
-        const channels = parseInt(response.headers['x-tts-pcm-channels'], 10);
+        const sampleRate = parseInt(response.headers.get('x-tts-pcm-sample-rate'), 10);
+        const channels = parseInt(response.headers.get('x-tts-pcm-channels'), 10);
         if (sampleRate !== OUTPUT_FORMAT.sample_rate || channels !== OUTPUT_FORMAT.channels) {
-            response.data.destroy();
+            await response.body.cancel().catch(() => {});
             throw new Error(`ttshubが要求と違う形式を返した (${sampleRate}Hz ${channels}ch, id=${id})`);
         }
 
-        const fallback = response.headers['x-tts-fallback'];
+        const fallback = response.headers.get('x-tts-fallback');
         if (fallback && fallback !== 'none') {
-            const resolved = decodeExtValue(response.headers['x-tts-resolved-voice']);
+            const resolved = decodeExtValue(response.headers.get('x-tts-resolved-voice'));
             logger.warn(
                 `ttshubが代わりの声で読んだ (要求=${audio.speaker}, 実際=${resolved}, 理由=${fallback}, id=${id})`
             );
         }
-        const warning = response.headers['x-tts-warning'];
+        const warning = response.headers.get('x-tts-warning');
         if (warning) {
             logger.info(`ttshubからの警告: ${warning} (id=${id})`);
         }
 
         // ttshub が Discord 向けの形式に変換済みなので、ここでは届かなくなったときの監視だけ行う
-        const stream = composeStreams(response.data, new transforms.StallGuard(BODY_STALL_TIMEOUT_MS));
+        const stream = composeStreams(
+            Readable.fromWeb(response.body),
+            new transforms.StallGuard(BODY_STALL_TIMEOUT_MS)
+        );
         stream.on('error', (err) => {
             // 読み上げをやめて破棄したときのエラーは記録しない
             if ((signal && signal.aborted) || err.name === 'AbortError') return;

@@ -2,6 +2,7 @@ const dns = require('dns');
 const net = require('net');
 const http = require('http');
 const https = require('https');
+const { download } = require('./download');
 
 /**
  * 利用者が指定したURLを取得するときに、接続を許さないアドレス帯
@@ -95,32 +96,33 @@ function publicOnlyLookup(hostname, options, callback) {
     });
 }
 
-const httpAgent = new http.Agent({ lookup: publicOnlyLookup });
-const httpsAgent = new https.Agent({ lookup: publicOnlyLookup });
+const agents = {
+    // 自前で作った Agent は環境変数のプロキシを使わない（プロキシを経由すると接続先の検査がプロキシ側に移ってしまう）
+    http: new http.Agent({ lookup: publicOnlyLookup }),
+    https: new https.Agent({ lookup: publicOnlyLookup }),
+};
 
 /**
- * 利用者が指定したURLを取得するためのaxios設定
+ * 利用者が指定したURLの中身をダウンロードする
  * 内部ネットワークへの接続（SSRF）を、初回の接続先・リダイレクト先の両方で拒否する
  *
  * @param {string} url 取得するURL
- * @returns {object} axiosのリクエスト設定に混ぜる値
+ * @param {object} options
+ * @param {number} options.maxBytes 本文の最大バイト数
+ * @param {AbortSignal} [options.signal] 中断・期限の合図
+ * @returns {ReturnType<typeof download>}
  */
-function publicOnlyRequestConfig(url) {
-    const { protocol, hostname } = new URL(url);
-    assertPublicTarget(protocol, hostname);
-
-    return {
-        httpAgent,
-        httpsAgent,
-        // 環境変数のプロキシを経由すると、接続先の検査がプロキシ側に移ってしまうため使わない
-        proxy: false,
-        maxRedirects: 5,
-        beforeRedirect: (options) => assertPublicTarget(options.protocol, options.hostname),
-    };
+function downloadPublic(url, { maxBytes, signal }) {
+    return download(url, {
+        maxBytes,
+        signal,
+        agents,
+        assertTarget: (target) => assertPublicTarget(target.protocol, target.hostname),
+    });
 }
 
 /**
- * 接続を拒否したことによるエラーかどうか（リダイレクト時のエラーは原因に包まれている）
+ * 接続を拒否したことによるエラーかどうか（原因に包まれていても判定する）
  *
  * @param {any} err
  * @returns {boolean}
@@ -134,6 +136,6 @@ function isForbiddenAddressError(err) {
 
 module.exports = {
     isForbiddenAddress,
-    publicOnlyRequestConfig,
+    downloadPublic,
     isForbiddenAddressError,
 };

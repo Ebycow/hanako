@@ -1,4 +1,5 @@
-const axios = require('axios').default;
+const { Readable } = require('stream');
+const { fetchOk, withQuery, networkErrorCode } = require('../http/fetch_ok');
 const transforms = require('../../library/transforms');
 const AppSettings = require('../../core/app_settings');
 const IVoiceroidStreamRepo = require('../../domain/repo/i_voiceroid_stream_repo');
@@ -60,7 +61,7 @@ class EbyroidStreamApiAdapter {
         }
 
         // 応答が始まるまでの期限。応答を受け取ったら解除する。
-        // axiosは受信が終わるまでsignalを見続けるため、期限をAbortSignal.timeoutにすると受信中に切れてしまう。
+        // fetchは本文の受信が終わるまでsignalを見続けるため、期限をAbortSignal.timeoutにすると受信中に切れてしまう。
         const responseTimeout = new AbortController();
         const timer = setTimeout(
             () => responseTimeout.abort(new Error(`Ebyroidの応答が${RESPONSE_TIMEOUT_MS}ms以内に始まらなかった`)),
@@ -74,23 +75,23 @@ class EbyroidStreamApiAdapter {
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
                     if (this.mode === 'streaming-post') {
-                        response = await axios.post(this.url, params, {
-                            responseType: 'stream',
+                        response = await fetchOk(this.url, {
+                            method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(params),
                             signal: requestSignal,
                         });
                     } else {
-                        response = await axios.get(this.url, {
-                            responseType: 'stream',
-                            params: params,
-                            signal: requestSignal,
-                        });
+                        response = await fetchOk(withQuery(this.url, params), { signal: requestSignal });
                     }
                     break;
                 } catch (err) {
-                    // 中断・期限切れは再試行しない（axiosはそれぞれ別のエラーで失敗する）
-                    if (err.code === 'ECONNRESET' && attempt < maxRetries && !requestSignal.aborted) {
-                        logger.warn(`ECONNRESET発生。リトライします (${attempt}/${maxRetries})`);
+                    // 中断・期限切れは再試行しない（fetchはsignalのreasonで失敗する）
+                    // 使い回した接続が切れていたときは、ソケットのエラー（ECONNRESET）か undici のエラーになる
+                    const code = networkErrorCode(err);
+                    const reset = code === 'ECONNRESET' || code === 'UND_ERR_SOCKET';
+                    if (reset && attempt < maxRetries && !requestSignal.aborted) {
+                        logger.warn(`${code}発生。リトライします (${attempt}/${maxRetries})`);
                         continue;
                     }
                     throw err;
@@ -100,9 +101,9 @@ class EbyroidStreamApiAdapter {
             clearTimeout(timer);
         }
 
-        const sampleRate = parseInt(response.headers['ebyroid-pcm-sample-rate'], 10);
-        const bitDepth = parseInt(response.headers['ebyroid-pcm-bit-depth'], 10);
-        const numChannels = parseInt(response.headers['ebyroid-pcm-number-of-channels'], 10);
+        const sampleRate = parseInt(response.headers.get('ebyroid-pcm-sample-rate'), 10);
+        const bitDepth = parseInt(response.headers.get('ebyroid-pcm-bit-depth'), 10);
+        const numChannels = parseInt(response.headers.get('ebyroid-pcm-number-of-channels'), 10);
 
         let channelTransform;
         if (numChannels == 1) {
@@ -125,7 +126,12 @@ class EbyroidStreamApiAdapter {
         // the complete response -> channel conversion -> resampling pipeline.
         // Destroying the composed stream also destroys the HTTP response.
         return Promise.resolve(
-            composeStreams(response.data, new transforms.StallGuard(BODY_STALL_TIMEOUT_MS), channelTransform, resample)
+            composeStreams(
+                Readable.fromWeb(response.body),
+                new transforms.StallGuard(BODY_STALL_TIMEOUT_MS),
+                channelTransform,
+                resample
+            )
         );
     }
 }

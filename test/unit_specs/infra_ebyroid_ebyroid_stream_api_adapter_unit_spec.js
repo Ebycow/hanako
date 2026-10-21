@@ -3,15 +3,19 @@ const { expect } = require('chai');
 const proxyquire = require('proxyquire');
 const sinon = require('sinon');
 
-function response() {
-    return {
+function response(body = Readable.from([Buffer.from([1, 2, 3, 4])])) {
+    return new Response(Readable.toWeb(body), {
         headers: {
             'ebyroid-pcm-sample-rate': '48000',
             'ebyroid-pcm-bit-depth': '16',
             'ebyroid-pcm-number-of-channels': '2',
         },
-        data: Readable.from([Buffer.from([1, 2, 3, 4])]),
-    };
+    });
+}
+
+/** fetch がソケットのエラーを包んで投げる TypeError('fetch failed') */
+function connectionReset(code) {
+    return new TypeError('fetch failed', { cause: Object.assign(new Error('other side closed'), { code }) });
 }
 
 async function consume(stream) {
@@ -20,26 +24,23 @@ async function consume(stream) {
     return Buffer.concat(chunks);
 }
 
-/** axios stub that only settles when its signal aborts, like a request stuck in Ebyroid's queue */
-function hangUntilAborted(_url, _params, config) {
+/** fetch stub that only settles when its signal aborts, like a request stuck in Ebyroid's queue */
+function hangUntilAborted(_url, init) {
     return new Promise((_resolve, reject) => {
-        config.signal.addEventListener('abort', () => reject(config.signal.reason));
+        init.signal.addEventListener('abort', () => reject(init.signal.reason));
     });
 }
 
 describe('EbyroidStreamApiAdapter', () => {
-    let axios;
+    let fetchOk;
     let EbyroidStreamApiAdapter;
 
     beforeEach(() => {
-        axios = {
-            get: sinon.stub().resolves(response()),
-            post: sinon.stub().resolves(response()),
-        };
+        fetchOk = sinon.stub().callsFake(async () => response());
         EbyroidStreamApiAdapter = proxyquire.noPreserveCache().noCallThru()(
             '../../src/infra/ebyroid/ebyroid_stream_api_adapter',
             {
-                axios: { default: axios },
+                '../http/fetch_ok': { fetchOk, '@noCallThru': false },
             }
         );
     });
@@ -58,15 +59,14 @@ describe('EbyroidStreamApiAdapter', () => {
             speaker: 'aoi',
         });
         expect(await consume(stream)).to.deep.equal(Buffer.from([1, 2, 3, 4]));
-        sinon.assert.notCalled(axios.get);
-        sinon.assert.calledOnce(axios.post);
-        expect(axios.post.firstCall.args[0]).to.equal(url);
-        expect(axios.post.firstCall.args[1]).to.deep.equal({
+        sinon.assert.calledOnce(fetchOk);
+        const [requestUrl, init] = fetchOk.firstCall.args;
+        expect(init.method).to.equal('POST');
+        expect(String(requestUrl)).to.equal(url);
+        expect(JSON.parse(init.body)).to.deep.equal({
             text: 'secret speech',
             name: 'aoi',
         });
-        expect(axios.post.firstCall.args[2].responseType).to.equal('stream');
-        expect(axios.post.firstCall.args[0]).not.to.include('secret speech');
     });
 
     it('keeps the legacy GET transport for a v1 URL in auto mode', async () => {
@@ -82,11 +82,10 @@ describe('EbyroidStreamApiAdapter', () => {
                 speaker: 'default',
             })
         );
-        sinon.assert.notCalled(axios.post);
-        sinon.assert.calledOnceWithMatch(axios.get, url, {
-            responseType: 'stream',
-            params: { text: 'legacy' },
-        });
+        sinon.assert.calledOnce(fetchOk);
+        const [requestUrl, init] = fetchOk.firstCall.args;
+        expect(init.method).to.equal(undefined);
+        expect(String(requestUrl)).to.equal(`${url}?text=legacy`);
     });
 
     it('allows the configured mode to override URL detection', async () => {
@@ -101,15 +100,15 @@ describe('EbyroidStreamApiAdapter', () => {
                 speaker: 'default',
             })
         );
-        sinon.assert.calledOnce(axios.post);
-        sinon.assert.notCalled(axios.get);
+        sinon.assert.calledOnce(fetchOk);
+        expect(fetchOk.firstCall.args[1].method).to.equal('POST');
     });
 
     describe('cancellation', () => {
         const url = 'http://localhost:4090/api/v2/audiostream';
 
         it('stops waiting for the response when the caller aborts', async () => {
-            axios.post.callsFake(hangUntilAborted);
+            fetchOk.callsFake(hangUntilAborted);
             const adapter = new EbyroidStreamApiAdapter({ ebyroidStreamApiUrl: url });
             const controller = new AbortController();
 
@@ -119,20 +118,31 @@ describe('EbyroidStreamApiAdapter', () => {
             controller.abort();
 
             expect((await result).name).to.equal('AbortError');
-            expect(axios.post.firstCall.args[2].signal.aborted).to.equal(true);
+            expect(fetchOk.firstCall.args[1].signal.aborted).to.equal(true);
         });
 
         it('does not retry ECONNRESET once the request has been aborted', async () => {
             const controller = new AbortController();
-            axios.post.callsFake(async () => {
+            fetchOk.callsFake(async () => {
                 controller.abort();
-                throw Object.assign(new Error('socket hang up'), { code: 'ECONNRESET' });
+                throw connectionReset('ECONNRESET');
             });
             const adapter = new EbyroidStreamApiAdapter({ ebyroidStreamApiUrl: url });
 
             await adapter.getVoiceroidStream({ content: 'x', speaker: 'default' }, controller.signal).catch(() => {});
 
-            sinon.assert.calledOnce(axios.post);
+            sinon.assert.calledOnce(fetchOk);
+        });
+
+        ['ECONNRESET', 'UND_ERR_SOCKET'].forEach((code) => {
+            it(`retries when a reused connection fails with ${code}`, async () => {
+                fetchOk.onFirstCall().rejects(connectionReset(code));
+                const adapter = new EbyroidStreamApiAdapter({ ebyroidStreamApiUrl: url });
+
+                await consume(await adapter.getVoiceroidStream({ content: 'x', speaker: 'default' }));
+
+                sinon.assert.calledTwice(fetchOk);
+            });
         });
     });
 
@@ -141,7 +151,8 @@ describe('EbyroidStreamApiAdapter', () => {
         let clock;
 
         beforeEach(() => {
-            clock = sinon.useFakeTimers();
+            // setImmediate は本物のままにする（fetch の本文の破棄が setImmediate を使う）
+            clock = sinon.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
         });
 
         afterEach(() => {
@@ -149,12 +160,12 @@ describe('EbyroidStreamApiAdapter', () => {
         });
 
         it('gives up when the response does not start within 15 seconds', async () => {
-            axios.post.callsFake(hangUntilAborted);
+            fetchOk.callsFake(hangUntilAborted);
             const adapter = new EbyroidStreamApiAdapter({ ebyroidStreamApiUrl: url });
 
             const result = adapter.getVoiceroidStream({ content: 'slow', speaker: 'default' }).catch((err) => err);
             await clock.tickAsync(14999);
-            sinon.assert.calledOnce(axios.post);
+            sinon.assert.calledOnce(fetchOk);
             await clock.tickAsync(1);
 
             expect((await result).message).to.include('15000ms');
@@ -166,12 +177,12 @@ describe('EbyroidStreamApiAdapter', () => {
             await adapter.getVoiceroidStream({ content: 'ok', speaker: 'default' });
             await clock.tickAsync(20000);
 
-            expect(axios.post.firstCall.args[2].signal.aborted).to.equal(false);
+            expect(fetchOk.firstCall.args[1].signal.aborted).to.equal(false);
         });
 
         it('destroys the HTTP response when PCM stops arriving while it is being read', async () => {
             const body = new Readable({ read() {} });
-            axios.post.resolves({ ...response(), data: body });
+            fetchOk.resolves(response(body));
             const adapter = new EbyroidStreamApiAdapter({ ebyroidStreamApiUrl: url });
 
             const stream = await adapter.getVoiceroidStream({ content: 'stalled', speaker: 'default' });

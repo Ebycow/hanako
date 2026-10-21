@@ -11,12 +11,13 @@ const FoleyDeleteAction = require('../../src/domain/entity/actions/foley_delete_
 const FoleyDeleteMultipleAction = require('../../src/domain/entity/actions/foley_delete_multiple_action');
 const FoleyRenameAction = require('../../src/domain/entity/actions/foley_rename_action');
 const FoleyAudio = require('../../src/domain/entity/audios/foley_audio');
+const { HttpStatusError } = require('../../src/infra/http/fetch_ok');
 
 /************************************************************************
  * NedbFoleyDictionaryTableManager コントラクトテスト
  *
  * 方針：NeDB を in-memory で動かし、DB契約（CRUD整合性）を実物で保証する。
- *       ネットワーク I/O (axios)、外部バイナリ (FFmpeg)、ファイル I/O
+ *       ネットワーク I/O (downloadPublic)、外部バイナリ (FFmpeg)、ファイル I/O
  *       (objectStorageRepo) のみ stub/fake で差し替える。
  *       NeDB → SQLite 移行時はこのテストがそのまま安全ネットになる。
  ***********************************************************************/
@@ -28,7 +29,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
     let sandbox;
 
     // --- stub / fake 群 ---
-    let fakeAxios;
+    let fakeDownload;
     let fakePrism;
     let objectStorageRepo;
     let settingsRepo;
@@ -64,7 +65,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
 
         const Manager = proxyquire('../../src/infra/nedb/nedb_foley_dictionary_table_manager', {
             '@seald-io/nedb': InMemoryDatastore,
-            axios: { default: fakeAxios },
+            '../http/public_address_guard': { downloadPublic: fakeDownload, '@noCallThru': false },
             'prism-media': fakePrism,
             '../../domain/repo/i_foley_action_repo': { comprise() {} },
             '../../domain/repo/i_foley_dictionary_repo': { comprise() {} },
@@ -87,8 +88,8 @@ describe('NedbFoleyDictionaryTableManager', () => {
 
         appSettings = createAppSettings();
 
-        // axios stub: デフォルトは成功レスポンス
-        fakeAxios = { get: sandbox.stub().resolves({ data: DUMMY_AUDIO_BUF }) };
+        // downloadPublic stub: デフォルトは成功レスポンス
+        fakeDownload = sandbox.stub().resolves({ data: DUMMY_AUDIO_BUF });
 
         // prism-media fake: FFmpeg を PassThrough に置き換え
         fakePrism = {
@@ -211,7 +212,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 args[2].should.equal('pcm');
             });
 
-            specify('axios に URL と maxContentLength が渡される', async () => {
+            specify('URL とサイズの上限を渡す', async () => {
                 const mgr = createManager();
                 const action = new FoleyCreateAction({
                     id: 'act-3',
@@ -221,10 +222,10 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 });
                 await mgr.postFoleyCreate(action);
 
-                fakeAxios.get.calledOnce.should.be.true;
-                const callArgs = fakeAxios.get.firstCall.args;
+                fakeDownload.calledOnce.should.be.true;
+                const callArgs = fakeDownload.firstCall.args;
                 callArgs[0].should.equal('http://example.com/shakin.mp3');
-                callArgs[1].should.deep.include({ maxContentLength: 1048576 });
+                callArgs[1].should.deep.include({ maxBytes: 1048576 });
             });
         });
 
@@ -272,7 +273,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
                     err.message.should.include('3GB');
                 }
                 objectStorageRepo.getTotalSize.calledWith('sv-full', 'pcm').should.be.true;
-                fakeAxios.get.called.should.be.false;
+                fakeDownload.called.should.be.false;
                 (await mgr.loadFoleyDictionary('sv-full')).lines.should.have.lengthOf(0);
             });
 
@@ -293,7 +294,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
 
             specify('ダウンロードサイズ超過 → rejected (unexpected)', async () => {
                 const mgr = createManager();
-                fakeAxios.get.rejects(new Error('maxContentLength size of 1048576 exceeded'));
+                fakeDownload.rejects(Object.assign(new Error('too large'), { code: 'EHANAKO_CONTENT_TOO_LARGE' }));
 
                 const action = new FoleyCreateAction({
                     id: 'act-big',
@@ -311,9 +312,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
 
             specify('HTTP 4xx → rejected (unexpected)', async () => {
                 const mgr = createManager();
-                const httpError = new Error('Request failed');
-                httpError.response = { status: 404 };
-                fakeAxios.get.rejects(httpError);
+                fakeDownload.rejects(new HttpStatusError(404, 'GET', 'http://example.com/none.mp3'));
 
                 const action = new FoleyCreateAction({
                     id: 'act-404',
@@ -332,7 +331,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
             specify('音声以外のファイル → rejected (unexpected)', async () => {
                 const mgr = createManager();
                 const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]);
-                fakeAxios.get.resolves({ data: png });
+                fakeDownload.resolves({ data: png });
 
                 const action = new FoleyCreateAction({
                     id: 'act-img',
@@ -350,7 +349,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
 
             specify('形式がわからないファイル → rejected (unexpected)', async () => {
                 const mgr = createManager();
-                fakeAxios.get.resolves({ data: Buffer.from('not an audio file') });
+                fakeDownload.resolves({ data: Buffer.from('not an audio file') });
 
                 const action = new FoleyCreateAction({
                     id: 'act-null',
@@ -386,9 +385,9 @@ describe('NedbFoleyDictionaryTableManager', () => {
         });
 
         context('ダウンロードの遅延・失敗（Discord CDN 不調時）', () => {
-            /** 制限時間切れで axios が投げるエラーと同じ code を持つエラー */
-            function canceledError() {
-                return Object.assign(new Error('canceled'), { code: 'ERR_CANCELED' });
+            /** 制限時間切れ（AbortSignal.timeout）で失敗したときのエラー */
+            function timeoutError() {
+                return new DOMException('The operation was aborted due to timeout', 'TimeoutError');
             }
 
             specify('ダウンロード全体の制限時間を signal で渡す', async () => {
@@ -401,13 +400,13 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 });
                 await mgr.postFoleyCreate(action);
 
-                fakeAxios.get.firstCall.args[1].signal.should.be.an.instanceOf(AbortSignal);
+                fakeDownload.firstCall.args[1].signal.should.be.an.instanceOf(AbortSignal);
             });
 
             specify('制限時間切れはリトライして成功すれば登録される', async () => {
                 const mgr = createManager();
-                fakeAxios.get.onFirstCall().rejects(canceledError());
-                fakeAxios.get.onSecondCall().resolves({ data: DUMMY_AUDIO_BUF });
+                fakeDownload.onFirstCall().rejects(timeoutError());
+                fakeDownload.onSecondCall().resolves({ data: DUMMY_AUDIO_BUF });
 
                 const action = new FoleyCreateAction({
                     id: 'act-retry',
@@ -417,14 +416,14 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 });
                 await mgr.postFoleyCreate(action);
 
-                fakeAxios.get.calledTwice.should.be.true;
+                fakeDownload.calledTwice.should.be.true;
                 const dict = await mgr.loadFoleyDictionary('sv-retry');
                 dict.lines.map((l) => l.keyword).should.deep.equal(['リトライ']);
             });
 
             specify('制限時間切れが続けば3回で諦め、タイムアウトとして伝える', async () => {
                 const mgr = createManager();
-                fakeAxios.get.rejects(canceledError());
+                fakeDownload.rejects(timeoutError());
 
                 const action = new FoleyCreateAction({
                     id: 'act-timeout',
@@ -439,12 +438,12 @@ describe('NedbFoleyDictionaryTableManager', () => {
                     err.type.should.equal('unexpected');
                     err.message.should.include('時間がかかりすぎた');
                 }
-                fakeAxios.get.callCount.should.equal(3);
+                fakeDownload.callCount.should.equal(3);
             });
 
             specify('HTTP 4xx はリトライしない', async () => {
                 const mgr = createManager();
-                fakeAxios.get.rejects(Object.assign(new Error('Request failed'), { response: { status: 404 } }));
+                fakeDownload.rejects(new HttpStatusError(404, 'GET', 'http://example.com/none.mp3'));
 
                 const action = new FoleyCreateAction({
                     id: 'act-404-noretry',
@@ -458,7 +457,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 } catch (err) {
                     err.type.should.equal('unexpected');
                 }
-                fakeAxios.get.calledOnce.should.be.true;
+                fakeDownload.calledOnce.should.be.true;
             });
 
             specify('ダウンロード待ちの間に同じキーワードが先に登録されたら「すでに登録」として伝える', async () => {
@@ -466,12 +465,12 @@ describe('NedbFoleyDictionaryTableManager', () => {
 
                 // 1回目の登録はダウンロードが止まり、その間に再投稿された2回目が先に完了する
                 let releaseSlowDownload;
-                fakeAxios.get.onFirstCall().returns(
+                fakeDownload.onFirstCall().returns(
                     new Promise((resolve) => {
                         releaseSlowDownload = () => resolve({ data: DUMMY_AUDIO_BUF });
                     })
                 );
-                fakeAxios.get.onSecondCall().resolves({ data: DUMMY_AUDIO_BUF });
+                fakeDownload.onSecondCall().resolves({ data: DUMMY_AUDIO_BUF });
                 objectStorageRepo.saveFile.onSecondCall().rejects(new Error('すでにキーが存在しています。'));
 
                 const newAction = (id) =>
@@ -525,9 +524,9 @@ describe('NedbFoleyDictionaryTableManager', () => {
         specify('部分成功 → disappointed（成功分は辞書に残る）', async () => {
             const mgr = createManager();
 
-            // 2回目の axios.get だけ失敗させる
-            fakeAxios.get.onFirstCall().resolves({ data: DUMMY_AUDIO_BUF });
-            fakeAxios.get.onSecondCall().rejects(new Error('network error'));
+            // 2回目のダウンロードだけ失敗させる
+            fakeDownload.onFirstCall().resolves({ data: DUMMY_AUDIO_BUF });
+            fakeDownload.onSecondCall().rejects(new Error('network error'));
 
             const action = new FoleyCreateMultipleAction({
                 id: 'act-m2',
@@ -572,7 +571,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 err.type.should.equal('disappointed');
                 err.message.should.include('バーン: SEの保存容量がいっぱいです');
             }
-            fakeAxios.get.calledOnce.should.be.true;
+            fakeDownload.calledOnce.should.be.true;
             const dict = await mgr.loadFoleyDictionary('sv-multi-full');
             dict.lines.map((l) => l.keyword).should.deep.equal(['ドン']);
         });
@@ -582,9 +581,9 @@ describe('NedbFoleyDictionaryTableManager', () => {
 
             // 「先に登録済み」のアイテム用: ダウンロードが止まっている間に別の登録が完了する
             let releaseSlowDownload;
-            fakeAxios.get.callsFake((url) => {
+            fakeDownload.callsFake((url) => {
                 if (url.endsWith('timeout.mp3')) {
-                    return Promise.reject(Object.assign(new Error('canceled'), { code: 'ERR_CANCELED' }));
+                    return Promise.reject(new DOMException('The operation was aborted due to timeout', 'TimeoutError'));
                 }
                 if (url.endsWith('slow.mp3')) {
                     return new Promise((resolve) => {
@@ -637,7 +636,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
 
         specify('全件失敗 → unexpected', async () => {
             const mgr = createManager();
-            fakeAxios.get.rejects(new Error('all fail'));
+            fakeDownload.rejects(new Error('all fail'));
 
             const action = new FoleyCreateMultipleAction({
                 id: 'act-m3',
