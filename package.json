@@ -18,10 +18,10 @@
   "license": "ISC",
   "type": "commonjs",
   "engines": {
-    "node": "24.21.0"
+    "node": "24.22.1"
   },
   "volta": {
-    "node": "24.21.0"
+    "node": "24.22.1"
   },
   "dependencies": {
     "@alexanderolsen/libsamplerate-js": "^2.1.2",

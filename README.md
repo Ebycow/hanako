@@ -126,7 +126,7 @@
 # Dependencies
 
 ## Node.js Runtime
-* Node.js 24.21.0
+* Node.js 24.22.1
 * npm (latest compatible version)
 
 ## System Dependencies
@@ -158,7 +158,7 @@
 
 # Install
 ## 0.前提条件
-* **Node.js 24.21.0** — [Volta](https://volta.sh/)を使用している場合、`package.json`の設定により自動的にバージョンが固定されます
+* **Node.js 24.22.1** — [Volta](https://volta.sh/)を使用している場合、`package.json`の設定により自動的にバージョンが固定されます
 * **Windows / Linux / macOS**（x64・arm64）— Dockerで動かす場合は [Docker で一発で動かす](#docker-で一発で動かすおすすめ) を参照
 
 ## 1.BOTの作成
@@ -403,7 +403,7 @@ Docker 化より前のコミット（`compose.yaml` などがないもの）は�
 ## 技術スタック
 | カテゴリ | 技術 |
 |----------|------|
-| Runtime | Node.js 24.21.0 |
+| Runtime | Node.js 24.22.1 |
 | Discord | discord.js 14, @discordjs/voice, opusscript |
 | Database | NeDB (組み込みドキュメントDB) |
 | Audio | prism-media, ffmpeg-static, libsamplerate-js (WebAssembly) |
