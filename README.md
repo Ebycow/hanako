@@ -246,9 +246,10 @@ git clone https://github.com/Ebycow/ebyroid.git
 cd ebyroid
 # Windows の C:\Program Files (x86)\AHS を、このディレクトリの AHS/ にコピーする（git の管理外）
 cp docker/ebyroid.conf.example.json docker/ebyroid.conf.json
-docker compose up -d --build
+docker compose up -d
 ```
 
+* イメージは GHCR に公開しているもの（`ghcr.io/ebycow/ebyroid-wine`）を使うので、ビルドは要りません。新しい版にするときは `docker compose pull && docker compose up -d`
 * `docker/ebyroid.conf.json` に使う話者を並べます。`AHS/VOICEROID+` はコンテナの `Z:\voiceroid` に見えるため、`baseDirPath` は `Z:\\voiceroid\\KiritanEX` のように書きます
 * `curl http://localhost:4090/api/v1/voices` で、設定した話者の一覧が返れば動いています
 * ポート、ワーカー数などの設定は [Ebycow/ebyroid の README](https://github.com/Ebycow/ebyroid#docker-linux--wine) を参照してください。Ebycow 版は配布用の `ebyroid.exe` を用意していないため、Windows で動かす場合はソースからビルドします（必要なものは同じ README の Requirements を参照）
