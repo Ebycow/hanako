@@ -1,5 +1,5 @@
 require('chai').should();
-const { AxiosError } = require('axios');
+const { HttpStatusError } = require('../../src/infra/http/fetch_ok');
 const log4js = require('log4js');
 const { formatError, formatLogEvent, stripQuery } = require('../../src/core/logging');
 const { dmessageBlueprint, commandInputBlueprint, wordDictionaryLineBlueprint } = require('../helpers/blueprints');
@@ -18,31 +18,23 @@ const WordCreateAction = require('../../src/domain/entity/actions/word_create_ac
 const SECRET = 'ひみつの発言本文';
 
 /**
- * Ebyroid への GET が 500 で失敗したときと同じ形の AxiosError を作る
+ * Ebyroid への GET（発言本文をクエリに載せる）が 500 で失敗したときのエラーを作る
  *
- * @returns {AxiosError}
+ * @returns {HttpStatusError}
  */
-function ebyroidAxiosError() {
-    const config = {
-        method: 'get',
-        url: 'http://localhost:4090/api/v1/audiostream',
-        params: { text: SECRET, name: 'zundamon' },
-        headers: {},
-    };
-    const request = { path: `/api/v1/audiostream?text=${encodeURIComponent(SECRET)}` };
-    const response = { status: 500, statusText: 'Internal Server Error', data: { text: SECRET }, config, headers: {} };
-    return new AxiosError('Request failed with status code 500', 'ERR_BAD_RESPONSE', config, request, response);
+function ebyroidHttpError() {
+    const url = `http://localhost:4090/api/v1/audiostream?text=${encodeURIComponent(SECRET)}&name=zundamon`;
+    return new HttpStatusError(500, 'get', url);
 }
 
 describe('ログ出力', () => {
     describe('formatError', () => {
-        specify('AxiosError から発言本文を除き、原因特定に必要な情報は残す', () => {
-            const output = formatError(ebyroidAxiosError());
+        specify('HTTPのエラーから発言本文を除き、原因特定に必要な情報は残す', () => {
+            const output = formatError(ebyroidHttpError());
 
             output.should.not.include(SECRET);
             output.should.not.include(encodeURIComponent(SECRET));
-            output.should.include('Request failed with status code 500');
-            output.should.include('code=ERR_BAD_RESPONSE');
+            output.should.include('HTTP 500 で失敗した');
             output.should.include('status=500');
             output.should.include('method=GET');
             output.should.include('url=http://localhost:4090/api/v1/audiostream');
@@ -79,13 +71,13 @@ describe('ログ出力', () => {
                 startTime: new Date(2026, 8, 25, 20, 14, 3, 7),
                 level: log4js.levels.ERROR,
                 categoryName: 'application.js',
-                data: ['予期しないエラーが発生。', ebyroidAxiosError()],
+                data: ['予期しないエラーが発生。', ebyroidHttpError()],
             };
 
             const output = formatLogEvent(event);
 
             output.should.match(
-                /^\[2026-09-25T20:14:03\.007\] \[ERROR\] application\.js - 予期しないエラーが発生。 AxiosError/
+                /^\[2026-09-25T20:14:03\.007\] \[ERROR\] application\.js - 予期しないエラーが発生。 HttpStatusError/
             );
             output.should.not.include(SECRET);
         });

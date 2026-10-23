@@ -55,6 +55,8 @@ describe('TtshubStreamApiAdapter', () => {
     });
 
     afterEach(async () => {
+        // 中断したリクエストの接続が残っていても待たない
+        server.closeAllConnections();
         await new Promise((resolve) => server.close(resolve));
     });
 
@@ -110,7 +112,7 @@ describe('TtshubStreamApiAdapter', () => {
         } catch (err) {
             error = err;
         }
-        error.response.status.should.equal(503);
+        error.status.should.equal(503);
     });
 
     specify('ttshub のログと突き合わせられるよう、リクエストごとに別の ID を送る', async () => {
