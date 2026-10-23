@@ -1,9 +1,16 @@
+const fs = require('fs');
+const crypto = require('crypto');
 const { REST, Routes, InteractionContextType, ApplicationIntegrationType } = require('discord.js');
 const AppSettings = require('./src/core/app_settings');
 const { buildSlashCommandsJSON, summarizeSlashCommands } = require('./src/service/slash_command_builder');
 
 // --dry-run のときは登録せず、登録する内容の表だけを表示する
 const dryRun = process.argv.includes('--dry-run');
+// --if-changed のときは、前回登録した内容と同じなら Discord に送らない（起動のたびに実行するため）
+const ifChanged = process.argv.includes('--if-changed');
+
+// 前回登録した内容のハッシュ。db はボリュームに置かれるので、コンテナを作り直しても残る
+const REGISTERED_HASH_PATH = './db/slash-commands.sha256';
 
 const appSettings = AppSettings.fromFile('./app-config-default.yml', './app-config.yml');
 
@@ -48,7 +55,34 @@ function printTable(rows) {
     console.log(rule('└', '┴', '┘'));
 }
 
+/**
+ * 登録する内容のハッシュ。登録先（CLIENT_ID・削除するギルド）が変わったときも登録し直す
+ *
+ * @returns {string}
+ */
+function registrationHash() {
+    const target = { clientId: appSettings.discordClientId, guildId: appSettings.discordGuildId, body };
+    return crypto.createHash('sha256').update(JSON.stringify(target)).digest('hex');
+}
+
+/**
+ * @returns {string|null}
+ */
+function readRegisteredHash() {
+    try {
+        return fs.readFileSync(REGISTERED_HASH_PATH, 'utf8').trim();
+    } catch {
+        return null;
+    }
+}
+
 async function deploy() {
+    const hash = registrationHash();
+    if (ifChanged && !dryRun && readRegisteredHash() === hash) {
+        console.log('スラッシュコマンドは前回の登録から変わっていないため、登録を省きました');
+        return;
+    }
+
     // 登録する内容を表で確認できるようにする（「?」付きのオプションは省略可）
     printTable(summarizeSlashCommands());
     if (dryRun) {
@@ -64,6 +98,13 @@ async function deploy() {
     if (/^\d+$/.test(guildId)) {
         await rest.put(Routes.applicationGuildCommands(appSettings.discordClientId, guildId), { body: [] });
         console.log(`ギルド(${guildId})に登録されていたスラッシュコマンドを削除しました`);
+    }
+
+    // 登録はできているので、記録できなくても失敗にはしない（次回もう一度登録するだけ）
+    try {
+        fs.writeFileSync(REGISTERED_HASH_PATH, hash + '\n');
+    } catch (err) {
+        console.warn(`登録した内容を記録できませんでした: ${err.message}`);
     }
 }
 
