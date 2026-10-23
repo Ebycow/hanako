@@ -1,0 +1,133 @@
+# はなこを Docker Compose で一発で動かす（hanako + ttshub + VOICEVOX）
+#
+#   cp .env.example .env     # Discord Bot のトークンと CLIENT_ID を書く
+#   docker compose up -d
+#
+# VOICEROID も使うときは README の「Docker で動かす」を参照（.env で COMPOSE_PROFILES=voiceroid）
+# イメージは GHCR に公開しているものを使うので、ビルドは要らない
+# 新しい版にするときは docker compose pull && docker compose up -d
+
+x-discord: &discord
+  DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:?.env に DISCORD_BOT_TOKEN を設定してください}
+  DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:?.env に DISCORD_CLIENT_ID を設定してください}
+  DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:-}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  hanako:
+    image: ghcr.io/ebycow/hanako:${HANAKO_VERSION:-latest}
+    restart: unless-stopped
+    # ffmpeg の子プロセスを回収し、停止時の SIGTERM を確実に届ける
+    init: true
+    logging: *logging
+    depends_on:
+      register-commands:
+        condition: service_completed_successfully
+      ttshub:
+        condition: service_healthy
+    environment:
+      <<: *discord
+      # ttshub には compose の中のネットワークだけでつなぐ（ttshub は鍵を確かめないので、ホストには公開しない）
+      TTSHUB_URL: http://ttshub:8790
+      HELP_URL: ${HELP_URL:-}
+      LOG_LEVEL: ${LOG_LEVEL:-}
+    # Discord に接続している間はハートビートファイルが 30 秒ごとに更新される。90 秒更新がなければ異常とみなす
+    healthcheck:
+      test: ["CMD", "node", "-e", "try { process.exit(Date.now() - require('fs').statSync('/tmp/hanako-heartbeat').mtimeMs < 90000 ? 0 : 1) } catch { process.exit(1) }"]
+      interval: 30s
+      timeout: 10s
+      retries: 2
+      start_period: 60s
+      start_interval: 5s
+    volumes:
+      - db:/app/db
+      - files:/app/files
+      - log:/app/log
+
+  # 起動のたびにスラッシュコマンドを登録する。前回と同じ内容なら Discord には送らない
+  register-commands:
+    image: ghcr.io/ebycow/hanako:${HANAKO_VERSION:-latest}
+    command: ["node", "deploy-commands.js", "--if-changed"]
+    restart: "no"
+    environment: *discord
+    volumes:
+      - db:/app/db
+
+  ttshub:
+    image: ghcr.io/ebycow/ttshub:${TTSHUB_VERSION:-latest}
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      TTSHUB_CONFIG: /etc/ttshub/ttshub.yaml
+      RUST_LOG: ${RUST_LOG:-info}
+    configs:
+      - source: ttshub
+        target: /etc/ttshub/ttshub.yaml
+    volumes:
+      - ttshub-state:/var/lib/ttshub
+    healthcheck:
+      test: ["CMD", "ttshub", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+      start_interval: 5s
+
+  # VOICEVOX 公式エンジン（CPU 版）
+  voicevox:
+    image: voicevox/voicevox_engine:${VOICEVOX_TAG:-cpu-latest}
+    restart: unless-stopped
+    logging: *logging
+
+  # VOICEROID（ebyroid を wine で動かす）。COMPOSE_PROFILES=voiceroid のときだけ起動する
+  # VOICEROID のライブラリは Windows からコピーして VOICEROID_DIR に置く（イメージには含まれない）
+  ebyroid:
+    image: ghcr.io/ebycow/ebyroid-wine:${EBYROID_VERSION:-latest}
+    profiles: [voiceroid]
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      EBYROID_PORT: 4090
+      EBYROID_WORKERS: ${EBYROID_WORKERS:-3}
+      EBYROID_WORKER_IDLE_TIMEOUT_MS: ${EBYROID_WORKER_IDLE_TIMEOUT_MS:-600000}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-m", "5", "-o", "/dev/null", "http://127.0.0.1:4090/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+      start_interval: 5s
+    volumes:
+      - ${VOICEROID_DIR:-./AHS/VOICEROID+}:/voiceroid:ro
+      - ./ebyroid.conf.json:/etc/ebyroid/ebyroid.conf.json:ro
+
+volumes:
+  db:
+  files:
+  log:
+  ttshub-state:
+
+configs:
+  # ttshub の設定。項目は https://github.com/Ebycow/ttshub#設定 を参照
+  # 止まっているエンジン（VOICEROID を使わないときの ebyroid など）は、ttshub が切り離して使わない
+  ttshub:
+    content: |
+      default_voice: ${DEFAULT_VOICE:-voicevox:ずんだもん}
+      engines:
+        voicevox:
+          plugin: voicevox-compatible
+          backends: [http://voicevox:50021]
+          terms_url: https://voicevox.hiroshiba.jp/term/
+          default_voice: ずんだもん/ノーマル
+          # VOICEVOX は音声を一括で返すため、長文だと応答開始まで時間がかかる
+          response_start_ms: 60000
+          max_concurrency_per_backend: 1
+        ebyroid:
+          plugin: ebyroid
+          backends: [http://ebyroid:4090]
+          terms_url: https://www.ah-soft.com/commercial/voiceroid/private/

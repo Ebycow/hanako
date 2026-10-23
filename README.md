@@ -108,7 +108,7 @@
 `@hanako speaker キャラクター名` で音声サーバの設定に従って、サーバの読み上げキャラクターを変更する
 `@hanako speaker default` でデフォルトキャラクターに戻す
 
-音声サーバに ttshub（複数の音声エンジンを束ねるゲートウェイ）を使っている場合（`TTSHUB_URL` を設定した場合）は、次のこともできます
+音声サーバに [ttshub](https://github.com/Ebycow/ttshub)（複数の音声エンジンを束ねるゲートウェイ）を使っている場合（`TTSHUB_URL` を設定した場合）は、次のこともできます
 * `/speaker` の入力中にキャラクターの候補が出る
 * `@hanako speaker ずんだもん あまあま` のようにあいまいに書いても、一番近いキャラクターに変更する。見つからなければ候補を案内する
 * `voicevox:ずんだもん/あまあま?speed=1.2` のように、話す速さなどを指定できる
@@ -140,13 +140,17 @@
 * インターネット接続
 
 ## Audio Service
-* **Ebyroid Audio Server** (推奨):
-  * VoiceroidがインストールされたWindowsマシン
-  * 有効なVoiceroidライセンス
-  * デフォルトポート: 4090
-* または次のいずれかを提供するHTTP音声サーバ
-  * `POST /api/v2/audiostream`（JSON body、chunked raw PCM。推奨）
-  * `GET /api/v1/audiostream?text=&name=`（従来互換）
+はなこは音声を作らず、別に動かす音声サーバに作らせます。次の3つの構成から選びます（詳しい手順は [2.音声サーバの設定](#2音声サーバの設定)）
+
+| 構成 | はなこの設定 | 必要な音声サーバ |
+|---|---|---|
+| A. Ebyroid に直接（従来） | `EBYROID_STREAM_API_URL` に `/api/v1/audiostream` | [nanokina/ebyroid](https://github.com/nanokina/ebyroid)（配布されている `ebyroid.exe`）または [Ebycow/ebyroid](https://github.com/Ebycow/ebyroid) |
+| B. Ebyroid に直接（ストリーミング） | `EBYROID_STREAM_API_URL` に `/api/v2/audiostream` | [Ebycow/ebyroid](https://github.com/Ebycow/ebyroid) |
+| C. ttshub 経由 | `TTSHUB_URL` | [Ebycow/ttshub](https://github.com/Ebycow/ttshub) と、その先のエンジン（VOICEROID を使うなら [Ebycow/ebyroid](https://github.com/Ebycow/ebyroid)、VOICEVOX など） |
+
+* Ebycow/ebyroid は nanokina/ebyroid のフォークで、ストリーミング（`POST /api/v2/audiostream`）、話者一覧（`GET /api/v1/voices`）、稼働確認（`GET /api/v1/health`）、話者ごとのワーカー、Linux（wine）+ Docker Compose での動作を加えたものです。従来の API もそのまま使えるため、A の構成でも置き換えられます
+* VOICEROID を使うには、有効なライセンスを持つ VOICEROID+ / VOICEROID2 のライブラリが必要です
+* 自作の音声サーバを使う場合は、`POST /api/v2/audiostream`（JSON body、chunked raw PCM）か `GET /api/v1/audiostream?text=&name=` を Ebyroid と同じ形で提供します
 
 ## Special Dependencies
 * **@alexanderolsen/libsamplerate-js**: 音声のサンプリングレート変換
@@ -155,7 +159,7 @@
 # Install
 ## 0.前提条件
 * **Node.js 24.21.0** — [Volta](https://volta.sh/)を使用している場合、`package.json`の設定により自動的にバージョンが固定されます
-* **Windows / Linux / macOS**（x64・arm64）— Dockerで動かす場合は [Docker Composeで動かす](#docker-composeで動かす) を参照
+* **Windows / Linux / macOS**（x64・arm64）— Dockerで動かす場合は [Docker で一発で動かす](#docker-で一発で動かすおすすめ) を参照
 
 ## 1.BOTの作成
 Discord Developer Portalよりアプリケーションを作成し、ボットのTOKENとCLIENT_IDを取得する必要があります
@@ -172,29 +176,126 @@ Discord Developer Portalよりアプリケーションを作成し、ボット�
 **必要なPrivileged Gateway Intents:**
 * Message Content Intent（テキストコマンドの読み取りに必要）
 
+## Docker で一発で動かす（おすすめ）
+はなこ・[ttshub](https://github.com/Ebycow/ttshub)・VOICEVOX をまとめて起動します（[Audio Service](#audio-service) の C の構成）。イメージは GHCR に公開しているものを使うので、ビルドや clone は要りません。Docker と Docker Compose（v2.23 以降）があれば動きます
+
+```
+mkdir hanako && cd hanako
+curl -fsSLO https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/compose.yaml
+curl -fsSL -o .env https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/.env.example
+# .env に DISCORD_BOT_TOKEN と DISCORD_CLIENT_ID を書く
+docker compose up -d
+```
+
+* スラッシュコマンドは起動のたびに登録します。前回から変わっていなければ Discord には送りません
+* VOICEVOX のすべてのキャラクターを使えます。キャラクターを指定していないサーバはずんだもんで読み上げます（`.env` の `DEFAULT_VOICE` で変えられます）。VOICEVOX のキャラクターはそれぞれの利用規約に従って使ってください（`/speaker` で変えたときに、クレジットと規約のリンクを表示します）
+* ttshub はホストにポートを公開せず、compose の中だけではなこにつなぎます
+* 新しい版にするときは `docker compose pull && docker compose up -d`。ログは `docker compose logs -f hanako` で見られます
+* 辞書・SE などのデータは Docker のボリュームに保存され、コンテナを作り直しても残ります
+
+**VOICEROID も使う場合**（x64 のみ）
+
+VOICEROID のライブラリは各自のライセンスで用意し、同じディレクトリに置きます（イメージには含まれません）
+
+```
+# Windows の C:\Program Files (x86)\AHS\VOICEROID+ を、compose.yaml と同じディレクトリの AHS/VOICEROID+ にコピーする
+curl -fsSL -o ebyroid.conf.json https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/ebyroid.conf.example.json
+# ebyroid.conf.json に、使う声を書く
+# .env の COMPOSE_PROFILES=voiceroid を有効にする
+docker compose up -d
+```
+
+* `ebyroid.conf.json` の `baseDirPath` は `Z:\\voiceroid\\<AHS/VOICEROID+ の中のフォルダ名>` と書きます。書き方は [Ebycow/ebyroid の README](https://github.com/Ebycow/ebyroid#docker-linux--wine) を参照してください
+* `/speaker ebyroid:kiritan` のように、`ebyroid:` に続けて `ebyroid.conf.json` の `name` で指定します
+
+**ttshub の設定を変える場合**
+
+ttshub の設定（エンジン、別名、プリセットなど）は `compose.yaml` の末尾の `configs` に書いてあります。AivisSpeech などを足すときはそこを書き換えます。項目は [ttshub の README](https://github.com/Ebycow/ttshub#設定) を参照してください
+
 ## 2.音声サーバの設定
-標準ではEbyroidの `POST /api/v2/audiostream`（JSON body）と、従来の `GET /api/v1/audiostream?text=...&name=...` の両方を利用できます。v2では発言内容をURLに含めず、生成途中のraw PCMを受け取った時点からDiscordへ流します。
+ここからは、[Docker で一発で動かす](#docker-で一発で動かすおすすめ) を使わずに、音声サーバとはなこを自分で組み合わせる場合の手順です
 
-Ebyroidは、VoiceroidがインストールされたWindowsマシンを音声サーバとして利用可能にするために最適なアプリケーションです。  
-動作には有効なライセンスを持つVoiceroidライブラリを所持している必要があります。アプリケーションのインストールは当該リポジトリから可能です https://github.com/nanokina/ebyroid
+[Audio Service](#audio-service) の A〜C のどれで動かすかを決め、はなこより先に音声サーバを起動しておきます
 
-hanakoの標準設定では4090番ポートにある音声サーバに接続を行います（これは設定ファイルから変更可能です）  
-これは、ebyroidのデフォルト起動時のポート番号設定に従います
+| | A. Ebyroid（従来） | B. Ebyroid（ストリーミング） | C. ttshub 経由 |
+|---|---|---|---|
+| Ebyroid | nanokina 版・Ebycow 版のどちらでもよい | Ebycow 版が必要 | VOICEROID を使うなら Ebycow 版が必要 |
+| 音声が流れ始めるまで | 1文を作り終えてから | 作っている途中から | 作っている途中から（エンジンによる） |
+| 発言内容 | URL のクエリに載る | リクエストの本文に載る | リクエストの本文に載る |
+| 使える声 | VOICEROID | VOICEROID | VOICEROID、VOICEVOX、AivisSpeech など |
+| `/speaker` の候補・`/speakers` | なし | なし | あり |
+
+### Ebyroid を用意する（VOICEROID を使う場合）
+Ebyroid は VOICEROID を HTTP の音声サーバにするアプリケーションです。既定では 4090 番ポートで待ち受け、はなこの既定の接続先もこれに合わせています
+
+**A の構成で、Windows で動かす場合（nanokina 版）**
+
+[nanokina/ebyroid の Releases](https://github.com/nanokina/ebyroid/releases) から `ebyroid-v*.zip` を取得して展開し、VOICEROID が入った Windows で起動します
 
 ```
 C:\ebyroid> ebyroid.exe configure
-C:\ebyroid> ebyroid.exe start 
+C:\ebyroid> ebyroid.exe start
 ```
 
-ストリーミングを有効にするには、`app-config.yml`へ次を設定します。
+**B・C の構成で使う場合（Ebycow 版）**
+
+Linux（wine）なら Docker Compose で動かせます。VOICEROID は Windows から `C:\Program Files (x86)\AHS` をコピーして使います（compose は VOICEROID+ を想定しています）
+
+```
+git clone https://github.com/Ebycow/ebyroid.git
+cd ebyroid
+# Windows の C:\Program Files (x86)\AHS を、このディレクトリの AHS/ にコピーする（git の管理外）
+cp docker/ebyroid.conf.example.json docker/ebyroid.conf.json
+docker compose up -d
+```
+
+* イメージは GHCR に公開しているもの（`ghcr.io/ebycow/ebyroid-wine`）を使うので、ビルドは要りません。新しい版にするときは `docker compose pull && docker compose up -d`
+* `docker/ebyroid.conf.json` に使う話者を並べます。`AHS/VOICEROID+` はコンテナの `Z:\voiceroid` に見えるため、`baseDirPath` は `Z:\\voiceroid\\KiritanEX` のように書きます
+* `curl http://localhost:4090/api/v1/voices` で、設定した話者の一覧が返れば動いています
+* ポート、ワーカー数などの設定は [Ebycow/ebyroid の README](https://github.com/Ebycow/ebyroid#docker-linux--wine) を参照してください。Ebycow 版は配布用の `ebyroid.exe` を用意していないため、Windows で動かす場合はソースからビルドします（必要なものは同じ README の Requirements を参照）
+
+### A・B: はなこを Ebyroid に直接つなぐ
+接続先を `app-config.yml` の `ebyroid_stream_api_url`（または環境変数 `EBYROID_STREAM_API_URL`）に書きます。URL のパスで使う API が決まります
 
 ```yaml
 settings:
-  ebyroid_stream_api_url: 'http://localhost:4090/api/v2/audiostream'
-  ebyroid_stream_api_mode: 'auto'
+  # A: 従来の API（nanokina 版・Ebycow 版）
+  ebyroid_stream_api_url: 'http://localhost:4090/api/v1/audiostream'
+  # B: ストリーミング（Ebycow 版のみ）
+  # ebyroid_stream_api_url: 'http://localhost:4090/api/v2/audiostream'
 ```
 
-`auto`はURLが `/api/v2/audiostream`ならPOSTストリーミング、それ以外なら従来GETを選びます。明示的に固定する場合は `streaming-post` または `legacy-get` を指定できます。環境変数 `EBYROID_STREAM_API_URL` と `EBYROID_STREAM_API_MODE` でも上書きできます。
+`ebyroid_stream_api_mode`（`EBYROID_STREAM_API_MODE`）は既定の `auto` のままで、URL が `/api/v2/audiostream` ならストリーミング、それ以外なら従来の API を使います。URL と別に固定したいときだけ `streaming-post` / `legacy-get` を指定します
+
+`/speaker` で指定するキャラクター名は、Ebyroid の設定にある話者の `name`（例: `kiritan`）です
+
+### C: はなこを ttshub につなぐ
+[ttshub](https://github.com/Ebycow/ttshub) は、VOICEROID（Ebyroid）や VOICEVOX などの複数のエンジンを1つの API にまとめるゲートウェイです。ttshub の Docker Compose は Ebyroid を一緒に起動できます。そのとき `../ebyroid/compose.yaml` を読むので、2つのリポジトリを同じディレクトリに並べて置きます
+
+```
+git clone https://github.com/Ebycow/ebyroid.git
+git clone https://github.com/Ebycow/ttshub.git
+# ebyroid の準備をする（上の「Ebycow 版」の手順のうち、docker compose up の前まで）
+cd ttshub
+cp ttshub.example.yaml ttshub.yaml
+docker compose --profile ebyroid --profile voicevox up -d
+```
+
+* `ttshub.yaml` の `engines` で使うエンジンを決めます。例のファイルは VOICEVOX が有効で、ebyroid はコメントになっているので、使うものを有効にし、使わないものは消します（`default_voice` も使うエンジンの声にします）
+* `--profile` は compose で一緒に起動するエンジンです。VOICEROID だけなら `--profile ebyroid`、VOICEVOX だけなら `--profile voicevox`、エンジンを別に動かしているなら付けません
+  * Ebyroid を ebyroid のディレクトリで別に起動している場合は `--profile ebyroid` を付けず、`ttshub.yaml` の ebyroid の `backends` を `http://host.docker.internal:4090` にします（両方で起動するとポートがぶつかります）
+* VOICEVOX などだけで VOICEROID を使わないなら、Ebyroid は不要です
+* はなこは ttshub に鍵（`Authorization`）を送りません。`ttshub.yaml` の `clients` は書かず、ttshub のポート（8790）はインターネットに公開しないでください
+* `curl -G localhost:8790/v1/voices/resolve --data-urlencode q=kiritan` で、話者が見つかれば動いています
+
+はなこの `app-config.yml` の `ttshub_url`（または環境変数 `TTSHUB_URL`）に ttshub の URL を書きます。設定すると、`ebyroid_stream_api_url` は使わずに ttshub で読み上げます
+
+```yaml
+settings:
+  ttshub_url: 'http://localhost:8790'
+```
+
+`/speaker` では `voicevox:ずんだもん/あまあま` のような ttshub のアドレスや、あいまいな名前でキャラクターを指定します（[読み上げキャラクター変更](#読み上げキャラクター変更)）。ttshub の設定は [ttshub の README](https://github.com/Ebycow/ttshub) を参照してください
 
 ## 3.hanakoのインストール
 ```
@@ -235,8 +336,8 @@ node index
 npm run debug
 ```
 
-## Docker Composeで動かす
-Node.jsを入れずに、Docker Composeで動かすこともできます。音声サーバ（Ebyroid）はVoiceroidが動くWindowsマシンで別に起動しておきます
+## Docker Composeで動かす（音声サーバを自分で用意する場合）
+リポジトリ直下の `compose.yaml` は、はなこだけを動かします。音声サーバ（Ebyroid や ttshub）は [2.音声サーバの設定](#2音声サーバの設定) の手順で別に起動しておきます
 
 `.env.example` をコピーして `.env` を作り、トークンなどを設定します
 ```
@@ -248,8 +349,9 @@ cp .env.example .env
 | `DISCORD_BOT_TOKEN` | Discord Botのトークン（必須） |
 | `DISCORD_CLIENT_ID` | Discord BotのCLIENT_ID（必須） |
 | `DISCORD_GUILD_ID` | （任意）以前ギルド単位でスラッシュコマンドを登録していたGUILD_ID |
-| `EBYROID_STREAM_API_URL` | 音声サーバのURL。同じマシンなら `host.docker.internal`、別のマシンならそのIPアドレスを書く |
+| `EBYROID_STREAM_API_URL` | （A・B）Ebyroid のURL。同じマシンなら `host.docker.internal`、別のマシンならそのIPアドレスを書く。ストリーミング（B、Ebycow 版のみ）なら `/api/v2/audiostream` |
 | `EBYROID_STREAM_API_MODE` | （任意）`auto` / `legacy-get` / `streaming-post` |
+| `TTSHUB_URL` | （C）ttshub のURL（例: `http://host.docker.internal:8790`）。設定すると `EBYROID_STREAM_API_URL` は使わない |
 | `HELP_URL` | （任意）help コマンドで案内する使い方のページのURL。省略するとこの README を案内する |
 
 これらの環境変数は、Dockerを使わない場合も `app-config.yml` より優先されます
@@ -259,6 +361,8 @@ cp .env.example .env
 docker compose run --rm hanako node deploy-commands.js
 docker compose up -d --build
 ```
+
+`node deploy-commands.js --if-changed` にすると、前回登録した内容と同じときは Discord に送りません（登録した内容は `db/slash-commands.sha256` に記録します）
 
 ログは `docker compose logs -f hanako` で確認できます。辞書・SEなどのデータはDockerのボリューム（`db`・`files`・`log`）に保存され、コンテナを作り直しても残ります
 
@@ -277,7 +381,7 @@ docker compose start
 本番のチェックアウトは編集せず、git で更新するだけにします。開発は `git worktree` で作った別のディレクトリで行います。Composeのプロジェクト名はディレクトリ名になるため、コンテナとボリューム（辞書・SEなど）は本番と開発で自動的に分かれます
 
 ```
-git worktree add ../hanako-dev -b <作業ブランチ> porting   # 開発用のディレクトリを作る
+git worktree add ../hanako-dev -b <作業ブランチ> origin/master   # 開発用のディレクトリを作る
 cd ../hanako-dev
 cp .env.example .env    # 開発用Botのトークンを書く。HANAKO_TAG は dev のまま
 docker compose run --rm hanako node deploy-commands.js
@@ -286,10 +390,11 @@ docker compose up -d --build
 
 本番の `.env` には `HANAKO_TAG=latest` を書きます。開発では既定の `dev` タグのままにして、本番のイメージを上書きしないようにします
 
-本番へは、本番のチェックアウトで `deploy.sh` を実行して出します。出すコミットをチェックアウトし（ブランチには固定せず detached HEAD で指します）、イメージのビルド、スラッシュコマンドの登録、起動を行い、healthy になるまで待ちます。失敗したら前のコミットとイメージに戻します
+本番へは、本番のチェックアウトで `deploy.sh` を実行して出します。CI が master のコミットごとに GHCR に公開したイメージ（`ghcr.io/ebycow/hanako:<コミット ID>`）を取得し、出すコミットをチェックアウトし（ブランチには固定せず detached HEAD で指します）、スラッシュコマンドの登録（変わったときだけ）、起動を行い、healthy になるまで待ちます。失敗したら前のコミットとイメージに戻します
 ```
-./deploy.sh                  # origin/master の内容を出す
-./deploy.sh origin/porting   # 指定した ref の内容を出す（開発用 worktree のブランチ名やコミット ID も使える）
+./deploy.sh                  # origin/master の内容を出す（マージ直後で CI がまだ公開していなければ待つ）
+./deploy.sh <コミット ID>    # 指定したコミットの内容を出す（戻すときなど）
+BUILD=1 ./deploy.sh <ref>    # master に入っていないコミットを、ここでビルドして出す
 ```
 
 Docker 化より前のコミット（`compose.yaml` などがないもの）は出せません。指定するとなにもせずに止まります
@@ -313,7 +418,7 @@ src/
 │   ├── model/    #   コマンドクラス (20種) ・ボットモデル
 │   ├── entity/   #   イミュータブルなドメインエンティティ・レスポンス・アクション
 │   └── repo/     #   リポジトリインターフェース (契約)
-├── infra/        # インフラ層 — Discord/NeDB/Ebyroid/ファイルストレージの実装
+├── infra/        # インフラ層 — Discord/NeDB/Ebyroid/ttshub/ファイルストレージの実装
 ├── service/      # サービス層 — メッセージルーティング・レスポンスハンドリング
 ├── core/         # DI コンテナ・設定ローダー・ユーティリティ
 └── library/      # 共有ライブラリ — ストリーム変換

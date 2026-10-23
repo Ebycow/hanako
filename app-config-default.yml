@@ -15,14 +15,16 @@ settings:
   # Discord Bot のコマンドプリフィックス
   default_command_prefix: '>'
 
-  # Ebyroid AudioStream API の URL
+  # Ebyroid AudioStream API の URL（音声サーバの構成は README の「2.音声サーバの設定」を参照）
+  # /api/v2/audiostream（ストリーミング）は Ebycow/ebyroid のみ。nanokina/ebyroid は /api/v1/audiostream を使う
   ebyroid_stream_api_url: 'http://localhost:4090/api/v1/audiostream'
 
   # auto: /api/v2/audiostream ならPOSTストリーミング、それ以外は従来GET
   # legacy-get / streaming-post で明示的に固定可能
   ebyroid_stream_api_mode: 'auto'
 
-  # ttshub（TTS ゲートウェイ）の URL。設定すると Ebyroid に直接つながず、ttshub で読み上げる
+  # ttshub（TTS ゲートウェイ, https://github.com/Ebycow/ttshub）の URL
+  # 設定すると ebyroid_stream_api_url は使わず、ttshub で読み上げる
   # 例: 'http://host.docker.internal:8790'
   ttshub_url: ''
 
