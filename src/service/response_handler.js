@@ -68,9 +68,10 @@ async function handleActionResponseF(response) {
 
     // Promiseの結果によって後続処理を振り分ける
     let success = true;
+    let result;
     let onFailure = response.onFailure;
     try {
-        await promise;
+        result = await promise;
     } catch (e) {
         success = false;
         if (e.eby && onFailure.type === 'chat') {
@@ -86,7 +87,7 @@ async function handleActionResponseF(response) {
 
     if (success) {
         // onSuccessを再帰的に処理する
-        return this.handle(response.onSuccess);
+        return this.handle(response.successResponse(result));
     } else {
         // onFailureを再帰的に処理する
         await this.handle(onFailure);

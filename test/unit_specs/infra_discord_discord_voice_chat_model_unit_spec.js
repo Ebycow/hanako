@@ -211,4 +211,17 @@ describe('DiscordVoiceChatModel', () => {
             stream.start.called.should.be.false;
         });
     });
+
+    describe('audio player', () => {
+        specify('keeps playing while the next part of an utterance is still being synthesized', async () => {
+            entersState.resolves();
+
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel());
+
+            // 次の区切りの取得をあきらめるまで（各アダプタの応答開始の期限。最長は Ebyroid の15秒）、途切れても止めない（20ms × フレーム数）
+            const { maxMissedFrames } = createAudioPlayer.firstCall.args[0].behaviors;
+            (maxMissedFrames * 20).should.be.above(15000);
+        });
+    });
 });

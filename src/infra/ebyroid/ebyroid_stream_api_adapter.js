@@ -1,10 +1,9 @@
 const axios = require('axios').default;
-const SampleRate = require('node-libsamplerate');
 const transforms = require('../../library/transforms');
 const AppSettings = require('../../core/app_settings');
 const IVoiceroidStreamRepo = require('../../domain/repo/i_voiceroid_stream_repo');
 const log4js = require('log4js');
-const { compose } = require('stream');
+const composeStreams = require('../../library/compose_streams');
 
 const logger = log4js.getLogger(require('path').basename(__filename));
 const STREAMING_API_PATH = '/api/v2/audiostream';
@@ -115,19 +114,18 @@ class EbyroidStreamApiAdapter {
         }
 
         // TODO リサンプル処理をEbyroidに移行
-        const resample = new SampleRate({
-            type: SampleRate.SRC_SINC_MEDIUM_QUALITY,
+        const resample = new transforms.SampleRateConverter({
+            type: transforms.SampleRateConverter.SRC_SINC_MEDIUM_QUALITY,
             channels: 2,
             fromRate: sampleRate,
             fromDepth: bitDepth,
             toRate: 48000,
-            toDepth: 16,
         });
         // Propagate HTTP/transform failures and preserve backpressure across
         // the complete response -> channel conversion -> resampling pipeline.
         // Destroying the composed stream also destroys the HTTP response.
         return Promise.resolve(
-            compose(response.data, new transforms.StallGuard(BODY_STALL_TIMEOUT_MS), channelTransform, resample)
+            composeStreams(response.data, new transforms.StallGuard(BODY_STALL_TIMEOUT_MS), channelTransform, resample)
         );
     }
 }

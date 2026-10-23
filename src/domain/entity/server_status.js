@@ -14,6 +14,7 @@ class ServerStatus {
      * @param {string} data.serverName Discordサーバー名
      * @param {string} data.userId 花子BotのユーザーID
      * @param {string} data.prefix コマンドのプリフィックス
+     * @param {string} data.helpUrl 使い方のページの URL（空なら案内しない）
      */
     constructor(data) {
         assert(typeof data.id === 'string');
@@ -21,6 +22,7 @@ class ServerStatus {
         assert(typeof data.serverName === 'string');
         assert(typeof data.userId === 'string');
         assert(typeof data.prefix === 'string');
+        assert(typeof data.helpUrl === 'string');
 
         Object.defineProperty(this, 'data', {
             value: Object.assign({}, data),
@@ -73,6 +75,15 @@ class ServerStatus {
      */
     get prefix() {
         return this.data.prefix;
+    }
+
+    /**
+     * 使い方のページの URL（空なら案内しない）
+     *
+     * @type {string}
+     */
+    get helpUrl() {
+        return this.data.helpUrl;
     }
 
     toString() {

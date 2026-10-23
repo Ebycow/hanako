@@ -35,6 +35,7 @@ describe('SeibaiCommand', () => {
             serverName: 'mock-server-name',
             userId: 'mock-user-id',
             prefix: 'mock-prefix',
+            helpUrl: 'mock-help-url',
         };
     }
 

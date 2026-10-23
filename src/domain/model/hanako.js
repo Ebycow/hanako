@@ -89,6 +89,13 @@ class Hanako {
     }
 
     /**
+     * 使い方のページの URL（空なら案内しない）
+     */
+    get helpUrl() {
+        return this.serverStatus.helpUrl;
+    }
+
+    /**
      * 花子が持つページ管理可能データの配列
      */
     get pageables() {

@@ -95,7 +95,7 @@ function Stop-HanakoConsole {
     }
 
     # Attempt graceful shutdown by sending WM_CLOSE to the console window.
-    # This generates CTRL_CLOSE_EVENT, allowing async-exit-hook handlers to run.
+    # This generates CTRL_CLOSE_EVENT, which Node.js receives as SIGHUP so the shutdown handlers can run.
     Write-Step "Requesting graceful shutdown (PID: $hanakoPid)."
     & taskkill /PID $hanakoPid 2>&1 | Out-Null
 
@@ -227,7 +227,7 @@ function Install-RuntimeDependencies {
 
 function Assert-NativeDependencies {
     Write-Step "Validating native runtime dependencies."
-    & $NodeExePath "-e" "const prism = require('prism-media'); new prism.opus.Encoder({ rate: 48000, channels: 2, frameSize: 960 }); require('node-libsamplerate'); console.log('opus module: ' + prism.opus.Encoder.type);"
+    & $NodeExePath "-e" "const prism = require('prism-media'); new prism.opus.Encoder({ rate: 48000, channels: 2, frameSize: 960 }); require('@alexanderolsen/libsamplerate-js'); console.log('opus module: ' + prism.opus.Encoder.type);"
     if ($LASTEXITCODE -ne 0) {
         throw "Native runtime dependencies failed to load on this Node runtime."
     }

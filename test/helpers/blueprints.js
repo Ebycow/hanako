@@ -32,6 +32,7 @@ function serverStatusBlueprint(overrides = {}) {
             serverName: 'mock-server-name',
             userId: 'mock-user-id',
             prefix: '>',
+            helpUrl: 'https://example.com/help',
         },
         overrides
     );

@@ -34,7 +34,8 @@
 | ブラックリスト一覧 | 名簿 blacklist-show | /blacklist-show | メンバーをタイムアウト | @hanako blacklist-show |
 | ブラックリスト全削除 | 大赦 blacklist-clear | /blacklist-clear | サーバー管理 | @hanako blacklist-clear --force |
 | 読み上げキャラ変更 | キャラクター変更 speaker | /speaker | - | @hanako speaker kiritan |
-| ヘルプ | 使い方 help | /help | - | @hanako help |
+| 読み上げキャラ一覧 | キャラクター一覧 speakers | /speakers | - | @hanako speakers |
+| ヘルプ | 使い方 help | /help | - | @hanako help limit |
 | 質問 | 質問 ask | /ask | - | @hanako ask 今日は晴れ？ |
 | テキストコマンドの有効・無効 | （スラッシュコマンドのみ） | /text-commands | サーバー管理 | /text-commands enabled:False |
 
@@ -107,6 +108,18 @@
 `@hanako speaker キャラクター名` で音声サーバの設定に従って、サーバの読み上げキャラクターを変更する
 `@hanako speaker default` でデフォルトキャラクターに戻す
 
+音声サーバに ttshub（複数の音声エンジンを束ねるゲートウェイ）を使っている場合（`TTSHUB_URL` を設定した場合）は、次のこともできます
+* `/speaker` の入力中にキャラクターの候補が出る
+* `@hanako speaker ずんだもん あまあま` のようにあいまいに書いても、一番近いキャラクターに変更する。見つからなければ候補を案内する
+* `voicevox:ずんだもん/あまあま?speed=1.2` のように、話す速さなどを指定できる
+* `@hanako speakers`（`/speakers`）でキャラクターの一覧を表示する
+
+## 使い方を見る
+`@hanako help`（`/help`）でコマンドの一覧を表示する
+`@hanako help limit`（`/help command:limit`）で、そのコマンドのオプション・使える人・テキストでの書き方を表示する。コマンド名はスラッシュコマンドの名前でも、`制限` のようなテキストでの名前でもよい
+
+どちらも最後に使い方のページ（`help_url` の設定。既定はこの README）を案内する。自分で運用している花子で独自の説明ページを用意しているなら、`app-config.yml` の `help_url` か環境変数 `HELP_URL` でその URL に変えられる（空にすると案内しない）
+
 ## サーバごとの独立管理
 辞書・SE・ブラックリスト・設定はすべてDiscordサーバ（ギルド）ごとに独立して管理されます
 
@@ -117,8 +130,8 @@
 * npm (latest compatible version)
 
 ## System Dependencies
-* **FFmpeg**: オーディオ形式変換・処理 (ffmpeg-staticに含まれる)
-* Windows x64環境ではprebuiltバイナリを同梱しているため、C++ Build Tools・CMake・libsamplerateのインストールは不要です
+* **FFmpeg**: オーディオ形式変換・処理 (ffmpeg-staticに含まれる。取得できなかった場合はPATH上の`ffmpeg`を使う)
+* ネイティブモジュールのビルドは不要です（C++ Build Tools・CMake・Pythonのインストールは不要）
 
 ## Discord Integration
 * Discord Bot Token
@@ -136,14 +149,13 @@
   * `GET /api/v1/audiostream?text=&name=`（従来互換）
 
 ## Special Dependencies
-* **node-libsamplerate**: ローカルカスタム依存関係 (`vendor/node-libsamplerate-prebuilt`)
-  * libsamplerateのnativeバインディング
-  * Windows x64向けprebuiltバイナリを同梱済み
+* **@alexanderolsen/libsamplerate-js**: 音声のサンプリングレート変換
+  * libsamplerateのWebAssembly版のため、OSやCPUを問わず動作します
 
 # Install
 ## 0.前提条件
 * **Node.js 24.21.0** — [Volta](https://volta.sh/)を使用している場合、`package.json`の設定により自動的にバージョンが固定されます
-* **Windows x64** — prebuiltバイナリを同梱しているため、そのまま動作します
+* **Windows / Linux / macOS**（x64・arm64）— Dockerで動かす場合は [Docker Composeで動かす](#docker-composeで動かす) を参照
 
 ## 1.BOTの作成
 Discord Developer Portalよりアプリケーションを作成し、ボットのTOKENとCLIENT_IDを取得する必要があります
@@ -223,6 +235,65 @@ node index
 npm run debug
 ```
 
+## Docker Composeで動かす
+Node.jsを入れずに、Docker Composeで動かすこともできます。音声サーバ（Ebyroid）はVoiceroidが動くWindowsマシンで別に起動しておきます
+
+`.env.example` をコピーして `.env` を作り、トークンなどを設定します
+```
+cp .env.example .env
+```
+
+| 環境変数 | 内容 |
+|---|---|
+| `DISCORD_BOT_TOKEN` | Discord Botのトークン（必須） |
+| `DISCORD_CLIENT_ID` | Discord BotのCLIENT_ID（必須） |
+| `DISCORD_GUILD_ID` | （任意）以前ギルド単位でスラッシュコマンドを登録していたGUILD_ID |
+| `EBYROID_STREAM_API_URL` | 音声サーバのURL。同じマシンなら `host.docker.internal`、別のマシンならそのIPアドレスを書く |
+| `EBYROID_STREAM_API_MODE` | （任意）`auto` / `legacy-get` / `streaming-post` |
+| `HELP_URL` | （任意）help コマンドで案内する使い方のページのURL。省略するとこの README を案内する |
+
+これらの環境変数は、Dockerを使わない場合も `app-config.yml` より優先されます
+
+スラッシュコマンドを登録してから起動します
+```
+docker compose run --rm hanako node deploy-commands.js
+docker compose up -d --build
+```
+
+ログは `docker compose logs -f hanako` で確認できます。辞書・SEなどのデータはDockerのボリューム（`db`・`files`・`log`）に保存され、コンテナを作り直しても残ります
+
+それ以外の設定を変えるときは、`app-config.yml` を作ってから `compose.yaml` の `./app-config.yml` の行を有効にします
+
+**既存のデータを移す場合:** 一度 `docker compose up -d` でコンテナを作ってから、次のようにコピーして再起動します
+```
+docker compose stop
+docker compose cp ./db/. hanako:/app/db
+docker compose cp ./files/. hanako:/app/files
+docker compose run --rm --user root hanako chown -R node:node /app/db /app/files
+docker compose start
+```
+
+### 本番と開発を同じマシンで動かす
+本番のチェックアウトは編集せず、git で更新するだけにします。開発は `git worktree` で作った別のディレクトリで行います。Composeのプロジェクト名はディレクトリ名になるため、コンテナとボリューム（辞書・SEなど）は本番と開発で自動的に分かれます
+
+```
+git worktree add ../hanako-dev -b <作業ブランチ> porting   # 開発用のディレクトリを作る
+cd ../hanako-dev
+cp .env.example .env    # 開発用Botのトークンを書く。HANAKO_TAG は dev のまま
+docker compose run --rm hanako node deploy-commands.js
+docker compose up -d --build
+```
+
+本番の `.env` には `HANAKO_TAG=latest` を書きます。開発では既定の `dev` タグのままにして、本番のイメージを上書きしないようにします
+
+本番へは、本番のチェックアウトで `deploy.sh` を実行して出します。出すコミットをチェックアウトし（ブランチには固定せず detached HEAD で指します）、イメージのビルド、スラッシュコマンドの登録、起動を行い、healthy になるまで待ちます。失敗したら前のコミットとイメージに戻します
+```
+./deploy.sh                  # origin/master の内容を出す
+./deploy.sh origin/porting   # 指定した ref の内容を出す（開発用 worktree のブランチ名やコミット ID も使える）
+```
+
+Docker 化より前のコミット（`compose.yaml` などがないもの）は出せません。指定するとなにもせずに止まります
+
 # Architecture
 ## 技術スタック
 | カテゴリ | 技術 |
@@ -230,7 +301,7 @@ npm run debug
 | Runtime | Node.js 24.21.0 |
 | Discord | discord.js 14, @discordjs/voice, opusscript |
 | Database | NeDB (組み込みドキュメントDB) |
-| Audio | prism-media, ffmpeg-static, node-libsamplerate |
+| Audio | prism-media, ffmpeg-static, libsamplerate-js (WebAssembly) |
 | Logging | log4js (ファイルローテーション付き) |
 | Config | YAML (app-config-default.yml + app-config.yml) |
 

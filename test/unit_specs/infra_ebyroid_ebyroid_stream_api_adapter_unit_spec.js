@@ -1,15 +1,7 @@
-const { Readable, Transform } = require('stream');
+const { Readable } = require('stream');
 const { expect } = require('chai');
 const proxyquire = require('proxyquire');
 const sinon = require('sinon');
-
-class PassThroughSampleRate extends Transform {
-    _transform(chunk, _encoding, callback) {
-        this.push(chunk);
-        callback();
-    }
-}
-PassThroughSampleRate.SRC_SINC_MEDIUM_QUALITY = 1;
 
 function response() {
     return {
@@ -48,7 +40,6 @@ describe('EbyroidStreamApiAdapter', () => {
             '../../src/infra/ebyroid/ebyroid_stream_api_adapter',
             {
                 axios: { default: axios },
-                'node-libsamplerate': PassThroughSampleRate,
             }
         );
     });

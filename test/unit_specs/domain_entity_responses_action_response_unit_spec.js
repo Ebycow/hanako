@@ -43,6 +43,22 @@ describe('ActionResponse', () => {
         });
     });
 
+    describe('#successResponse', () => {
+        specify('onSuccess がレスポンスならそのまま返す', () => {
+            const onSuccess = new ChatResponse({ id: 'id', content: '成功', channelId: 'ch', code: 'simple' });
+            const res = new ActionResponse({ id: 'id', action: { type: 'x' }, onSuccess });
+            res.successResponse('結果').should.equal(onSuccess);
+        });
+
+        specify('onSuccess が関数なら、アクションの結果を渡して作る', () => {
+            const onSuccess = (result) =>
+                new ChatResponse({ id: 'id', content: `結果は${result}`, channelId: 'ch', code: 'simple' });
+            const res = new ActionResponse({ id: 'id', action: { type: 'x' }, onSuccess });
+            res.successResponse(42).content.should.equal('結果は42');
+            res.toString().should.include('(result => Response)');
+        });
+    });
+
     describe('ゲッター', () => {
         specify('typeはactionを返す', () => {
             const res = new ActionResponse({ id: 'id', action: { type: 'test' } });

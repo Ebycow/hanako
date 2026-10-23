@@ -12,3 +12,4 @@ app-config.yml
 coverage/
 
 *.pid
+.env

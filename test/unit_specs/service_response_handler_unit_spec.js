@@ -88,6 +88,15 @@ describe('ResponseHandler', () => {
                 chatRepo.postChat.firstCall.args[0].content.should.equal('成功');
             });
 
+            specify('onSuccess が関数なら、アクションの結果から作ったレスポンスを処理する', async () => {
+                actionHandler.handle.resolves('ずんだもん');
+                const action = { type: 'speaker_update' };
+                const onSuccess = (name) =>
+                    new ChatResponse({ id: '2', content: `${name}に変更`, code: 'simple', channelId: 'ch-1' });
+                await handler.handle(new ActionResponse({ id: '1', action, onSuccess }));
+                chatRepo.postChat.firstCall.args[0].content.should.equal('ずんだもんに変更');
+            });
+
             specify('onSuccess省略時はSilentResponseとして処理する', async () => {
                 const action = { type: 'word_create' };
                 const response = new ActionResponse({ id: '1', action });

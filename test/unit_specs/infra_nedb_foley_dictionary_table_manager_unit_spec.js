@@ -29,7 +29,6 @@ describe('NedbFoleyDictionaryTableManager', () => {
 
     // --- stub / fake 群 ---
     let fakeAxios;
-    let fakeFileType;
     let fakePrism;
     let objectStorageRepo;
     let settingsRepo;
@@ -66,7 +65,6 @@ describe('NedbFoleyDictionaryTableManager', () => {
         const Manager = proxyquire('../../src/infra/nedb/nedb_foley_dictionary_table_manager', {
             '@seald-io/nedb': InMemoryDatastore,
             axios: { default: fakeAxios },
-            'file-type': fakeFileType,
             'prism-media': fakePrism,
             '../../domain/repo/i_foley_action_repo': { comprise() {} },
             '../../domain/repo/i_foley_dictionary_repo': { comprise() {} },
@@ -81,8 +79,8 @@ describe('NedbFoleyDictionaryTableManager', () => {
         return new Manager(appSettings, objectStorageRepo, settingsRepo);
     }
 
-    /** 有効な audio バッファ（stub が audio/mpeg を返す前提の任意データ） */
-    const DUMMY_AUDIO_BUF = Buffer.from('dummy-audio-data');
+    /** 音声と判定されるバッファ（MP3 のフレームヘッダで始まる任意データ） */
+    const DUMMY_AUDIO_BUF = Buffer.concat([Buffer.from([0xff, 0xfb, 0x90, 0x00]), Buffer.from('dummy-audio-data')]);
 
     beforeEach(() => {
         sandbox = sinon.createSandbox();
@@ -91,9 +89,6 @@ describe('NedbFoleyDictionaryTableManager', () => {
 
         // axios stub: デフォルトは成功レスポンス
         fakeAxios = { get: sandbox.stub().resolves({ data: DUMMY_AUDIO_BUF }) };
-
-        // file-type stub: デフォルトは audio/mpeg
-        fakeFileType = { fromBuffer: sandbox.stub().resolves({ mime: 'audio/mpeg', ext: 'mp3' }) };
 
         // prism-media fake: FFmpeg を PassThrough に置き換え
         fakePrism = {
@@ -231,23 +226,6 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 callArgs[0].should.equal('http://example.com/shakin.mp3');
                 callArgs[1].should.deep.include({ maxContentLength: 1048576 });
             });
-
-            specify('file-type v22 の fileTypeFromBuffer API で MIME 判定できる', async () => {
-                fakeFileType = {
-                    fileTypeFromBuffer: sandbox.stub().resolves({ mime: 'audio/mpeg', ext: 'mp3' }),
-                };
-                const mgr = createManager();
-                const action = new FoleyCreateAction({
-                    id: 'act-file-type-v22',
-                    serverId: 'sv-file-type-v22',
-                    keyword: 'v22',
-                    url: 'http://example.com/v22.mp3',
-                });
-
-                await mgr.postFoleyCreate(action);
-
-                fakeFileType.fileTypeFromBuffer.calledOnceWith(DUMMY_AUDIO_BUF).should.be.true;
-            });
         });
 
         context('異常系', () => {
@@ -351,9 +329,10 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 }
             });
 
-            specify('非オーディオ MIME → rejected (unexpected)', async () => {
+            specify('音声以外のファイル → rejected (unexpected)', async () => {
                 const mgr = createManager();
-                fakeFileType.fromBuffer.resolves({ mime: 'image/png', ext: 'png' });
+                const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]);
+                fakeAxios.get.resolves({ data: png });
 
                 const action = new FoleyCreateAction({
                     id: 'act-img',
@@ -369,9 +348,9 @@ describe('NedbFoleyDictionaryTableManager', () => {
                 }
             });
 
-            specify('file-type が null → rejected (unexpected)', async () => {
+            specify('形式がわからないファイル → rejected (unexpected)', async () => {
                 const mgr = createManager();
-                fakeFileType.fromBuffer.resolves(null);
+                fakeAxios.get.resolves({ data: Buffer.from('not an audio file') });
 
                 const action = new FoleyCreateAction({
                     id: 'act-null',

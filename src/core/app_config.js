@@ -83,6 +83,18 @@ class AppConfig {
     }
 
     /**
+     * インターフェースの実装を差し替えたコンフィグを返す
+     *
+     * @param {string} interfaceName インターフェース名
+     * @param {string} dependent 実装クラス名
+     * @returns {AppConfig}
+     */
+    withDependent(interfaceName, dependent) {
+        const others = this.data.filter((c) => c.interface !== interfaceName);
+        return new AppConfig([...others, { interface: interfaceName, dependent }]);
+    }
+
+    /**
      * DIコンフィグを適用する
      */
     configure() {

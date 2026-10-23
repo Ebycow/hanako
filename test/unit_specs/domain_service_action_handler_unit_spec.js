@@ -1,6 +1,7 @@
 const should = require('chai').should();
 const sinon = require('sinon');
 const ActionHandler = require('../../src/domain/service/action_handler');
+const SpeakerUpdateAction = require('../../src/domain/entity/actions/speaker_update_action');
 
 /************************************************************************
  * ActionHandlerクラス単体スペック
@@ -11,7 +12,7 @@ const ActionHandler = require('../../src/domain/service/action_handler');
  ***********************************************************************/
 
 describe('ActionHandler', () => {
-    let vcActionRepo, wordActionRepo, silenceActionRepo, foleyActionRepo, settingsActionRepo;
+    let vcActionRepo, wordActionRepo, silenceActionRepo, foleyActionRepo, settingsActionRepo, voiceCatalogRepo;
     let handler;
     let dispatchTargets;
     let allRepoStubs;
@@ -51,12 +52,21 @@ describe('ActionHandler', () => {
             postTextCommandsUpdate: sinon.stub().resolves(),
         };
 
+        // 既定では入力をそのまま話者として受け付ける（照合の振る舞いは speaker_update の節で確かめる）
+        voiceCatalogRepo = {
+            resolveVoice: sinon.stub().callsFake(async (query) => ({
+                voice: { address: query, displayName: query, engine: null, credit: null },
+                suggestions: [],
+            })),
+            loadVoiceCatalog: sinon.stub().resolves({ lines: [] }),
+        };
         handler = new ActionHandler(
             vcActionRepo,
             wordActionRepo,
             silenceActionRepo,
             foleyActionRepo,
-            settingsActionRepo
+            settingsActionRepo,
+            voiceCatalogRepo
         );
 
         dispatchTargets = {
@@ -78,6 +88,7 @@ describe('ActionHandler', () => {
             speaker_update: settingsActionRepo.postSpeakerUpdate,
             se_normalize_update: settingsActionRepo.postSeNormalizeUpdate,
             text_commands_update: settingsActionRepo.postTextCommandsUpdate,
+            voice_catalog_load: voiceCatalogRepo.loadVoiceCatalog,
         };
         allRepoStubs = Object.values(dispatchTargets);
     });
@@ -202,6 +213,61 @@ describe('ActionHandler', () => {
                 const action = { type: 'text_commands_update' };
                 await handler.handle(action);
                 assertExclusiveDispatch(dispatchTargets.text_commands_update, action);
+            });
+        });
+
+        context('読み上げキャラクター一覧', () => {
+            specify('voice_catalog_loadはvoiceCatalogRepo.loadVoiceCatalogを呼び、一覧を返す', async () => {
+                const action = { type: 'voice_catalog_load' };
+                const result = await handler.handle(action);
+                sinon.assert.calledOnceWithExactly(voiceCatalogRepo.loadVoiceCatalog);
+                allRepoStubs
+                    .filter((stub) => stub !== voiceCatalogRepo.loadVoiceCatalog)
+                    .forEach((stub) => sinon.assert.notCalled(stub));
+                result.should.deep.equal({ lines: [] });
+            });
+        });
+
+        context('speaker_update の照合', () => {
+            const speakerAction = (speaker) =>
+                new SpeakerUpdateAction({ id: 'i', serverId: 's', userId: 'u', speaker });
+
+            specify('照合した正式な指定に置き換えて保存し、話者を返す', async () => {
+                const voice = {
+                    address: 'voicevox:ずんだもん/あまあま',
+                    displayName: 'ずんだもん（あまあま）',
+                    engine: 'voicevox',
+                    credit: 'VOICEVOX:ずんだもん',
+                };
+                voiceCatalogRepo.resolveVoice.resolves({ voice, suggestions: [] });
+
+                const result = await handler.handle(speakerAction('ずんだもん あまあま'));
+
+                sinon.assert.calledOnceWithExactly(voiceCatalogRepo.resolveVoice, 'ずんだもん あまあま');
+                const saved = settingsActionRepo.postSpeakerUpdate.firstCall.args[0];
+                saved.speaker.should.equal('voicevox:ずんだもん/あまあま');
+                saved.userId.should.equal('u');
+                result.should.equal(voice);
+            });
+
+            specify('見つからなければ候補を添えて失敗し、保存しない', async () => {
+                voiceCatalogRepo.resolveVoice.resolves({
+                    voice: null,
+                    suggestions: [
+                        { address: 'voicevox:四国めたん/ノーマル' },
+                        { address: 'voicevox:四国めたん/あまあま' },
+                    ],
+                });
+
+                try {
+                    await handler.handle(speakerAction('めたーん'));
+                    should.fail('should have thrown');
+                } catch (e) {
+                    e.eby.should.be.true;
+                    e.message.should.include('「めたーん」という声は見つからなかったよ');
+                    e.message.should.include('`voicevox:四国めたん/ノーマル` / `voicevox:四国めたん/あまあま`');
+                }
+                sinon.assert.notCalled(settingsActionRepo.postSpeakerUpdate);
             });
         });
 

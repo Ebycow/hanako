@@ -8,11 +8,13 @@ const AppSettings = require('./core/app_settings');
 const InteractionCtrl = require('./app/interaction_ctrl');
 const PagerButtonCtrl = require('./app/pager_button_ctrl');
 const ConfirmButtonCtrl = require('./app/confirm_button_ctrl');
+const AutocompleteCtrl = require('./app/autocomplete_ctrl');
 const MessageCtrl = require('./app/message_ctrl');
 const ReadyCtrl = require('./app/ready_ctrl');
 const PagerReactionCtrl = require('./app/pager_reaction_ctrl');
 const AutoLeaveCtrl = require('./app/auto_leave_ctrl');
 const StatusChangeCtrl = require('./app/status_change_ctrl');
+const HeartbeatCtrl = require('./app/heartbeat_ctrl');
 const MessageSanitizeMiddleWare = require('./app/message_sanitize_middle_ware');
 const PagerReactionFilterMiddleWare = require('./app/pager_reaction_filter_middle_ware');
 const VoiceChatActionMiddleWare = require('./app/voice_chat_action_middle_ware');
@@ -80,9 +82,11 @@ class Application {
         // コントローラの登録
         this.bind('clientReady', ReadyCtrl);
         this.bind('clientReady', StatusChangeCtrl);
+        this.bind('clientReady', HeartbeatCtrl);
         this.bind('interactionCreate', InteractionCtrl);
         this.bind('interactionCreate', PagerButtonCtrl);
         this.bind('interactionCreate', ConfirmButtonCtrl);
+        this.bind('interactionCreate', AutocompleteCtrl);
         this.bind('messageCreate', MessageCtrl, [MessageSanitizeMiddleWare]);
         this.bind('messageReactionAdd', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);
         this.bind('messageReactionRemove', PagerReactionCtrl, [PagerReactionFilterMiddleWare]);

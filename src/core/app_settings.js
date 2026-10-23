@@ -36,6 +36,21 @@ function coerceCase(obj) {
 }
 
 /**
+ * 設定を上書きする環境変数と、上書きする設定の名前
+ *
+ * @type {Array<[string, string]>}
+ */
+const ENV_OVERRIDES = [
+    ['DISCORD_BOT_TOKEN', 'discordBotToken'],
+    ['DISCORD_CLIENT_ID', 'discordClientId'],
+    ['DISCORD_GUILD_ID', 'discordGuildId'],
+    ['EBYROID_STREAM_API_URL', 'ebyroidStreamApiUrl'],
+    ['EBYROID_STREAM_API_MODE', 'ebyroidStreamApiMode'],
+    ['TTSHUB_URL', 'ttshubUrl'],
+    ['HELP_URL', 'helpUrl'],
+];
+
+/**
  * 読み上げ花子アプリケーション全体の設定
  */
 class AppSettings {
@@ -56,11 +71,11 @@ class AppSettings {
             override = {};
         }
         const data = Object.assign({}, base, override);
-        if (process.env.EBYROID_STREAM_API_URL) {
-            data.ebyroidStreamApiUrl = process.env.EBYROID_STREAM_API_URL;
-        }
-        if (process.env.EBYROID_STREAM_API_MODE) {
-            data.ebyroidStreamApiMode = process.env.EBYROID_STREAM_API_MODE;
+        // 環境変数があれば設定ファイルより優先する（Docker などで設定ファイルを置かずに動かすため）
+        for (const [envName, key] of ENV_OVERRIDES) {
+            if (process.env[envName]) {
+                data[key] = process.env[envName];
+            }
         }
         return new AppSettings(data);
     }
@@ -75,6 +90,8 @@ class AppSettings {
      * @param {string} data.discordGuildId
      * @param {string} data.ebyroidStreamApiUrl
      * @param {string} [data.ebyroidStreamApiMode='auto']
+     * @param {string} [data.ttshubUrl=''] 空でなければ ttshub で読み上げる
+     * @param {string} [data.helpUrl=''] 空でなければ help コマンドで案内する
      * @param {number} data.foleyMaxDownloadByteSize
      * @param {number} data.foleyMaxAudioSeconds
      * @param {number} data.foleyMaxStorageByteSize
@@ -89,6 +106,10 @@ class AppSettings {
         assert(typeof data.ebyroidStreamApiUrl === 'string');
         const streamApiMode = data.ebyroidStreamApiMode || 'auto';
         assert(['auto', 'legacy-get', 'streaming-post'].includes(streamApiMode));
+        const ttshubUrl = data.ttshubUrl || '';
+        assert(typeof ttshubUrl === 'string');
+        const helpUrl = data.helpUrl || '';
+        assert(typeof helpUrl === 'string');
         assert(typeof data.foleyMaxDownloadByteSize === 'number');
         assert(typeof data.foleyMaxAudioSeconds === 'number');
         assert(typeof data.foleyMaxStorageByteSize === 'number');
@@ -99,7 +120,7 @@ class AppSettings {
         );
 
         Object.defineProperty(this, 'data', {
-            value: Object.assign({}, data, { ebyroidStreamApiMode: streamApiMode }),
+            value: Object.assign({}, data, { ebyroidStreamApiMode: streamApiMode, ttshubUrl, helpUrl }),
             writable: false,
             enumerable: false,
             configurable: false,
@@ -158,6 +179,24 @@ class AppSettings {
      */
     get ebyroidStreamApiMode() {
         return this.data.ebyroidStreamApiMode;
+    }
+
+    /**
+     * ttshub（TTS ゲートウェイ）の URL。空なら Ebyroid に直接つなぐ
+     *
+     * @type {string}
+     */
+    get ttshubUrl() {
+        return this.data.ttshubUrl;
+    }
+
+    /**
+     * help コマンドで案内する使い方のページの URL。空なら案内しない
+     *
+     * @type {string}
+     */
+    get helpUrl() {
+        return this.data.helpUrl;
     }
 
     /**
