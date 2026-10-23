@@ -159,7 +159,7 @@
 # Install
 ## 0.前提条件
 * **Node.js 24.21.0** — [Volta](https://volta.sh/)を使用している場合、`package.json`の設定により自動的にバージョンが固定されます
-* **Windows / Linux / macOS**（x64・arm64）— Dockerで動かす場合は [Docker Composeで動かす](#docker-composeで動かす) を参照
+* **Windows / Linux / macOS**（x64・arm64）— Dockerで動かす場合は [Docker で一発で動かす](#docker-で一発で動かすおすすめ) を参照
 
 ## 1.BOTの作成
 Discord Developer Portalよりアプリケーションを作成し、ボットのTOKENとCLIENT_IDを取得する必要があります
@@ -176,7 +176,45 @@ Discord Developer Portalよりアプリケーションを作成し、ボット�
 **必要なPrivileged Gateway Intents:**
 * Message Content Intent（テキストコマンドの読み取りに必要）
 
+## Docker で一発で動かす（おすすめ）
+はなこ・[ttshub](https://github.com/Ebycow/ttshub)・VOICEVOX をまとめて起動します（[Audio Service](#audio-service) の C の構成）。イメージは GHCR に公開しているものを使うので、ビルドや clone は要りません。Docker と Docker Compose（v2.23 以降）があれば動きます
+
+```
+mkdir hanako && cd hanako
+curl -fsSLO https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/compose.yaml
+curl -fsSL -o .env https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/.env.example
+# .env に DISCORD_BOT_TOKEN と DISCORD_CLIENT_ID を書く
+docker compose up -d
+```
+
+* スラッシュコマンドは起動のたびに登録します。前回から変わっていなければ Discord には送りません
+* VOICEVOX のすべてのキャラクターを使えます。キャラクターを指定していないサーバはずんだもんで読み上げます（`.env` の `DEFAULT_VOICE` で変えられます）。VOICEVOX のキャラクターはそれぞれの利用規約に従って使ってください（`/speaker` で変えたときに、クレジットと規約のリンクを表示します）
+* ttshub はホストにポートを公開せず、compose の中だけではなこにつなぎます
+* 新しい版にするときは `docker compose pull && docker compose up -d`。ログは `docker compose logs -f hanako` で見られます
+* 辞書・SE などのデータは Docker のボリュームに保存され、コンテナを作り直しても残ります
+
+**VOICEROID も使う場合**（x64 のみ）
+
+VOICEROID のライブラリは各自のライセンスで用意し、同じディレクトリに置きます（イメージには含まれません）
+
+```
+# Windows の C:\Program Files (x86)\AHS\VOICEROID+ を、compose.yaml と同じディレクトリの AHS/VOICEROID+ にコピーする
+curl -fsSL -o ebyroid.conf.json https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/ebyroid.conf.example.json
+# ebyroid.conf.json に、使う声を書く
+# .env の COMPOSE_PROFILES=voiceroid を有効にする
+docker compose up -d
+```
+
+* `ebyroid.conf.json` の `baseDirPath` は `Z:\\voiceroid\\<AHS/VOICEROID+ の中のフォルダ名>` と書きます。書き方は [Ebycow/ebyroid の README](https://github.com/Ebycow/ebyroid#docker-linux--wine) を参照してください
+* `/speaker ebyroid:kiritan` のように、`ebyroid:` に続けて `ebyroid.conf.json` の `name` で指定します
+
+**ttshub の設定を変える場合**
+
+ttshub の設定（エンジン、別名、プリセットなど）は `compose.yaml` の末尾の `configs` に書いてあります。AivisSpeech などを足すときはそこを書き換えます。項目は [ttshub の README](https://github.com/Ebycow/ttshub#設定) を参照してください
+
 ## 2.音声サーバの設定
+ここからは、[Docker で一発で動かす](#docker-で一発で動かすおすすめ) を使わずに、音声サーバとはなこを自分で組み合わせる場合の手順です
+
 [Audio Service](#audio-service) の A〜C のどれで動かすかを決め、はなこより先に音声サーバを起動しておきます
 
 | | A. Ebyroid（従来） | B. Ebyroid（ストリーミング） | C. ttshub 経由 |
@@ -297,8 +335,8 @@ node index
 npm run debug
 ```
 
-## Docker Composeで動かす
-Node.jsを入れずに、Docker Composeで動かすこともできます。音声サーバ（Ebyroid や ttshub）は [2.音声サーバの設定](#2音声サーバの設定) の手順で別に起動しておきます
+## Docker Composeで動かす（音声サーバを自分で用意する場合）
+リポジトリ直下の `compose.yaml` は、はなこだけを動かします。音声サーバ（Ebyroid や ttshub）は [2.音声サーバの設定](#2音声サーバの設定) の手順で別に起動しておきます
 
 `.env.example` をコピーして `.env` を作り、トークンなどを設定します
 ```
@@ -322,6 +360,8 @@ cp .env.example .env
 docker compose run --rm hanako node deploy-commands.js
 docker compose up -d --build
 ```
+
+`node deploy-commands.js --if-changed` にすると、前回登録した内容と同じときは Discord に送りません（登録した内容は `db/slash-commands.sha256` に記録します）
 
 ログは `docker compose logs -f hanako` で確認できます。辞書・SEなどのデータはDockerのボリューム（`db`・`files`・`log`）に保存され、コンテナを作り直しても残ります
 
@@ -349,10 +389,11 @@ docker compose up -d --build
 
 本番の `.env` には `HANAKO_TAG=latest` を書きます。開発では既定の `dev` タグのままにして、本番のイメージを上書きしないようにします
 
-本番へは、本番のチェックアウトで `deploy.sh` を実行して出します。出すコミットをチェックアウトし（ブランチには固定せず detached HEAD で指します）、イメージのビルド、スラッシュコマンドの登録、起動を行い、healthy になるまで待ちます。失敗したら前のコミットとイメージに戻します
+本番へは、本番のチェックアウトで `deploy.sh` を実行して出します。CI が master のコミットごとに GHCR に公開したイメージ（`ghcr.io/ebycow/hanako:<コミット ID>`）を取得し、出すコミットをチェックアウトし（ブランチには固定せず detached HEAD で指します）、スラッシュコマンドの登録（変わったときだけ）、起動を行い、healthy になるまで待ちます。失敗したら前のコミットとイメージに戻します
 ```
-./deploy.sh                  # origin/master の内容を出す
-./deploy.sh <コミット ID>    # 指定した ref の内容を出す（戻すときなど。ブランチ名も使える）
+./deploy.sh                  # origin/master の内容を出す（マージ直後で CI がまだ公開していなければ待つ）
+./deploy.sh <コミット ID>    # 指定したコミットの内容を出す（戻すときなど）
+BUILD=1 ./deploy.sh <ref>    # master に入っていないコミットを、ここでビルドして出す
 ```
 
 Docker 化より前のコミット（`compose.yaml` などがないもの）は出せません。指定するとなにもせずに止まります

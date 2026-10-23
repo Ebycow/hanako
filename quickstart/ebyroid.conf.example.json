@@ -1,0 +1,21 @@
+[
+  {
+    "version": "VOICEROID+",
+    "name": "kiritan",
+    "baseDirPath": "Z:\\voiceroid\\KiritanEX",
+    "voiceDirName": "kiritan_22",
+    "default": true
+  },
+  {
+    "version": "VOICEROID+",
+    "name": "aoi",
+    "baseDirPath": "Z:\\voiceroid\\Aoi",
+    "voiceDirName": "aoi_22"
+  },
+  {
+    "version": "VOICEROID+",
+    "name": "akane",
+    "baseDirPath": "Z:\\voiceroid\\Akane",
+    "voiceDirName": "akane_22"
+  }
+]
