@@ -13,3 +13,7 @@ coverage/
 
 *.pid
 .env
+
+# quickstart で VOICEROID を使うときの設定とライブラリ
+quickstart/ebyroid.conf.json
+quickstart/AHS/
