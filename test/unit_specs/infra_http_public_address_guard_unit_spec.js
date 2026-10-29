@@ -1,9 +1,8 @@
 require('chai').should();
 const http = require('http');
-const axios = require('axios').default;
 const {
     isForbiddenAddress,
-    publicOnlyRequestConfig,
+    downloadPublic,
     isForbiddenAddressError,
 } = require('../../src/infra/http/public_address_guard');
 
@@ -47,27 +46,19 @@ describe('public_address_guard', () => {
         });
     });
 
-    describe('publicOnlyRequestConfig', () => {
+    describe('downloadPublic', () => {
         /**
-         * @param {() => any} f
-         * @returns {any} 投げられたエラー
+         * @param {string} url
+         * @returns {Promise<any>} 失敗したときのエラー
          */
-        function captureError(f) {
+        async function downloadError(url) {
             try {
-                f();
+                await downloadPublic(url, { maxBytes: 1024 });
             } catch (e) {
                 return e;
             }
-            throw new Error('例外が投げられるはずが投げられなかった');
+            throw new Error('失敗するはずが成功した');
         }
-
-        specify('公開ホストのURLなら設定を返す', () => {
-            const config = publicOnlyRequestConfig('https://cdn.discordapp.com/attachments/1/2/a.mp3');
-            config.should.have.property('proxy', false);
-            config.should.have.property('maxRedirects').that.is.a('number');
-            config.should.have.property('httpAgent');
-            config.should.have.property('httpsAgent');
-        });
 
         [
             'http://127.0.0.1:4090/api/v1/audiostream',
@@ -75,61 +66,42 @@ describe('public_address_guard', () => {
             'http://[::1]/',
             'http://[::ffff:127.0.0.1]/',
         ].forEach((url) => {
-            specify(`IPアドレス直書きの内部アドレス ${url} は拒否する`, () => {
-                isForbiddenAddressError(captureError(() => publicOnlyRequestConfig(url))).should.be.true;
+            specify(`IPアドレス直書きの内部アドレス ${url} は拒否する`, async () => {
+                isForbiddenAddressError(await downloadError(url)).should.be.true;
             });
         });
 
-        specify('http/https 以外のスキームは拒否する', () => {
-            isForbiddenAddressError(captureError(() => publicOnlyRequestConfig('file:///etc/passwd'))).should.be.true;
+        specify('http/https 以外のスキームは拒否する', async () => {
+            isForbiddenAddressError(await downloadError('file:///etc/passwd')).should.be.true;
         });
 
-        specify('リダイレクト先が内部アドレスなら拒否する', () => {
-            const { beforeRedirect } = publicOnlyRequestConfig('https://example.com/a.mp3');
-            const err = captureError(() => beforeRedirect({ protocol: 'http:', hostname: '127.0.0.1' }));
-            isForbiddenAddressError(err).should.be.true;
-        });
+        describe('実際の接続', () => {
+            let server;
+            let port;
 
-        specify('リダイレクト先が公開ホストなら許可する', () => {
-            const { beforeRedirect } = publicOnlyRequestConfig('https://example.com/a.mp3');
-            beforeRedirect({ protocol: 'https:', hostname: 'cdn.discordapp.com' });
-        });
-    });
-
-    describe('実際の接続', () => {
-        let server;
-        let port;
-
-        before((done) => {
-            server = http.createServer((req, res) => res.end('secret'));
-            server.listen(0, '127.0.0.1', () => {
-                port = server.address().port;
-                done();
+            before((done) => {
+                server = http.createServer((req, res) => res.end('secret'));
+                server.listen(0, '127.0.0.1', () => {
+                    port = server.address().port;
+                    done();
+                });
             });
-        });
 
-        after((done) => {
-            server.close(done);
-        });
+            after((done) => {
+                server.close(done);
+            });
 
-        specify('名前解決の結果が内部アドレス（localhost）なら接続前に拒否する', async () => {
-            const url = `http://localhost:${port}/secret`;
-            let error = null;
-            try {
-                await axios.get(url, publicOnlyRequestConfig(url));
-            } catch (e) {
-                error = e;
-            }
-            (error !== null).should.be.true;
-            isForbiddenAddressError(error).should.be.true;
+            specify('名前解決の結果が内部アドレス（localhost）なら接続前に拒否する', async () => {
+                isForbiddenAddressError(await downloadError(`http://localhost:${port}/secret`)).should.be.true;
+            });
         });
     });
 
     describe('isForbiddenAddressError', () => {
-        specify('原因（cause）に包まれた拒否エラーも判定できる', () => {
+        specify('原因（cause）に包まれた拒否エラーも判定できる', async () => {
             let inner;
             try {
-                publicOnlyRequestConfig('http://127.0.0.1/');
+                await downloadPublic('http://127.0.0.1/', { maxBytes: 1024 });
             } catch (e) {
                 inner = e;
             }

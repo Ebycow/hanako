@@ -2,13 +2,14 @@ const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
 const assert = require('assert').strict;
 const uuid = require('crypto').randomUUID;
-const axios = require('axios').default;
 const prism = require('prism-media');
 const { Readable, Transform } = require('stream');
 const errors = require('../../core/errors').promises;
 const formatBytes = require('../../core/utils/format_bytes');
 const detectAudioFormat = require('../../library/detect_audio_format');
-const { publicOnlyRequestConfig, isForbiddenAddressError } = require('../http/public_address_guard');
+const { downloadPublic, isForbiddenAddressError } = require('../http/public_address_guard');
+const { isContentTooLargeError } = require('../http/download');
+const { isHttpStatusError } = require('../http/fetch_ok');
 
 /**
  * FFmpegが入力を読み切る前に終了したときに、残りの入力を書き込もうとして出るエラーかどうか
@@ -84,9 +85,8 @@ const FOLEY_DOWNLOAD_MAX_ATTEMPTS = 3;
  * @returns {boolean}
  */
 function isRetryableDownloadError(err) {
-    if (err.code === 'ERR_CANCELED' || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') return true;
-    if (err.code === 'ECONNABORTED' && !String(err.message).startsWith('maxContentLength')) return true;
-    return Boolean(err.response && err.response.status >= 500);
+    if (isDownloadTimeout(err) || err.code === 'ECONNRESET') return true;
+    return isHttpStatusError(err) && err.status >= 500;
 }
 
 /**
@@ -95,18 +95,15 @@ function isRetryableDownloadError(err) {
  * 1回ごとに全体の制限時間を設け、回復しうるエラーは数回リトライする。
  *
  * @param {string} url
- * @param {number} maxContentLength
- * @returns {Promise<import('axios').AxiosResponse>}
+ * @param {number} maxBytes
+ * @returns {Promise<{ data: Buffer }>}
  */
-async function downloadFoley(url, maxContentLength) {
+async function downloadFoley(url, maxBytes) {
     for (let attempt = 1; ; attempt++) {
         try {
-            return await axios.get(url, {
-                // 利用者が指定したURLなので、内部ネットワークへは接続させない
-                ...publicOnlyRequestConfig(url),
-                responseType: 'arraybuffer',
-                maxContentLength,
-                // axios の timeout はソケット無通信時間しか見ないため、全体の期限は signal で設ける
+            // 利用者が指定したURLなので、内部ネットワークへは接続させない
+            return await downloadPublic(url, {
+                maxBytes,
                 signal: AbortSignal.timeout(FOLEY_DOWNLOAD_TIMEOUT_MS),
             });
         } catch (err) {
@@ -129,7 +126,7 @@ async function downloadFoley(url, maxContentLength) {
  * @returns {boolean}
  */
 function isDownloadTimeout(err) {
-    return err.code === 'ERR_CANCELED' || err.code === 'ETIMEDOUT';
+    return err.name === 'TimeoutError' || err.code === 'ETIMEDOUT';
 }
 
 const AppSettings = require('../../core/app_settings');
@@ -410,16 +407,14 @@ class NedbFoleyDictionaryTableManager {
         try {
             response = await downloadFoley(action.url, this.appSettings.foleyMaxDownloadByteSize);
         } catch (err) {
-            // AXIOS null やめて
-            // cf. https://github.com/axios/axios/blob/v0.19.1/lib/adapters/http.js#L219-L220
             if (isForbiddenAddressError(err)) {
                 const message = 'そのURLからは取得できないにゃ :sob:';
                 return errors.unexpected('foley-http-forbidden-address', message);
-            } else if (err.message.startsWith('maxContentLength size of ')) {
+            } else if (isContentTooLargeError(err)) {
                 const maxSize = formatBytes(this.appSettings.foleyMaxDownloadByteSize);
                 const message = `${maxSize}以上のデータは大きすぎて入らないにゃ :sob:`;
                 return errors.unexpected('foley-http-data-too-large', message);
-            } else if (err.response && err.response.status >= 400) {
+            } else if (isHttpStatusError(err)) {
                 const message = 'URLのファイルが見つからないにゃ :sob:';
                 return errors.unexpected('foley-http-file-not-found', message);
             } else if (isDownloadTimeout(err)) {

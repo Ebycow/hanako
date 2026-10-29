@@ -10,7 +10,7 @@ const log4js = require('log4js');
  *
  * 各所の logger 呼び出しで気をつけるのに加えて、最後の砦として
  * エラーオブジェクトはこのレイアウトで要約してから出力する。
- * （util.inspect でエラーを丸ごと出すと、axios の config.params などに
+ * （util.inspect でエラーを丸ごと出すと、エラーに付いたリクエストの情報などに
  *   含まれる発言本文がそのままログに残るため）
  */
 
@@ -82,7 +82,7 @@ function stackFrames(err) {
 
 /**
  * エラーの付帯情報（code, status など）を要約する。
- * 発言本文が入りうる config / request / response の中身は出さない。
+ * 発言本文が入りうる URL のクエリや、知らないプロパティの中身は出さない。
  *
  * @param {Error} err
  * @returns {string}
@@ -90,13 +90,10 @@ function stackFrames(err) {
 function describeErrorDetails(err) {
     const details = [];
     if (err.code !== undefined) details.push(`code=${err.code}`);
-    if (err.isAxiosError) {
-        if (err.response && err.response.status !== undefined) details.push(`status=${err.response.status}`);
-        if (err.config) {
-            if (err.config.method) details.push(`method=${String(err.config.method).toUpperCase()}`);
-            if (err.config.url) details.push(`url=${stripQuery(err.config.url)}`);
-        }
-    }
+    // HttpStatusError（src/infra/http/fetch_ok.js）
+    if (typeof err.status === 'number') details.push(`status=${err.status}`);
+    if (typeof err.method === 'string') details.push(`method=${err.method.toUpperCase()}`);
+    if (typeof err.url === 'string') details.push(`url=${stripQuery(err.url)}`);
     if (err.syscall !== undefined) details.push(`syscall=${err.syscall}`);
     if (typeof err.hostname === 'string') details.push(`hostname=${err.hostname}`);
     return details.length > 0 ? ` (${details.join(', ')})` : '';

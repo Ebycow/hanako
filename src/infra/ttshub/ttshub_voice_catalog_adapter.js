@@ -1,6 +1,6 @@
 const path = require('path');
 const logger = require('log4js').getLogger(path.basename(__filename));
-const axios = require('axios').default;
+const { fetchOk, withQuery } = require('../http/fetch_ok');
 const errors = require('../../core/errors').promises;
 const AppSettings = require('../../core/app_settings');
 const IVoiceCatalogRepo = require('../../domain/repo/i_voice_catalog_repo');
@@ -128,11 +128,11 @@ class TtshubVoiceCatalogAdapter {
     async searchVoices(input, limit) {
         const { base, params } = splitParams(input);
         // 補完の候補には、エンジンが止まっていて今は読めない声を出さない
-        const res = await axios.get(`${this.base}/v1/voices`, {
-            params: { q: base, limit, available: true },
-            timeout: SEARCH_TIMEOUT_MS,
+        const res = await fetchOk(withQuery(`${this.base}/v1/voices`, { q: base, limit, available: true }), {
+            signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),
         });
-        return res.data.voices.map((v) => {
+        const { voices } = await res.json();
+        return voices.map((v) => {
             const voice = toVoiceInfo(v);
             if (!params) return voice;
             return Object.assign(voice, {
@@ -160,11 +160,10 @@ class TtshubVoiceCatalogAdapter {
 
         let data;
         try {
-            const res = await axios.get(`${this.base}/v1/voices/resolve`, {
-                params: { q: base },
-                timeout: RESOLVE_TIMEOUT_MS,
+            const res = await fetchOk(withQuery(`${this.base}/v1/voices/resolve`, { q: base }), {
+                signal: AbortSignal.timeout(RESOLVE_TIMEOUT_MS),
             });
-            data = res.data;
+            data = await res.json();
         } catch (err) {
             return errors.disappointed(
                 `ttshub-unavailable ${err.message}`,
@@ -197,18 +196,19 @@ class TtshubVoiceCatalogAdapter {
         let cursor = null;
         try {
             do {
-                const res = await axios.get(`${this.base}/v1/voices`, {
-                    params: Object.assign({ limit: CATALOG_PAGE_SIZE }, cursor ? { cursor } : {}),
-                    timeout: RESOLVE_TIMEOUT_MS,
+                const params = Object.assign({ limit: CATALOG_PAGE_SIZE }, cursor ? { cursor } : {});
+                const res = await fetchOk(withQuery(`${this.base}/v1/voices`, params), {
+                    signal: AbortSignal.timeout(RESOLVE_TIMEOUT_MS),
                 });
-                for (const v of res.data.voices) {
+                const data = await res.json();
+                for (const v of data.voices) {
                     if (NAMED_KINDS.includes(v.kind)) {
                         named.push({ name: v.address, target: v.target });
                     } else {
                         voices.push(v);
                     }
                 }
-                cursor = res.data.next_cursor;
+                cursor = data.next_cursor;
             } while (cursor);
         } catch (err) {
             logger.warn('ttshubから話者の一覧を取得できなかった', err.message);
