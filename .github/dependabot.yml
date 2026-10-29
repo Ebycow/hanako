@@ -1,0 +1,45 @@
+# 依存を新しくするプルリクエストを Dependabot に作らせる
+# 脆弱性の修正（セキュリティ更新）は、リポジトリの Settings → Advanced Security で有効にするもので、この設定とは別に届く
+# Dependabot のプルリクエストを長く放っておくと Dependabot が更新を一時停止するので、届いたら早めにマージか close する
+#
+# Dockerfile の node イメージは対象にしない。Node.js の版は package.json の engines・volta、Dockerfile、README で
+# 揃えているので、上げるときはまとめて手で変える
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: saturday
+      time: '09:00'
+      timezone: Asia/Tokyo
+    # 公開されたばかりの版は避け、1 週間たってから取り込む（セキュリティ更新はすぐ届く）
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+    # マイナー・パッチの更新は、本番で使う依存と開発用の依存に分けて 1 つずつにまとめる。メジャーの更新は個別に届く
+    groups:
+      production:
+        dependency-type: production
+        update-types: [minor, patch]
+      development:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: saturday
+      time: '09:00'
+      timezone: Asia/Tokyo
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      github-actions:
+        patterns: ['*']
