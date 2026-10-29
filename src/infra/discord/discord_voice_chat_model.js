@@ -10,6 +10,7 @@ const {
     StreamType,
     AudioPlayerStatus,
     VoiceConnectionStatus,
+    VoiceConnectionDisconnectReason,
     entersState,
 } = require('@discordjs/voice');
 
@@ -17,6 +18,9 @@ const VOICE_RECOVERY_WAIT_MS = 5000;
 const VOICE_READY_WAIT_MS = 20000;
 const RECONNECT_BASE_DELAY_MS = 30000;
 const RECONNECT_MAX_DELAY_MS = 300000;
+// Discordの音声ゲートウェイが「再接続しないで」と返すクローズコード。
+// 人の操作でVCから切断されたとき、または別のVCへ移動させられたときに届く。
+const DO_NOT_RECONNECT_CLOSE_CODE = 4014;
 // 発言と発言の間に挟む無音の長さ。VOICEROIDの末尾無音は除去しているため、
 // ここで間を取らないと別々の発言がつながって聞こえる。
 const UTTERANCE_GAP_MS = 300;
@@ -233,7 +237,7 @@ class DiscordVoiceChatModel {
      * 音声接続の切断を検知して復帰を試みる。
      *
      * @param {VoiceConnection} connection
-     * @param {{status: string}} newState
+     * @param {{status: string, reason?: number, closeCode?: number}} newState
      * @returns {Promise<void>}
      * @private
      */
@@ -259,6 +263,16 @@ class DiscordVoiceChatModel {
             logger.info(`音声接続がReady状態に復帰 (server: ${this.serverId})`);
         } catch {
             if (connection !== this.connection) return;
+
+            // 4014のあと自動復帰しないなら、別のVCへの移動ではなく人の操作による切断なので戻らない
+            if (
+                newState.reason === VoiceConnectionDisconnectReason.WebSocketClose &&
+                newState.closeCode === DO_NOT_RECONNECT_CLOSE_CODE
+            ) {
+                logger.info(`VCから切断されたので退出する (server: ${this.serverId})`);
+                this.leave();
+                return;
+            }
 
             try {
                 // 自動復帰しなかった場合、手動でrejoinを試みる

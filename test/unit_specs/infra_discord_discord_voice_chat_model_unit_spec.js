@@ -87,6 +87,7 @@ describe('DiscordVoiceChatModel', () => {
                 StreamType: { Raw: 'raw' },
                 AudioPlayerStatus: { Idle: 'idle' },
                 VoiceConnectionStatus,
+                VoiceConnectionDisconnectReason: { WebSocketClose: 0 },
                 entersState,
             },
         });
@@ -141,6 +142,57 @@ describe('DiscordVoiceChatModel', () => {
             vc.connection.should.equal(connections[1]);
             connections[1].destroy.called.should.be.false;
             vc.readingChannels.map((channel) => channel.id).should.deep.equal(['text-2']);
+        });
+
+        specify('leaves without reconnecting when disconnected by a member (close code 4014)', async () => {
+            entersState.rejects(new Error('not recovered'));
+
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel());
+            vc.addReadingChannel(textChannel());
+
+            connections[0].emit(
+                'stateChange',
+                {},
+                {
+                    status: VoiceConnectionStatus.Disconnected,
+                    reason: 0,
+                    closeCode: 4014,
+                }
+            );
+            await flushPromises();
+
+            connections[0].rejoin.called.should.be.false;
+            connections[0].destroy.calledOnce.should.be.true;
+            should.equal(vc.connection, null);
+            should.equal(vc.voiceChannel, null);
+            vc.readingChannels.should.be.empty;
+
+            await clock.tickAsync(300000);
+            joinVoiceChannel.callCount.should.equal(1);
+        });
+
+        specify('stays connected when moved to another channel (close code 4014 then recovery)', async () => {
+            entersState.resolves();
+
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel());
+            vc.addReadingChannel(textChannel());
+
+            connections[0].emit(
+                'stateChange',
+                {},
+                {
+                    status: VoiceConnectionStatus.Disconnected,
+                    reason: 0,
+                    closeCode: 4014,
+                }
+            );
+            await flushPromises();
+
+            connections[0].destroy.called.should.be.false;
+            vc.connection.should.equal(connections[0]);
+            vc.readingChannels.map((channel) => channel.id).should.deep.equal(['text-1']);
         });
     });
 

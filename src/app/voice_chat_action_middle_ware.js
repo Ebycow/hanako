@@ -28,30 +28,40 @@ class VoiceChatActionMiddleWare {
      * @returns {Promise<[discord.VoiceChannel, discord.GuildMember, ('joined'|'left')]>} コントローラに渡す引数
      */
     async transform(oldState, newState) {
-        // 花子が参加していないVCのイベントは無視
-        const channel = oldState.channel || newState.channel;
-        if (!channel.members.some((m) => m.id === this.client.user.id)) {
-            return errors.abort();
-        }
-
         // 花子に起因するイベントは無視
         const member = oldState.member || newState.member;
         if (member.id === this.client.user.id) {
             return errors.abort();
         }
 
-        // ボイスチャット退出イベント
-        if (oldState.channel !== null && newState.channel === null) {
+        // 同じチャンネル内の状態変化（ミュートなど）は無視
+        if (oldState.channelId === newState.channelId) {
+            return errors.abort();
+        }
+
+        // ボイスチャット退出イベント（別のVCへの移動を含む）
+        if (oldState.channel !== null && this.hasHanako(oldState.channel)) {
             return Promise.resolve([oldState.channel, oldState.member, 'left']);
         }
 
-        // ボイスチャット参加イベント
-        if (oldState.channel === null && newState.channel !== null) {
+        // ボイスチャット参加イベント（別のVCからの移動を含む）
+        if (newState.channel !== null && this.hasHanako(newState.channel)) {
             return Promise.resolve([newState.channel, newState.member, 'joined']);
         }
 
-        // それ以外なら無視
+        // 花子が参加していないVCのイベントは無視
         return errors.abort();
+    }
+
+    /**
+     * 花子が参加しているチャンネルか
+     *
+     * @param {discord.VoiceChannel} channel 音声チャンネル
+     * @returns {boolean}
+     * @private
+     */
+    hasHanako(channel) {
+        return channel.members.some((m) => m.id === this.client.user.id);
     }
 }
 
