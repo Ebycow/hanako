@@ -93,6 +93,31 @@ describe('WordDictionaryFormatter', () => {
             });
         });
 
+        context('文字種の区別', () => {
+            specify('全角英字で教育した単語は半角英字を置換しない', () => {
+                const line = wordDictionaryLineBlueprint({ from: 'ｗｗ', to: 'わらわら' });
+                const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
+                const fmt = new WordDictionaryFormatter(basicHanako({ wordDictionary: wd }));
+                fmt.format('ww').should.equal('ww');
+                fmt.format('ｗｗ').should.equal('わらわら');
+            });
+
+            specify('半角カナで教育した単語は全角カナを置換しない', () => {
+                const line = wordDictionaryLineBlueprint({ from: 'ﾊﾅｺ', to: 'はなこ' });
+                const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
+                const fmt = new WordDictionaryFormatter(basicHanako({ wordDictionary: wd }));
+                fmt.format('ハナコ').should.equal('ハナコ');
+                fmt.format('ﾊﾅｺ').should.equal('はなこ');
+            });
+
+            specify('置換結果の文字種は登録したまま残す', () => {
+                const line = wordDictionaryLineBlueprint({ from: '花子', to: 'ﾊﾅｺＡ' });
+                const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
+                const fmt = new WordDictionaryFormatter(basicHanako({ wordDictionary: wd }));
+                fmt.format('花子').should.equal('ﾊﾅｺＡ');
+            });
+        });
+
         context('置換方式', () => {
             /**
              * @param {Array<{from: string, to: string}>} words

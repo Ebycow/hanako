@@ -116,6 +116,16 @@ describe('WordCreateCommand', () => {
                 res.content.should.include('教育済み');
             });
 
+            specify('文字種だけが違う単語は別の単語として教育できる', () => {
+                const line = wordDictionaryLineBlueprint({ from: 'ｗｗ', to: 'わらわら' });
+                const wd = new WordDictionary({ id: 'wd', serverId: 'mock-server-id', lines: [line] });
+                const input = commandInputBlueprint({ argc: 2, argv: ['ww', 'だぶりゅーだぶりゅー'] });
+                const sub = new WordCreateCommand(basicHanako({ wordDictionary: wd }));
+                const res = processText(sub, input);
+
+                res.type.should.equal('action');
+            });
+
             specify('上限10000件に達しているとエラー', () => {
                 const lines = [];
                 for (let i = 0; i < 10000; i++) {

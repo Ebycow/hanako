@@ -207,6 +207,16 @@ describe('FoleyCreateCommand', () => {
                 res.code.should.equal('error');
             });
 
+            specify('文字種だけが違うキーワード → 別のSEとして登録できる', () => {
+                const line = foleyDictionaryLineBlueprint({ keyword: 'ﾄﾞﾝｯ' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
+                const input = commandInputBlueprint({ argc: 2, argv: ['ドンッ', 'http://example.com/se.mp3'] });
+                const sub = new FoleyCreate(basicHanako({ foleyDictionary: fd }));
+                const res = processText(sub, input);
+
+                res.type.should.equal('action');
+            });
+
             specify('10000件登録済み → エラー', () => {
                 const lines = Array.from({ length: 10000 }, (_, i) =>
                     foleyDictionaryLineBlueprint({ id: `fdl-${i}`, keyword: `kw${i}` })

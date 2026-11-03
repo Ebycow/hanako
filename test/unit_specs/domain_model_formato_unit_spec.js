@@ -34,6 +34,11 @@ describe('Formato', () => {
                 formato.normalize('普通のテキスト').should.equal('普通のテキスト');
             });
 
+            specify('半角カナと全角英数字はそのまま残す', () => {
+                const formato = new Formato(basicHanako());
+                formato.normalize('ﾊﾅｺとＨＡＮＡＫＯ１２３').should.equal('ﾊﾅｺとＨＡＮＡＫＯ１２３');
+            });
+
             specify('空文字列は空文字列を返す', () => {
                 const formato = new Formato(basicHanako());
                 formato.normalize('').should.equal('');

@@ -59,6 +59,40 @@ describe('FoleyReader', () => {
             });
         });
 
+        context('文字種の区別', () => {
+            specify('半角カナで登録したSEは全角カナの文字に反応しない', () => {
+                const line = foleyDictionaryLineBlueprint({ keyword: 'ﾄﾞﾝｯ' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
+                const reader = new FoleyReader(basicHanako({ foleyDictionary: fd }));
+                const result = reader.read(new Plain({ content: 'ドンッ' }));
+                result.should.have.lengthOf(1);
+                result[0].type.should.equal('plain');
+            });
+
+            specify('全角カナで登録したSEは半角カナの文字に反応しない', () => {
+                const line = foleyDictionaryLineBlueprint({ keyword: 'ドンッ' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
+                const reader = new FoleyReader(basicHanako({ foleyDictionary: fd }));
+                const result = reader.read(new Plain({ content: 'ﾄﾞﾝｯ' }));
+                result.should.have.lengthOf(1);
+                result[0].type.should.equal('plain');
+            });
+
+            specify('文字種だけが違うSEはそれぞれの文字にだけ反応する', () => {
+                const half = foleyDictionaryLineBlueprint({ id: 'fdl-half', keyword: 'ﾄﾞﾝｯ' });
+                const full = foleyDictionaryLineBlueprint({ id: 'fdl-full', keyword: 'ドンッ' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [half, full] });
+                const reader = new FoleyReader(basicHanako({ foleyDictionary: fd }));
+                const foleyIds = (content) =>
+                    reader
+                        .read(new Plain({ content }))
+                        .filter((r) => r.type === 'foley')
+                        .map((r) => r.foleyId);
+                foleyIds('ﾄﾞﾝｯ').should.deep.equal(['fdl-half']);
+                foleyIds('ドンッ').should.deep.equal(['fdl-full']);
+            });
+        });
+
         context('エッジケース', () => {
             specify('複数の異なるSEキーワードを含むテキストをすべて分割する', () => {
                 const line1 = foleyDictionaryLineBlueprint({ id: 'fdl-1', keyword: 'ドンッ' });

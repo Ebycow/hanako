@@ -81,6 +81,17 @@ describe('FoleyRenameCommand', () => {
                 res.code.should.equal('error');
             });
 
+            specify('半角カナで登録したSEは全角カナでは指定できない', () => {
+                const line = foleyDictionaryLineBlueprint({ keyword: 'ﾄﾞﾝｯ' });
+                const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
+                const input = commandInputBlueprint({ argc: 2, argv: ['ドンッ', 'ドカン'] });
+                const sub = new FoleyRenameCommand(basicHanako({ foleyDictionary: fd }));
+                const res = processText(sub, input);
+
+                res.type.should.equal('chat');
+                res.code.should.equal('error');
+            });
+
             specify('変更先が1文字だとエラー', () => {
                 const line = foleyDictionaryLineBlueprint({ keyword: 'ドンッ' });
                 const fd = new FoleyDictionary({ id: 'fd', serverId: 'mock-server-id', lines: [line] });
