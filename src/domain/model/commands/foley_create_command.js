@@ -127,10 +127,8 @@ class FoleyCreateCommand {
             return input.newChatResponse(validationError, 'error');
         }
 
-        // 重複チェック（読み上げでは文字種をそろえて照合するため、そろえると同じになるキーワードも重複とする）
-        const dup = this.hanako.foleyDictionary.lines.find(
-            (line) => utils.unifyCharacterWidth(line.keyword) === utils.unifyCharacterWidth(keyword)
-        );
+        // 重複チェック
+        const dup = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keyword);
         if (dup) {
             return input.newChatResponse(`すでに登録済みのキーワードです！ 『${dup.keyword}』`, 'error');
         }
@@ -180,10 +178,8 @@ class FoleyCreateCommand {
                 continue;
             }
 
-            // 重複チェック（文字種をそろえると同じになるキーワードも重複とする）
-            const dup = this.hanako.foleyDictionary.lines.find(
-                (line) => utils.unifyCharacterWidth(line.keyword) === utils.unifyCharacterWidth(keyword)
-            );
+            // 重複チェック
+            const dup = this.hanako.foleyDictionary.lines.find((line) => line.keyword === keyword);
             if (dup) {
                 errors.push(`${attachment.name}: すでに登録済みのキーワードです！ 『${dup.keyword}』`);
                 continue;
