@@ -1,9 +1,11 @@
-# はなこを Docker Compose で一発で動かす（hanako + ttshub + VOICEVOX）
+# はなこを Docker Compose で一発で動かす（hanako + ttshub + VOICEVOX / Open JTalk）
 #
-#   cp .env.example .env     # Discord Bot のトークンと CLIENT_ID を書く
+#   cp .env.example .env       # x64 の PC。VOICEVOX で読み上げる
+#   cp .env.pi.example .env    # Raspberry Pi など。軽い Open JTalk で読み上げる
+#   # .env に Discord Bot のトークンと CLIENT_ID を書く
 #   docker compose up -d
 #
-# VOICEROID も使うときは README の「Docker で動かす」を参照（.env で COMPOSE_PROFILES=voiceroid）
+# 起動するエンジンは .env の COMPOSE_PROFILES で選ぶ（voicevox / voiceroid。Open JTalk は常に起動する）
 # イメージは GHCR に公開しているものを使うので、ビルドは要らない
 # 新しい版にするときは docker compose pull && docker compose up -d
 
@@ -78,9 +80,18 @@ services:
       start_period: 30s
       start_interval: 5s
 
-  # VOICEVOX 公式エンジン（CPU 版）
+  # VOICEVOX 公式エンジン（CPU 版）。COMPOSE_PROFILES に voicevox を含めたときだけ起動する
+  # arm64 でも動くが重いので、Raspberry Pi などでは Open JTalk をおすすめする
   voicevox:
     image: voicevox/voicevox_engine:${VOICEVOX_TAG:-cpu-latest}
+    profiles: [voicevox]
+    restart: unless-stopped
+    logging: *logging
+
+  # Open JTalk（ttshub のリポジトリの openjtalk/ のサーバー）。軽いので常に起動し、最後の代わりの声にも使う
+  # 声（mei、takumi、nitech-jp-atr503-m001）はイメージに入っている
+  openjtalk:
+    image: ghcr.io/ebycow/ttshub-openjtalk:${TTSHUB_VERSION:-latest}
     restart: unless-stopped
     logging: *logging
 
@@ -113,11 +124,13 @@ volumes:
   ttshub-state:
 
 configs:
-  # ttshub の設定。項目は https://github.com/Ebycow/ttshub#設定 を参照
-  # 止まっているエンジン（VOICEROID を使わないときの ebyroid など）は、ttshub が切り離して使わない
+  # ttshub の設定。項目の意味は https://github.com/Ebycow/ttshub#設定 を参照
+  # 止まっているエンジン（起動していない VOICEVOX や ebyroid）は、ttshub が切り離して使わない
   ttshub:
     content: |
       default_voice: ${DEFAULT_VOICE:-voicevox:ずんだもん}
+      # ほかの声がすべて使えないときの、最後の代わりの声
+      fallback_voice: openjtalk:mei
       engines:
         voicevox:
           plugin: voicevox-compatible
@@ -127,6 +140,16 @@ configs:
           # VOICEVOX は音声を一括で返すため、長文だと応答開始まで時間がかかる
           response_start_ms: 60000
           max_concurrency_per_backend: 1
+        openjtalk:
+          plugin: openjtalk
+          backends: [http://openjtalk:8791]
+          max_concurrency_per_backend: 4
+          # Mei と Takumi は CC BY 3.0 なので、クレジット表記が要る
+          credits:
+            mei: "HTS Voice \"Mei\" (c) Nagoya Institute of Technology (CC BY 3.0)"
+            takumi: "HTS Voice \"Takumi\" (c) Nagoya Institute of Technology (CC BY 3.0)"
+          terms_url: https://creativecommons.org/licenses/by/3.0/deed.ja
+          default_voice: mei/normal
         ebyroid:
           plugin: ebyroid
           backends: [http://ebyroid:4090]
