@@ -19,7 +19,7 @@ const SHUTDOWN_TIMEOUT_MS = 10000;
 
 /**
  * 終了前処理を始めるシグナルと、そのときの終了コード（128 + シグナル番号）
- * Windows でコンソールを閉じたとき（deploy.ps1 の taskkill）は SIGHUP、Ctrl+Break は SIGBREAK になる
+ * Windows でコンソールを閉じたとき（taskkill を含む）は SIGHUP、Ctrl+Break は SIGBREAK になる
  *
  * @type {Array<[string, number]>}
  */

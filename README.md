@@ -1,4 +1,11 @@
 # Hanako
+
+[![node](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FEbycow%2Fhanako%2Fmaster%2Fpackage.json&query=%24.engines.node&label=node&logo=nodedotjs&logoColor=white&color=339933)](package.json)
+[![discord.js](https://img.shields.io/github/package-json/dependency-version/Ebycow/hanako/discord.js?logo=discord&logoColor=white&color=5865F2)](https://discord.js.org/)
+[![docker](https://img.shields.io/badge/docker-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)](https://github.com/Ebycow/hanako/pkgs/container/hanako)
+[![Node.js CI](https://github.com/Ebycow/hanako/actions/workflows/nodejs.yml/badge.svg?branch=master)](https://github.com/Ebycow/hanako/actions/workflows/nodejs.yml)
+![Catpower](https://img.shields.io/badge/%F0%9F%98%BB%20Catpower-Include-ff69b4)
+
 汎用Discordチャット読み上げ(TTS)Bot  
 強力なSE機能、ユーザーごとの音声切り替えに対応、複数サーバで高速に動作😼  
 PC（x64）でも Raspberry Pi などの arm64 でも、`docker compose up` だけで動きます😻（[Docker で一発で動かす](#docker-で一発で動かすおすすめ)）
@@ -311,7 +318,7 @@ node index
 | `log/` | ログ |
 
 # 開発・運用
-* コマンドの足し方は [コマンド追加手順書](コマンド追加手順書.md) を参照してください
+* コマンドの足し方は [コマンド追加手順書](docs/コマンド追加手順書.md) を参照してください
 
 ## 本番と開発を同じマシンで動かす
 本番のチェックアウトは編集せず、git で更新するだけにします。開発は `git worktree` で作った別のディレクトリで行います。Composeのプロジェクト名はディレクトリ名になるため、コンテナとボリューム（辞書・SEなど）は本番と開発で自動的に分かれます
