@@ -125,8 +125,8 @@ PC（x64）でも Raspberry Pi などの arm64 でも、`docker compose up` だ�
 
 ## Discord の Bot を作る
 1. [Discord Developer Portal](https://discord.com/developers/applications) を開き、「New Application」でアプリケーションを作ります。名前が Bot の名前になります
-2. 「General Information」の **Application ID** を控えます。これが `DISCORD_CLIENT_ID` です
-3. 「Bot」の「Reset Token」でトークンを作って控えます。これが `DISCORD_BOT_TOKEN` です。トークンは他人に見せないでください（漏れたらもう一度 Reset Token します）
+2. 「一般情報」の **アプリID** を控えます。これが `DISCORD_CLIENT_ID` です
+3. 「Bot」の「トークンをリセット」でトークンを作って控えます。これが `DISCORD_BOT_TOKEN` です。トークンはAIや他人に見せないでください（漏れたらもう一度 トークンをリセット します）
 4. 同じ「Bot」の「Privileged Gateway Intents」で **Message Content Intent** をオンにして保存します。`@hanako` や `>` で始まるテキストのコマンドを読むのに要ります
 5. 次の URL の `<CLIENT_ID>` を 2 で控えた ID に置き換えてブラウザで開き、はなこを入れるサーバを選びます
 
@@ -151,11 +151,24 @@ https://discord.com/oauth2/authorize?client_id=<CLIENT_ID>&scope=bot+application
 
 ```
 mkdir hanako && cd hanako
+
 curl -fsSLO https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/compose.yaml
+
 # PC（x64）は VOICEVOX で読み上げる
 curl -fsSL -o .env https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/.env.example
-# Raspberry Pi など（arm64）は、上の代わりにこちら。軽い Open JTalk で読み上げる
-# curl -fsSL -o .env https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/.env.pi.example
+
+# .env に DISCORD_BOT_TOKEN と DISCORD_CLIENT_ID を書く
+docker compose up -d
+```
+
+Raspberry Pi など（arm64）は、上の代わりにこちら。軽い Open JTalk で読み上げます。後述するVOICEROIDは、ラズパイで高速に動作するのでそちらもおすすめです
+```
+mkdir hanako && cd hanako
+
+curl -fsSLO https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/compose.yaml
+
+curl -fsSL -o .env https://raw.githubusercontent.com/Ebycow/hanako/master/quickstart/.env.pi.example
+
 # .env に DISCORD_BOT_TOKEN と DISCORD_CLIENT_ID を書く
 docker compose up -d
 ```
@@ -183,9 +196,6 @@ docker compose up -d
 ### 音声サーバの設定を変える場合
 ttshub の設定（エンジン、別名、プリセットなど）は `compose.yaml` の末尾の `configs` にあります。AivisSpeech などを足すときはそこを書き換えます。項目は [ttshub の README](https://github.com/Ebycow/ttshub#設定) を参照してください
 
-### 以前の quickstart から更新する場合
-VOICEVOX は、`.env` の `COMPOSE_PROFILES` に `voicevox` を含めたときだけ起動するようになりました。`compose.yaml` を取り直したら、`.env` に `COMPOSE_PROFILES=voicevox`（VOICEROID も使っているなら `voicevox,voiceroid`）を書き足してください。書き足さないと Open JTalk の声で読み上げます
-
 ## 自分で組み合わせて動かす
 [Docker で一発で動かす](#docker-で一発で動かすおすすめ) を使わずに、音声サーバとはなこを別々に用意する手順です。音声サーバを先に起動しておきます
 
@@ -209,7 +219,7 @@ settings:
 
 **Ebyroid に直接つなぐ（VOICEROID だけでよい場合）**
 
-ttshub を挟まずに、VOICEROID だけで読み上げる軽い構成です。`/speaker` の入力候補やあいまいな指定、`/speakers` は使えません。[Ebycow/ebyroid](https://github.com/Ebycow/ebyroid#docker-linux--wine) を起動し、`ebyroid_stream_api_url`（または環境変数 `EBYROID_STREAM_API_URL`）にストリーミングの API を書きます。`ttshub_url` は空のままにします
+ttshub を挟まずに、VOICEROID だけで読み上げる軽い構成です。従来のはなこは、この直接つなぐ経路で動いていました。今はttshubがあるので、直接つなぐ方法はサポートされなくなるかもしれません。直接つなぐと、`/speaker` の入力候補やあいまいな指定、`/speakers` は使えません。[Ebycow/ebyroid](https://github.com/Ebycow/ebyroid#docker-linux--wine) を起動し、`ebyroid_stream_api_url`（または環境変数 `EBYROID_STREAM_API_URL`）にストリーミングの API を書きます。`ttshub_url` は空のままにします
 
 ```yaml
 settings:
@@ -219,7 +229,7 @@ settings:
 `/speaker` には Ebyroid の設定にある話者の `name`（例: `kiritan`）を指定します
 
 * [nanokina/ebyroid](https://github.com/nanokina/ebyroid) の `ebyroid.exe` のように従来の API しかない音声サーバには、URL のパスを `/api/v1/audiostream` にしてつなぎます（音声は 1 文を作り終えてから流れます）
-* 自作の音声サーバを使う場合は、`POST /api/v2/audiostream`（JSON の本文、chunked の raw PCM）か `GET /api/v1/audiostream?text=&name=` を Ebyroid と同じ形で用意します
+* 自作の音声サーバを使う場合は、`POST /api/v2/audiostream`（JSON の本文、chunked の raw PCM）か `GET /api/v1/audiostream?text=&name=` を Ebyroid と同じ形で用意します。Ebyroid と同じ API（`/api/v1/voices`・`/api/v2/audiostream`・`/api/v1/health`）にしておけば、ttshub の `ebyroid` プラグインでもつなげるので、こちらをおすすめします
 
 ### はなこを Docker Compose で動かす
 リポジトリ直下の `compose.yaml` は、はなこだけを動かします

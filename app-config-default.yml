@@ -15,7 +15,7 @@ settings:
   # Discord Bot のコマンドプリフィックス
   default_command_prefix: '>'
 
-  # Ebyroid AudioStream API の URL（音声サーバの構成は README の「2.音声サーバの設定」を参照）
+  # Ebyroid AudioStream API の URL（音声サーバの選び方は README の「音声サーバを用意する」を参照）
   # /api/v2/audiostream（ストリーミング）は Ebycow/ebyroid のみ。nanokina/ebyroid は /api/v1/audiostream を使う
   ebyroid_stream_api_url: 'http://localhost:4090/api/v1/audiostream'
 
