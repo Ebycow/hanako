@@ -17,3 +17,4 @@ app-config.yml
 Dockerfile
 compose.yaml
 deploy.sh
+docs
