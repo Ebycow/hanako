@@ -50,8 +50,9 @@ describe('app-config-default.yml', () => {
     configurations.forEach(({ interface: iname, dependent }) => {
         specify(`${iname} → ${dependent} の実装が存在し、インターフェースを満たす`, () => {
             const files = srcFiles();
-            const ifile = files.find((f) => f.endsWith(`/${snakeCase(iname)}.js`));
-            const dfile = files.find((f) => f.endsWith(`/${snakeCase(dependent)}.js`));
+            // Note: Windows では区切りが \ になるので、パスではなくファイル名で比べる
+            const ifile = files.find((f) => path.basename(f) === `${snakeCase(iname)}.js`);
+            const dfile = files.find((f) => path.basename(f) === `${snakeCase(dependent)}.js`);
             (ifile !== undefined).should.equal(true, `${iname} のファイルがない`);
             (dfile !== undefined).should.equal(true, `${dependent} のファイルがない`);
 
