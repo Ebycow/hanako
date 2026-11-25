@@ -60,14 +60,17 @@ describe('NedbSilenceDictionaryTableManager', () => {
             const mgr = new Manager();
             await instances[0].insertAsync({ id: 's1', users: ['old-user', ['u2', new Date(), 'x2']] });
 
+            // Note: 行は作成日時の新しい順に並ぶので、位置ではなくユーザーで探す
             const dict = await mgr.loadSilenceDictionary('s1');
-            dict.lines.map((l) => l.userId).should.deep.equal(['old-user', 'u2']);
-            dict.lines[0].id.should.be.a('string').and.not.be.empty;
-            dict.lines[0].createdAt.should.be.an.instanceOf(Date);
-            dict.lines[1].id.should.equal('x2');
+            dict.lines.map((l) => l.userId).should.have.members(['old-user', 'u2']);
+            const migrated = dict.lines.find((l) => l.userId === 'old-user');
+            migrated.id.should.be.a('string').and.not.be.empty;
+            migrated.createdAt.should.be.an.instanceOf(Date);
+            dict.lines.find((l) => l.userId === 'u2').id.should.equal('x2');
 
             // 補った ID はキャッシュにより安定している
-            (await mgr.loadSilenceDictionary('s1')).lines[0].id.should.equal(dict.lines[0].id);
+            const reloaded = await mgr.loadSilenceDictionary('s1');
+            reloaded.lines.find((l) => l.userId === 'old-user').id.should.equal(migrated.id);
         });
 
         specify('返した辞書は、その後の追加の影響を受けない', async () => {
@@ -114,7 +117,8 @@ describe('NedbSilenceDictionaryTableManager', () => {
             const mgr = new Manager();
             await mgr.postSilenceCreate(create('s1', 'u1'));
             await mgr.postSilenceCreate(create('s1', 'u2'));
-            const target = (await mgr.loadSilenceDictionary('s1')).lines[0];
+            // Note: 行は作成日時の新しい順に並び、同じミリ秒に作ると順序が決まらないので、位置ではなくユーザーで探す
+            const target = (await mgr.loadSilenceDictionary('s1')).lines.find((l) => l.userId === 'u1');
 
             await mgr.postSilenceDelete(del('s1', target.id));
 
