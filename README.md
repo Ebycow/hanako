@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/hanako.webp" alt="はなこ" width="320">
+  <img src="docs/images/hanako.webp" alt="はなこ" width="200">
 </p>
 
 <h1 align="center">Hanako</h1>
