@@ -163,8 +163,14 @@ class DiscordVoiceChatModel {
      */
     killStream() {
         return new Promise((resolve) => {
-            if (this.dispatcher !== null && this.audioPlayer !== null) {
-                this.audioPlayer.stop();
+            const killed = this.dispatcher;
+            if (killed !== null && this.audioPlayer !== null) {
+                // 無音の余白（silencePaddingFrames）を待たずに、すぐIdleへ遷移させる。
+                // 余白を待つと、その間に届いた発言が中止した音声のIdleで中断されうる。
+                this.audioPlayer.stop(true);
+            }
+            // Idleで次の音声へ進んでいれば、それは止めない
+            if (this.dispatcher === killed) {
                 this.dispatcher = null;
             }
             resolve();
@@ -214,11 +220,23 @@ class DiscordVoiceChatModel {
         this.playerSubscribe = connection.subscribe(audioPlayer);
         this.dispatcher = null;
 
+        // 次の音声へ進むのは、再生中の音声が終わってIdleになったときだけにする。
+        // 発言ごとに once(Idle) を登録すると、Idleを経ずに次の音声へ切り替わったとき
+        // （エラー時に再生し直す、停止中の余白の間に次を再生する等）古いリスナーが残り、
+        // 後の発言を途中で打ち切ってしまう。終わった音声が今の再生かを比べて判断する。
+        audioPlayer.on('stateChange', (oldState, newState) => {
+            if (audioPlayer !== this.audioPlayer) return;
+            if (newState.status !== AudioPlayerStatus.Idle || oldState.status === AudioPlayerStatus.Idle) return;
+            if (this.dispatcher === null || oldState.resource !== this.dispatcher) return;
+            logger.debug('Audio playback idle, playing next');
+            this.dispatcher = null;
+            this.play();
+        });
+
+        // エラー後は @discordjs/voice がIdleへ遷移させるので、次の音声へはstateChangeで進む
         audioPlayer.on('error', (error) => {
             if (audioPlayer !== this.audioPlayer) return;
             logger.error('Audio player error:', error);
-            this.dispatcher = null;
-            this.play();
         });
 
         connection.on('stateChange', async (_oldState, newState) => {
@@ -486,13 +504,8 @@ class DiscordVoiceChatModel {
 
             // Reserve playback synchronously so another push cannot schedule a
             // second resource before audioPlayer.play() starts.
+            // 終わったときはconnect()で登録したstateChangeで次へ進む。
             this.dispatcher = resource;
-            audioPlayer.once(AudioPlayerStatus.Idle, () => {
-                if (audioPlayer !== this.audioPlayer) return;
-                logger.debug('Audio playback idle, playing next');
-                this.dispatcher = null;
-                this.play();
-            });
 
             logger.debug('Playing audio resource');
             audioPlayer.play(resource);
