@@ -154,6 +154,35 @@ describe('DiscordVoiceChatModel', () => {
             vc.reconnectAttempts.should.equal(0);
         });
 
+        specify('reconnects to the channel it was moved to, not the originally joined one', async () => {
+            entersState.onCall(0).rejects(new Error('not signalling'));
+            entersState.onCall(1).rejects(new Error('not connecting'));
+            entersState.onCall(2).rejects(new Error('rejoin failed'));
+            entersState.onCall(3).resolves();
+
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel('voice-1'));
+            vc.addReadingChannel(textChannel());
+
+            // サーバーメンバーの操作で別のVCへ移動させられた
+            connections[0].joinConfig.channelId = 'voice-2';
+            connections[0].emit('stateChange', {}, { status: VoiceConnectionStatus.Ready });
+            await flushPromises();
+
+            // 通信断。切断時にはchannelIdがnullになることもある
+            connections[0].joinConfig.channelId = null;
+            connections[0].emit('stateChange', {}, { status: VoiceConnectionStatus.Disconnected });
+            await flushPromises();
+            should.equal(vc.connection, null);
+
+            await clock.tickAsync(30000);
+            await flushPromises();
+
+            joinVoiceChannel.callCount.should.equal(2);
+            joinVoiceChannel.secondCall.args[0].channelId.should.equal('voice-2');
+            vc.connection.should.equal(connections[1]);
+        });
+
         specify('does not let stale disconnect handling destroy a manually rejoined connection', async () => {
             entersState.rejects(new Error('old connection failed'));
 
