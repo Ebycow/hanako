@@ -29,9 +29,9 @@
 
 # 使い方
 ## はなことの対話
-はなこにコマンド入力してあげると、様々な機能を利用できる  
-コマンド入力は、テキストチャンネルに`@botname コマンド名` のリプライ形式、もしくは `>コマンド名`と発言することで行う。
-また、スラッシュコマンド（/コマンド名）も利用可能です。スラッシュコマンドでは引数が明確に指定され、説明が表示されます。
+はなこにコマンドを入力してあげると、様々な機能を利用できます。
+コマンドは、テキストチャンネルに`@botname コマンド名` の形でリプライするか、`>コマンド名`と発言して入力します。
+また、スラッシュコマンド（`/コマンド名`）も利用できます。スラッシュコマンドでは引数が明確に指定され、説明が表示されます。
 ## コマンド一覧
 
 | 機能 | コマンド | スラッシュコマンド | 必要な権限 | 例 |
@@ -74,60 +74,61 @@
 * 無効にしている間、テキストのコマンドは案内も返さずに無視します
 * `>` で始まる発言は、これまでどおり読み上げません
 
-## ボイスチャットへの参加、退出
-参加させたいボイスチャットに参加し、読み上げたいテキストチャンネルに`@hanako plz` と発言(または、`summon` `s`)
-`@hanako bye`(または、`bye` `b` ) で退出
-ボイスチャンネルにはなこだけが残った場合、自動的に退出します
+## ボイスチャットへの参加と退出
+はなこを参加させたいボイスチャットに入ってから、読み上げたいテキストチャンネルで `@hanako plz`（または `summon`、`s`）と発言します。
+`@hanako bye`（または `bye`、`b`）で退出します。
+ボイスチャンネルにはなこだけが残った場合は、自動的に退出します。
 
 ## 単語の教育
-ボイスチャットにはなこを参加させた状態で `@hanako teach 置換前の単語 置換後の単語` と発言
-`@hanako forget 置換前の単語` と発言し削除
-`@hanako alldelete --force` ですべての単語を削除（`--force`フラグが必要）
-`@hanako dictionary` で教育済みの単語の一覧を表示（ページ送り対応）
+ボイスチャットにはなこを参加させた状態で `@hanako teach 置換前の単語 置換後の単語` と発言して、単語を教えます。
+`@hanako forget 置換前の単語` と発言すると、その単語を削除します。
+`@hanako alldelete --force` ですべての単語を削除します（`--force`フラグが必要です）。
+`@hanako dictionary` で教育済みの単語の一覧を表示します（ページ送りに対応）。
 
-* 単語は2〜50文字、サーバごとに最大10,000件まで登録可能
-* 登録された単語はTTS合成前にテキスト置換されます
+* 単語は2〜50文字で、サーバごとに最大10,000件まで登録できます
+* 登録された単語はTTSで合成する前にテキスト置換されます
 
 ## 読み上げる文字数の制限
-`@hanako limit 30`で読み上げる文字数を30文字に制限
-`@hanako limit 0`で制限を解除（デフォルト: 無制限）
+`@hanako limit 30`で読み上げる文字数を30文字に制限します。
+`@hanako limit 0`で制限を解除します（デフォルト: 無制限）。
 
 ## SE機能
-チャット中の特定の単語が読み上げられる代わりに、登録した音声ファイルを再生します
+チャット中の特定の単語を読み上げる代わりに、登録した音声ファイルを再生します。
 
-**SE追加の3つの方法:**
+**SEを追加する3つの方法**
 1. URL指定: `@hanako se-add キーワード https://example.com/sound.mp3`
 2. ファイル添付（単一）: `@hanako se-add キーワード` + Discordにファイルを添付
 3. ファイル添付（複数）: `@hanako se-add` + 複数ファイルを添付（ファイル名がキーワードになる）
 
-`@hanako se-del SE化した単語` でSEを解除（スペース区切りで複数同時削除可能）
-`@hanako se-list` でSEの一覧を表示（ページ送り対応）
-`@hanako se? キーワード` であいまい検索（上位5件を表示）
-`@hanako se-rename 旧キーワード 新キーワード` でキーワードを変更
+`@hanako se-del SE化した単語` でSEを解除します（スペースで区切ると複数をまとめて削除できます）。
+`@hanako se-list` でSEの一覧を表示します（ページ送りに対応）。
+`@hanako se? キーワード` であいまい検索します（上位5件を表示）。
+`@hanako se-rename 旧キーワード 新キーワード` でキーワードを変更します。
 
 * 対応形式: `.wav` `.mp3`
 * キーワードは2〜50文字、サーバごとに最大10,000件まで登録可能
 * ファイルサイズ上限: 2MB、再生時間上限: 60秒
 * 保存容量はサーバごとに3GBまで（`foley_max_storage_byte_size`）。超えると新しいSEを登録できない（登録済みのSEは消さない）
 
-**SE音量正規化:**
-`@hanako se-normalize 80` でSEの音量を正規化するレベルを設定します（0〜100）
-デフォルト値はグローバル設定（`foley_normalize_target_peak`）から決まります（未設定時は50%）
-音量が小さいSEファイルを指定したレベルまで持ち上げることで、再生時の音量バランスを改善します
-`@hanako se-normalize 0` で正規化を無効化できます
+**SE音量正規化**
+
+`@hanako se-normalize 80` でSEの音量を正規化するレベルを設定します（0〜100）。
+デフォルト値はグローバル設定（`foley_normalize_target_peak`）から決まります（未設定時は50%）。
+音量が小さいSEファイルを指定したレベルまで持ち上げることで、再生時の音量バランスを改善します。
+`@hanako se-normalize 0` で正規化を無効化できます。
 
 ## ブラックリスト（ユーザのミュート）
-ボイスチャットにはなこを参加させた状態で `@hanako blacklist-add @username` と発言、@usernameの発言は読まれなくなる
-`@hanako blacklist-remove @username` で解除
-`@hanako blacklist-show` でミュート中のユーザの一覧を表示
-`@hanako blacklist-clear --force` で全ミュートを解除（`--force`フラグが必要）
+ボイスチャットにはなこを参加させた状態で `@hanako blacklist-add @username` と発言すると、@usernameの発言は読まれなくなります。
+`@hanako blacklist-remove @username` で解除します。
+`@hanako blacklist-show` でミュート中のユーザの一覧を表示します。
+`@hanako blacklist-clear --force` ですべてのミュートを解除します（`--force`フラグが必要です）。
 
 ## 成敗
-`@hanako seibai` で現在読み上げ中の音声（とそれ以降に読み上げる予定の音声）をすべて中断する
+`@hanako seibai` で現在読み上げ中の音声（とそれ以降に読み上げる予定の音声）をすべて中断します。
 
 ## 読み上げキャラクター変更
-`@hanako speaker キャラクター名` で音声サーバの設定に従って、サーバの読み上げキャラクターを変更する
-`@hanako speaker default` でデフォルトキャラクターに戻す
+`@hanako speaker キャラクター名` で、自分の発言を読み上げるキャラクターを変更します。キャラクター名は音声サーバの設定に従います。
+`@hanako speaker default` でデフォルトキャラクターに戻します。
 
 音声サーバに [ttshub](https://github.com/Ebycow/ttshub)（複数の音声エンジンを束ねるゲートウェイ）を使っている場合（`TTSHUB_URL` を設定した場合）は、次のこともできます
 * `/speaker` の入力中にキャラクターの候補が出る
@@ -136,21 +137,21 @@
 * `@hanako speakers`（`/speakers`）でキャラクターの一覧を表示する
 
 ## 使い方を見る
-`@hanako help`（`/help`）でコマンドの一覧を表示する
-`@hanako help limit`（`/help command:limit`）で、そのコマンドのオプション・使える人・テキストでの書き方を表示する。コマンド名はスラッシュコマンドの名前でも、`制限` のようなテキストでの名前でもよい
+`@hanako help`（`/help`）でコマンドの一覧を表示します。
+`@hanako help limit`（`/help command:limit`）で、そのコマンドのオプション・使える人・テキストでの書き方を表示します。コマンド名はスラッシュコマンドの名前でも、`制限` のようなテキストでの名前でもかまいません。
 
-どちらも最後に使い方のページ（`help_url` の設定。既定はこの README）を案内する。自分で運用している花子で独自の説明ページを用意しているなら、`app-config.yml` の `help_url` か環境変数 `HELP_URL` でその URL に変えられる（空にすると案内しない）
+どちらも最後に使い方のページ（`help_url` の設定。既定はこの README）を案内します。自分で運用している花子で独自の説明ページを用意しているなら、`app-config.yml` の `help_url` か環境変数 `HELP_URL` でその URL に変えられます（空にすると案内しません）。
 
 ## サーバごとの独立管理
-辞書・SE・ブラックリスト・設定はすべてDiscordサーバ（ギルド）ごとに独立して管理されます
+辞書・SE・ブラックリスト・設定はすべてDiscordサーバ（ギルド）ごとに独立して管理されます。
 
 # はじめかた
-はなこを動かすには、Discord の Bot と、声を作る音声サーバが要ります。[Discord の Bot を作る](#discord-の-bot-を作る) を済ませたら、[Docker で一発で動かす](#docker-で一発で動かすおすすめ) で音声サーバごとまとめて起動するのがかんたんです
+はなこを動かすには、Discord の Bot と、声を作る音声サーバが要ります。[Discord の Bot を作る](#discord-の-bot-を作る) を済ませたら、[Docker で一発で動かす](#docker-で一発で動かすおすすめ) で音声サーバごとまとめて起動するのがかんたんです。
 
 ## Discord の Bot を作る
 1. [Discord Developer Portal](https://discord.com/developers/applications) を開き、「New Application」でアプリケーションを作ります。名前が Bot の名前になります
 2. 「一般情報」の **アプリID** を控えます。これが `DISCORD_CLIENT_ID` です
-3. 「Bot」の「トークンをリセット」でトークンを作って控えます。これが `DISCORD_BOT_TOKEN` です。トークンはAIや他人に見せないでください（漏れたらもう一度 トークンをリセット します）
+3. 「Bot」の「トークンをリセット」でトークンを作って控えます。これが `DISCORD_BOT_TOKEN` です。トークンはAIや他人に見せないでください（漏れたら、もう一度「トークンをリセット」します）
 4. 同じ「Bot」の「Privileged Gateway Intents」で **Message Content Intent** をオンにして保存します。`@hanako` や `>` で始まるテキストのコマンドを読むのに要ります
 5. 次の URL の `<CLIENT_ID>` を 2 で控えた ID に置き換えてブラウザで開き、はなこを入れるサーバを選びます
 
@@ -185,7 +186,7 @@ curl -fsSL -o .env https://raw.githubusercontent.com/Ebycow/hanako/master/quicks
 docker compose up -d
 ```
 
-Raspberry Pi など（arm64）は、上の代わりにこちら。軽い Open JTalk で読み上げます。後述するVOICEROIDは、ラズパイで高速に動作するのでそちらもおすすめです
+Raspberry Pi など（arm64）では、上の代わりに次の手順で起動します。こちらは軽い Open JTalk で読み上げます。後述するVOICEROIDは、ラズパイで高速に動作するのでそちらもおすすめです
 ```
 mkdir hanako && cd hanako
 
@@ -279,7 +280,7 @@ docker compose up -d --build
 * これらの環境変数は、Docker を使わない場合も `app-config.yml` より優先されます。それ以外の設定を変えるときは、`app-config.yml` を作ってから `compose.yaml` の `./app-config.yml` の行を有効にします
 * `node deploy-commands.js --if-changed` にすると、前回登録した内容と同じときは Discord に送りません
 
-**既存のデータを移す場合:** 一度 `docker compose up -d` でコンテナを作ってから、次のようにコピーして再起動します
+既存のデータを移す場合は、一度 `docker compose up -d` でコンテナを作ってから、次のようにコピーして再起動します
 ```
 docker compose stop
 docker compose cp ./db/. hanako:/app/db
@@ -350,7 +351,7 @@ docker compose up -d --build
 
 本番の `.env` には `HANAKO_TAG=latest` を書きます。開発では既定の `dev` タグのままにして、本番のイメージを上書きしないようにします
 
-本番へは、本番のチェックアウトで `deploy.sh` を実行して出します。CI が master のコミットごとに GHCR に公開したイメージ（`ghcr.io/ebycow/hanako:<コミット ID>`）を取得し、出すコミットをチェックアウトし（ブランチには固定せず detached HEAD で指します）、スラッシュコマンドの登録（変わったときだけ）、起動を行い、healthy になるまで待ちます。失敗したら前のコミットとイメージに戻します
+本番へは、本番のチェックアウトで `deploy.sh` を実行して出します。`deploy.sh` は、CI が master のコミットごとに GHCR に公開したイメージ（`ghcr.io/ebycow/hanako:<コミット ID>`）を取得し、出すコミットをチェックアウトします（ブランチには固定せず detached HEAD で指します）。続けてスラッシュコマンドを登録し（変わったときだけ）、起動して、healthy になるまで待ちます。失敗したら前のコミットとイメージに戻します
 ```
 ./deploy.sh                  # origin/master の内容を出す（マージ直後で CI がまだ公開していなければ待つ）
 ./deploy.sh <コミット ID>    # 指定したコミットの内容を出す（戻すときなど）
@@ -363,25 +364,25 @@ Docker 化より前のコミット（`compose.yaml` などがないもの）は�
 はなこは、次のソフトウェアと声に支えられています
 
 **声と音声サーバ**
-* [ebyroid](https://github.com/nanokina/ebyroid)（nanokina）— VOICEROID を音声サーバにする。[Ebycow/ebyroid](https://github.com/Ebycow/ebyroid) はこのフォーク
+* [ebyroid](https://github.com/nanokina/ebyroid)（nanokina）: VOICEROID を音声サーバにする。[Ebycow/ebyroid](https://github.com/Ebycow/ebyroid) はこのフォーク
 * [VOICEROID](https://www.ah-soft.com/voiceroid/)（AHS）
 * [VOICEVOX](https://voicevox.hiroshiba.jp/)・[AivisSpeech](https://aivis-project.com/)
 * [Open JTalk](https://open-jtalk.sourceforge.net/)（名古屋工業大学）と、HTS Voice "Mei"・"Takumi"（[MMDAgent](https://www.mmdagent.jp/)、名古屋工業大学、CC BY 3.0）
 
 **ライブラリ**
-* [discord.js](https://discord.js.org/)・[@discordjs/voice](https://github.com/discordjs/discord.js/tree/main/packages/voice)・[opusscript](https://github.com/abalabahaha/opusscript) — Discord との接続と音声の送信
-* [FFmpeg](https://ffmpeg.org/)（[ffmpeg-static](https://github.com/eugeneware/ffmpeg-static)）・[prism-media](https://github.com/amishshah/prism-media) — 音声の変換
-* [libsamplerate](https://libsndfile.github.io/libsamplerate/)（WebAssembly 版の [@alexanderolsen/libsamplerate-js](https://github.com/aolsenjazz/libsamplerate-js)）— 音声のサンプリングレートの変換。WebAssembly なので OS や CPU を問わず動きます
-* [NeDB](https://github.com/seald/nedb)（@seald-io/nedb）— 辞書や設定の保存
-* [emojibase-data](https://emojibase.dev/) — 絵文字の読み
-* [log4js](https://github.com/log4js-node/log4js-node)・[yaml](https://eemeli.org/yaml/) — ログと設定ファイル
+* [discord.js](https://discord.js.org/)・[@discordjs/voice](https://github.com/discordjs/discord.js/tree/main/packages/voice)・[opusscript](https://github.com/abalabahaha/opusscript): Discord との接続と音声の送信
+* [FFmpeg](https://ffmpeg.org/)（[ffmpeg-static](https://github.com/eugeneware/ffmpeg-static)）・[prism-media](https://github.com/amishshah/prism-media): 音声の変換
+* [libsamplerate](https://libsndfile.github.io/libsamplerate/)（WebAssembly 版の [@alexanderolsen/libsamplerate-js](https://github.com/aolsenjazz/libsamplerate-js)）: 音声のサンプリングレートの変換。WebAssembly なので OS や CPU を問わず動きます
+* [NeDB](https://github.com/seald/nedb)（@seald-io/nedb）: 辞書や設定の保存
+* [emojibase-data](https://emojibase.dev/): 絵文字の読み
+* [log4js](https://github.com/log4js-node/log4js-node)・[yaml](https://eemeli.org/yaml/): ログと設定ファイル
 
 # VS.
 喋太郎: https://twitter.com/syabetaro - More cute voice
 
 # トラブル発生?
 問題が起きた場合は[Issueに投稿](https://github.com/Ebycow/hanako/issues/new)し、相互に共有してください。他の利用者の助けになります！  
-ねこは寂しがり屋でお話が大好きです、開発メンバーのTwitterやDiscordのDMでこっそり質問しないで！😿
+ねこは寂しがり屋でお話が大好きです。開発メンバーのTwitterやDiscordのDMで、こっそり質問しないで！😿
 
 # Catgirl
 ![img20200222233956](https://user-images.githubusercontent.com/18446038/75094313-4a370d80-55cd-11ea-9af1-71cec1bf1d20.png)
