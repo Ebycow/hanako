@@ -1,12 +1,25 @@
-# Hanako
+<p align="center">
+  <img src="docs/images/hanako.webp" alt="はなこ" width="320">
+</p>
 
-[![node](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FEbycow%2Fhanako%2Fmaster%2Fpackage.json&query=%24.engines.node&label=node&logo=nodedotjs&logoColor=white&color=339933)](package.json)
-[![discord.js](https://img.shields.io/github/package-json/dependency-version/Ebycow/hanako/discord.js?logo=discord&logoColor=white&color=5865F2)](https://discord.js.org/)
-[![docker](https://img.shields.io/badge/docker-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)](https://github.com/Ebycow/hanako/pkgs/container/hanako)
-[![Node.js CI](https://github.com/Ebycow/hanako/actions/workflows/nodejs.yml/badge.svg?branch=master)](https://github.com/Ebycow/hanako/actions/workflows/nodejs.yml)
-![Catpower](https://img.shields.io/badge/%F0%9F%98%BB%20Catpower-Include-ff69b4)
+<h1 align="center">Hanako</h1>
 
-汎用Discordチャット読み上げ(TTS)Bot  
+<p align="center">
+  汎用Discordチャット読み上げ（TTS）Bot
+</p>
+
+<p align="center">
+  <a href="https://hanako.ebycow.net/"><b>公式サイト hanako.ebycow.net</b></a>
+</p>
+
+<p align="center">
+  <a href="package.json"><img alt="node" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FEbycow%2Fhanako%2Fmaster%2Fpackage.json&query=%24.engines.node&label=node&logo=nodedotjs&logoColor=white&color=339933"></a>
+  <a href="https://discord.js.org/"><img alt="discord.js" src="https://img.shields.io/github/package-json/dependency-version/Ebycow/hanako/discord.js?logo=discord&logoColor=white&color=5865F2"></a>
+  <a href="https://github.com/Ebycow/hanako/pkgs/container/hanako"><img alt="docker" src="https://img.shields.io/badge/docker-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white"></a>
+  <a href="https://github.com/Ebycow/hanako/actions/workflows/nodejs.yml"><img alt="Node.js CI" src="https://github.com/Ebycow/hanako/actions/workflows/nodejs.yml/badge.svg?branch=master"></a>
+  <img alt="Catpower" src="https://img.shields.io/badge/%F0%9F%98%BB%20Catpower-Include-ff69b4">
+</p>
+
 強力なSE機能、ユーザーごとの音声切り替えに対応、複数サーバで高速に動作😼  
 PC（x64）でも Raspberry Pi などの arm64 でも、`docker compose up` だけで動きます😻（[Docker で一発で動かす](#docker-で一発で動かすおすすめ)）
 
