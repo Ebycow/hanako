@@ -53,10 +53,40 @@ describe('DiscordVoiceChatModel', () => {
         return connection;
     }
 
+    // @discordjs/voice の AudioPlayer の状態遷移を真似る
     function makeAudioPlayer() {
         const audioPlayer = new EventEmitter();
-        audioPlayer.play = sinon.stub();
-        audioPlayer.stop = sinon.stub();
+        audioPlayer.state = { status: 'idle' };
+        audioPlayer.setState = (newState) => {
+            const oldState = audioPlayer.state;
+            audioPlayer.state = newState;
+            audioPlayer.emit('stateChange', oldState, newState);
+        };
+        audioPlayer.play = sinon.spy((resource) => {
+            audioPlayer.setState({ status: 'playing', resource });
+        });
+        audioPlayer.stop = sinon.spy((force = false) => {
+            if (audioPlayer.state.status === 'idle') return false;
+            if (force || audioPlayer.state.resource.silencePaddingFrames === 0) {
+                audioPlayer.setState({ status: 'idle' });
+            } else {
+                // 余白の無音を流し終えるまでIdleにならない
+                audioPlayer.state.resource.stopping = true;
+            }
+            return true;
+        });
+        // 再生中の音声（または停止中の余白）が流れ終わる
+        audioPlayer.finish = () => {
+            if (audioPlayer.state.status !== 'idle') audioPlayer.setState({ status: 'idle' });
+        };
+        // 再生中の音声のストリームでエラーが起きる（エラーのあとIdleへ遷移する）
+        audioPlayer.failStream = (error) => {
+            const resource = audioPlayer.state.resource;
+            audioPlayer.emit('error', error);
+            if (audioPlayer.state.status !== 'idle' && audioPlayer.state.resource === resource) {
+                audioPlayer.setState({ status: 'idle' });
+            }
+        };
         return audioPlayer;
     }
 
@@ -75,7 +105,7 @@ describe('DiscordVoiceChatModel', () => {
             audioPlayers.push(audioPlayer);
             return audioPlayer;
         });
-        createAudioResource = sinon.stub().callsFake((stream) => ({ stream }));
+        createAudioResource = sinon.stub().callsFake((stream, options) => ({ stream, ...options }));
         entersState = sinon.stub();
 
         DiscordVoiceChatModel = proxyquire('../../src/infra/discord/discord_voice_chat_model', {
@@ -225,7 +255,7 @@ describe('DiscordVoiceChatModel', () => {
             ]);
             vc.cue.should.deep.equal([second]);
 
-            audioPlayers[0].emit('idle');
+            audioPlayers[0].finish();
 
             audioPlayers[0].play.calledTwice.should.be.true;
             createAudioResource.secondCall.args.should.deep.equal([
@@ -249,7 +279,7 @@ describe('DiscordVoiceChatModel', () => {
             next.start.called.should.be.true;
             later.start.called.should.be.false;
 
-            audioPlayers[0].emit('idle');
+            audioPlayers[0].finish();
 
             later.start.called.should.be.true;
         });
@@ -264,7 +294,60 @@ describe('DiscordVoiceChatModel', () => {
         });
     });
 
+    describe('#killStream', () => {
+        specify('余白を待たずに止め、直後の発言は最後まで再生する', async () => {
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel());
+            const player = audioPlayers[0];
+            const first = { destroy: sinon.stub() };
+            const second = { destroy: sinon.stub() };
+            const third = { destroy: sinon.stub() };
+
+            vc.push(first);
+            vc.clearQueue();
+            await vc.killStream();
+
+            player.stop.lastCall.args.should.deep.equal([true]);
+            player.state.status.should.equal('idle');
+            should.equal(vc.dispatcher, null);
+
+            vc.push(second);
+            vc.push(third);
+            player.state.resource.stream.should.equal(second);
+
+            player.finish();
+            player.state.resource.stream.should.equal(third);
+            vc.cue.should.deep.equal([]);
+        });
+    });
+
     describe('audio player', () => {
+        specify('ストリームのエラー後は次の発言へ進み、以降の発言を打ち切らない', async () => {
+            const vc = new DiscordVoiceChatModel('guild-1');
+            await vc.join(voiceChannel());
+            const player = audioPlayers[0];
+            const first = { destroy: sinon.stub() };
+            const second = { destroy: sinon.stub() };
+            const third = { destroy: sinon.stub() };
+
+            vc.push(first);
+            vc.push(second);
+            vc.push(third);
+
+            player.failStream(new Error('stream broken'));
+            player.state.resource.stream.should.equal(second);
+            vc.cue.should.deep.equal([third]);
+
+            // secondの終了で進むのは1件だけ
+            player.finish();
+            player.state.resource.stream.should.equal(third);
+            player.play.callCount.should.equal(3);
+
+            player.finish();
+            player.play.callCount.should.equal(3);
+            should.equal(vc.dispatcher, null);
+        });
+
         specify('keeps playing while the next part of an utterance is still being synthesized', async () => {
             entersState.resolves();
 
