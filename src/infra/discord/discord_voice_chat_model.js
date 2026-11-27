@@ -81,6 +81,15 @@ class DiscordVoiceChatModel {
         this.voiceChannel = null;
 
         /**
+         * 最後に参加していた音声チャンネルのID
+         * サーバーメンバーの操作で別のVCへ移動させられると、voiceChannelとは別のIDになる。
+         * 再接続ではこちらのIDへ入り直す。
+         *
+         * @type {string | null}
+         */
+        this.voiceChannelId = null;
+
+        /**
          * 音声チャンネルのオーディオプレイヤー
          *
          * @type {AudioPlayer | null}
@@ -186,6 +195,7 @@ class DiscordVoiceChatModel {
     async join(voiceChannel) {
         this.cancelReconnect();
         this.voiceChannel = voiceChannel;
+        this.voiceChannelId = voiceChannel.id;
         this.reconnectAttempts = 0;
         this.clearReadingChannels();
         this.clearQueue();
@@ -198,13 +208,14 @@ class DiscordVoiceChatModel {
      * Discord音声接続とAudioPlayerを作る。
      * 古い接続のイベントが新しい接続を破棄しないよう、呼び出し側で接続インスタンスを保持して比較する。
      *
-     * @param {discord.VoiceChannel} voiceChannel 参加するチャンネル。
+     * @param {discord.VoiceChannel} voiceChannel 参加するチャンネル（サーバー情報もここから取る）。
+     * @param {string} [channelId] 参加するチャンネルのID。省略時はvoiceChannelのID。
      * @returns {VoiceConnection}
      * @private
      */
-    connect(voiceChannel) {
+    connect(voiceChannel, channelId = voiceChannel.id) {
         const connection = joinVoiceChannel({
-            channelId: voiceChannel.id,
+            channelId,
             guildId: voiceChannel.guildId,
             adapterCreator: voiceChannel.guild.voiceAdapterCreator,
         });
@@ -260,7 +271,11 @@ class DiscordVoiceChatModel {
      * @private
      */
     async handleConnectionStateChange(connection, newState) {
-        if (connection !== this.connection || newState.status !== VoiceConnectionStatus.Disconnected) {
+        if (connection !== this.connection) {
+            return;
+        }
+        this.syncVoiceChannelId(connection);
+        if (newState.status !== VoiceConnectionStatus.Disconnected) {
             return;
         }
 
@@ -304,10 +319,29 @@ class DiscordVoiceChatModel {
                 if (connection !== this.connection) return;
 
                 logger.error(`音声接続の復帰に失敗。接続を破棄する (server: ${this.serverId})`);
+                this.syncVoiceChannelId(connection);
                 this.clearQueue();
                 this.destroyConnection(connection);
                 this.scheduleReconnect();
             }
+        }
+    }
+
+    /**
+     * 接続が今いるVCのIDを、再接続先として覚える。
+     * サーバーメンバーの操作で別のVCへ移動させられると、
+     * @discordjs/voice は joinConfig.channelId を移動先のIDに書き換える。
+     *
+     * @param {VoiceConnection} connection
+     * @private
+     */
+    syncVoiceChannelId(connection) {
+        if (connection !== this.connection) return;
+        const channelId = connection.joinConfig && connection.joinConfig.channelId;
+        // 切断時はnullになりうるので、そのときは最後のIDを残す
+        if (typeof channelId === 'string' && channelId !== this.voiceChannelId) {
+            logger.info(`参加中のVCが変わった (server: ${this.serverId}, channel: ${channelId})`);
+            this.voiceChannelId = channelId;
         }
     }
 
@@ -317,6 +351,7 @@ class DiscordVoiceChatModel {
     leave() {
         this.cancelReconnect();
         this.voiceChannel = null;
+        this.voiceChannelId = null;
         this.clearReadingChannels();
         this.clearQueue();
         this.destroyConnection(this.connection);
@@ -454,7 +489,7 @@ class DiscordVoiceChatModel {
         let shouldRetry = false;
         try {
             logger.info(`音声接続の再接続を試行 (server: ${this.serverId})`);
-            connection = this.connect(this.voiceChannel);
+            connection = this.connect(this.voiceChannel, this.voiceChannelId ?? this.voiceChannel.id);
             await entersState(connection, VoiceConnectionStatus.Ready, VOICE_READY_WAIT_MS);
             if (connection !== this.connection) return;
 
