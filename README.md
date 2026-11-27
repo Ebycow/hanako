@@ -20,8 +20,12 @@
   <img alt="Catpower" src="https://img.shields.io/badge/%F0%9F%98%BB%20Catpower-Include-ff69b4">
 </p>
 
-強力なSE機能、ユーザーごとの音声切り替えに対応、複数サーバで高速に動作😼  
-PC（x64）でも Raspberry Pi などの arm64 でも、`docker compose up` だけで動きます😻（[Docker で一発で動かす](#docker-で一発で動かすおすすめ)）
+# できること
+* テキストチャンネルの発言をボイスチャンネルで読み上げます。複数のサーバで高速に動きます😼
+* 単語の読み方を教えられます（サーバごとに最大10,000件）
+* キーワードを設定して効果音（SE）を鳴らせます。音声ファイルは URL か添付で登録します
+* 読み上げる声をユーザーごとに切り替えられます。VOICEVOX・AivisSpeech・Open JTalk・VOICEROID などの声を使えます
+* PC（x64）でも Raspberry Pi などの arm64 でも、`docker compose up` だけで動きます😻（[Docker で一発で動かす](#docker-で一発で動かすおすすめ)）
 
 # 使い方
 ## はなことの対話
