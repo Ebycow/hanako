@@ -56,16 +56,8 @@ module.exports = [
             'n/prefer-global/url': ['error', 'always'],
             'n/prefer-promises/dns': 'error',
             'n/prefer-promises/fs': 'off',
-            'prettier/prettier': [
-                'error',
-                {
-                    tabWidth: 4,
-                    printWidth: 120,
-                    singleQuote: true,
-                    trailingComma: 'es5',
-                    endOfLine: 'auto',
-                },
-            ],
+            // 整形の設定は .prettierrc.json に置き、prettier コマンドと共有する
+            'prettier/prettier': 'error',
         },
     },
     {

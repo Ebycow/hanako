@@ -11,6 +11,8 @@
     "start": "node index",
     "debug": "node index --trace-warnings --trace-uncaught",
     "test": "c8 mocha --recursive --exit",
+    "format": "prettier --write \"**/*.js\"",
+    "format:check": "prettier --check \"**/*.js\"",
     "prepare": "node -e \"try { require.resolve('husky'); require('child_process').execSync('husky', { stdio: 'inherit', shell: true }); } catch (e) { if (e && e.code === 'MODULE_NOT_FOUND') process.exit(0); throw e; }\""
   },
   "keywords": [],
