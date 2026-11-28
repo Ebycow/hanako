@@ -33,6 +33,8 @@ describe('NedbFoleyDictionaryTableManager', () => {
     let fakePrism;
     let objectStorageRepo;
     let settingsRepo;
+    /** 最後に読み込んだモジュールが開いた in-memory NeDB */
+    let datastore;
 
     /** テスト用 AppSettings を構築 */
     function createAppSettings() {
@@ -60,6 +62,7 @@ describe('NedbFoleyDictionaryTableManager', () => {
         class InMemoryDatastore extends RealDatastore {
             constructor(_opts) {
                 super();
+                datastore = this;
             }
         }
 
@@ -164,6 +167,14 @@ describe('NedbFoleyDictionaryTableManager', () => {
             // どちらも空だが同一サーバーのデータ
             dict1.lines.should.have.lengthOf(0);
             dict2.lines.should.have.lengthOf(0);
+        });
+
+        specify('未登録サーバーを同時に読み込んでも、ドキュメントは 1 件しか作らない', async () => {
+            const mgr = createManager();
+            await Promise.all([mgr.loadFoleyDictionary('server-p'), mgr.loadFoleyDictionary('server-p')]);
+
+            const docs = await datastore.findAsync({ id: 'server-p' });
+            docs.should.have.lengthOf(1);
         });
 
         specify('返却値は FoleyDictionary インスタンスである', async () => {
