@@ -73,6 +73,14 @@ describe('NedbSilenceDictionaryTableManager', () => {
             reloaded.lines.find((l) => l.userId === 'old-user').id.should.equal(migrated.id);
         });
 
+        specify('未登録のサーバーを同時に読み込んでも、ドキュメントは 1 件しか作らない', async () => {
+            const mgr = new Manager();
+            await Promise.all([mgr.loadSilenceDictionary('s1'), mgr.loadSilenceDictionary('s1')]);
+
+            const docs = await findDocs({ id: 's1' });
+            docs.should.have.lengthOf(1);
+        });
+
         specify('返した辞書は、その後の追加の影響を受けない', async () => {
             const mgr = new Manager();
             const before = await mgr.loadSilenceDictionary('s1');
