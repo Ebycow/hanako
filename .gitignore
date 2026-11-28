@@ -17,3 +17,6 @@ coverage/
 # quickstart で VOICEROID を使うときの設定とライブラリ
 quickstart/ebyroid.conf.json
 quickstart/AHS/
+
+# macOS が作るフォルダの表示設定
+.DS_Store
