@@ -93,6 +93,31 @@ describe('NedbWordDictionaryTableManager', () => {
             dict.lines.map((l) => l.from).should.deep.equal(['x']);
         });
 
+        specify('未登録のサーバーを同時に読み込んでも、ドキュメントは 1 件しか作らない', async () => {
+            const mgr = new Manager();
+            await Promise.all([mgr.loadWordDictionary('s1'), mgr.loadWordDictionary('s1')]);
+
+            const docs = await findDocs({ id: 's1' });
+            docs.should.have.lengthOf(1);
+        });
+
+        specify('DB の読み込みに失敗しても、次の読み込みでやり直せる', async () => {
+            const mgr = new Manager();
+            const db = instances[0];
+            const originalFindOne = db.findOne;
+            db.findOne = function (query, callback) {
+                db.findOne = originalFindOne;
+                callback(new Error('boom'));
+            };
+
+            const results = await Promise.allSettled([mgr.loadWordDictionary('s1'), mgr.loadWordDictionary('s1')]);
+            results.map((r) => r.status).should.deep.equal(['rejected', 'rejected']);
+
+            const dict = await mgr.loadWordDictionary('s1');
+            dict.lines.should.have.lengthOf(0);
+            (await findDocs({ id: 's1' })).should.have.lengthOf(1);
+        });
+
         specify('返した辞書は、その後の追加の影響を受けない', async () => {
             const mgr = new Manager();
             const before = await mgr.loadWordDictionary('s1');

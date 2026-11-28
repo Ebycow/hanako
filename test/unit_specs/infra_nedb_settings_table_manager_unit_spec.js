@@ -68,6 +68,15 @@ describe('NedbSettingsTableManager', () => {
             a.id.should.equal(b.id);
         });
 
+        specify('未登録のサーバーを同時に読み込んでも、ドキュメントは 1 件しか作らず同じ設定 ID を返す', async () => {
+            const mgr = new Manager(appSettings(0.5));
+            const [a, b] = await Promise.all([mgr.loadSettings('s1'), mgr.loadSettings('s1')]);
+            a.id.should.equal(b.id);
+
+            const doc = await findDoc('s1');
+            doc.dict.id.should.equal(a.id);
+        });
+
         specify('既存のドキュメントから設定を復元する', async () => {
             const mgr = new Manager(appSettings(0.5));
             await instances[0].insertAsync({
