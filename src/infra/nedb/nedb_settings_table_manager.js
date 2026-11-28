@@ -41,6 +41,13 @@ let dbInstance;
 let cache;
 
 /**
+ * DBから読み込み中のデータ（同じサーバーの読み込みを並行して二重に走らせないため）
+ *
+ * @type {Map<ServerID, Promise<Record>>}
+ */
+let loading;
+
+/**
  * AppSettingsインスタンス（デフォルト値計算用）
  *
  * @type {AppSettings}
@@ -67,6 +74,7 @@ function init(settings) {
 
     // キャッシュ領域の割当
     cache = new Map();
+    loading = new Map();
 
     // AppSettingsを保持
     appSettings = settings;
@@ -99,10 +107,38 @@ function calculateDefaultSeNormalize() {
  * キャッシュからデータを取得
  * キャッシュがなければDBからロード
  *
+ * 同じサーバーをDBから読み込み中なら、その読み込みの完了を待って同じものを返す。
+ * findOne→insert が並行して二重に走ると、同じ id のドキュメントが 2 件できてしまうため。
+ *
  * @param {ServerID} serverId
  * @returns {Promise<Record>}
  */
 async function loadSharedData(serverId) {
+    assert(typeof serverId === 'string');
+
+    // 読み込み中なら相乗りする
+    if (loading.has(serverId)) {
+        return loading.get(serverId);
+    }
+
+    const promise = fetchSharedData(serverId);
+    loading.set(serverId, promise);
+    try {
+        return await promise;
+    } finally {
+        loading.delete(serverId);
+    }
+}
+
+/**
+ * キャッシュからデータを取得
+ * キャッシュがなければDBからロード（なければ空のドキュメントを作る）
+ * 直接呼ばずに loadSharedData を通すこと
+ *
+ * @param {ServerID} serverId
+ * @returns {Promise<Record>}
+ */
+async function fetchSharedData(serverId) {
     assert(typeof serverId === 'string');
 
     // キャッシュにデータがあればそのまま返却
